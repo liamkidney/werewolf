@@ -33,31 +33,30 @@ jobs:
           ref: dev
           path: development
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: cd development && npm install --no-audit --no-fund
+
       - name: Test
         run: cd development && npm test
 
-      - name: Prepare static files
+      - name: Build production
         run: |
-          mkdir -p _site/dev
-          rsync -a --exclude='.git/' --exclude='.github/' --exclude='tests/' --exclude='scripts/' --exclude='supabase/' --exclude='node_modules/' --exclude='package*.json' --exclude='requirements-build.txt' production/ _site/
-          rsync -a --exclude='.git/' --exclude='.github/' --exclude='tests/' --exclude='scripts/' --exclude='supabase/' --exclude='node_modules/' --exclude='package*.json' --exclude='requirements-build.txt' development/ _site/dev/
-          touch _site/.nojekyll
-          # Publish each release under its own URL so cached modules cannot mix versions.
-          for site in production development; do
-            if [ "$site" = production ]; then
-              target="_site"
-            else
-              target="_site/dev"
-            fi
-            revision="$(git -C "$site" rev-parse --short HEAD)"
-            mkdir -p "$target/assets/$revision"
-            cp "$site/app.js" "$target/assets/$revision/app.js"
-            cp "$site/styles.css" "$target/assets/$revision/styles.css"
-            cp -R "$site/src" "$target/assets/$revision/src"
-            sed -i "s|href=\"./styles.css\"|href=\"./assets/$revision/styles.css\"|; s|src=\"./app.js\"|src=\"./assets/$revision/app.js\"|" "$target/index.html"
-          done
+          SITE_ROOT="$GITHUB_WORKSPACE/production" SITE_BASE="/werewolf/" SITE_OUT="$GITHUB_WORKSPACE/_site" npm run build --prefix development
+
+      - name: Build development
+        run: |
+          SITE_ROOT="$GITHUB_WORKSPACE/development" SITE_BASE="/werewolf/dev/" SITE_OUT="$GITHUB_WORKSPACE/_site/dev" npm run build --prefix development
+
+      - name: Stamp footer and prepare Pages
+        run: |
           sed -i "s/__BUILD_VERSION__/$(git -C production rev-parse --short HEAD)/g" _site/index.html
           sed -i "s/__BUILD_VERSION__/$(git -C development rev-parse --short HEAD)/g" _site/dev/index.html
+          touch _site/.nojekyll
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
