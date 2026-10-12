@@ -3,6 +3,7 @@ import { GameEngine, secureRandomInt } from './game-engine.js';
 import { GameRepository } from './game-repository.js';
 import { GameSync } from './game-sync.js';
 import { Screens } from './screens.js';
+import { StateEngine } from './state-engine.js';
 
 const identityKey = id => 'werewolf:player:' + id;
 const hostKey = id => 'werewolf:host:' + id;
@@ -15,6 +16,7 @@ export class GameController {
   } = {}) {
     this.repository = repository;
     this.engine = engine;
+    this.stateEngine = new StateEngine();
     this.screens = screens;
     this.sync = new GameSync(repository);
     this.state = new GameState();
@@ -233,7 +235,7 @@ export class GameController {
     if (state.phase !== 'day') { this.stopDayTimer(); return; }
     const deadline = Date.parse(state.phaseStartedAt || '') + (state.dayDurationSeconds ?? 120) * 1000;
     const seconds = Number.isFinite(deadline) ? Math.max(0, Math.ceil((deadline - Date.now()) / 1000)) : (state.dayDurationSeconds ?? 120);
-    const voting = seconds === 0 || !!state.discussionEndedAt;
+    const voting = this.stateEngine.step(state) === 'voting';
     const active = state.players.filter(player => !player.eliminated_at);
     const votes = state.votes.filter(vote => vote.round_number === state.roundNumber);
     const myVote = votes.find(vote => vote.voter_id === this.playerId);
@@ -325,7 +327,7 @@ export class GameController {
     this.showActionError('');
     try {
       const fresh = await this.repository.getState(this.state.id);
-      const next = this.engine.nextPhase(fresh);
+      const next = this.stateEngine.transition(fresh, { type: fresh.phase === 'reveal' ? 'START_DAY' : 'START_NIGHT' });
       await this.repository.advancePhase(fresh, next);
       this.requestRefresh();
     } catch (error) {
