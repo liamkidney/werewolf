@@ -13,8 +13,8 @@ from pathlib import Path
 import cairosvg
 from PIL import Image
 
-EXCLUDED_DIRS = {'.git', '.github', '__pycache__', 'node_modules', '.pytest_cache'}
-EXCLUDED_FILES = {'.DS_Store'}
+EXCLUDED_DIRS = {'.git', '.github', '__pycache__', 'node_modules', '.pytest_cache', 'tests', 'scripts'}
+EXCLUDED_FILES = {'.DS_Store', 'requirements-build.txt', 'package.json', 'package-lock.json'}
 
 
 class AssetReferences(HTMLParser):
