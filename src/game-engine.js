@@ -5,6 +5,20 @@ export class GameEngine {
       && state.werewolfCount >= 1 && state.werewolfCount <= 50;
   }
 
+  nextPhase(state) {
+    if (state.status !== 'playing') throw new Error('Game is not in progress.');
+    const transitions = {
+      reveal: 'night', night: 'day', day: 'voting',
+      voting: 'results', results: 'night'
+    };
+    const phase = transitions[state.phase];
+    if (!phase) throw new Error('Unknown game phase.');
+    return {
+      phase,
+      roundNumber: state.roundNumber + (state.phase === 'results' ? 1 : 0)
+    };
+  }
+
   nextWerewolfCount(state, delta) {
     return Math.max(1, Math.min(50, state.werewolfCount + delta));
   }
