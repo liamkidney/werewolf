@@ -19,7 +19,7 @@ export class GameRepository {
   }
 
   async getGame(gameId) {
-    return unwrap(await this.db.from('games').select('id,status,werewolf_count,phase,round_number,phase_started_at,day_duration_seconds,discussion_ended_at,last_banished_id,last_banished_round,host_player_id').eq('id', gameId).maybeSingle());
+    return unwrap(await this.db.from('games').select('id,status,werewolf_count,phase,step,round_number,phase_started_at,day_duration_seconds,discussion_ended_at,last_banished_id,last_banished_round,host_player_id').eq('id', gameId).maybeSingle());
   }
 
   async hasPlayer(gameId, playerId) {
@@ -44,7 +44,7 @@ export class GameRepository {
     ]);
     if (!game) throw new Error('Game not found.');
     return new GameState({
-      id: game.id, status: game.status, phase: game.phase, roundNumber: game.round_number, werewolfCount: game.werewolf_count, players, votes,
+      id: game.id, status: game.status, phase: game.phase, step: game.step, roundNumber: game.round_number, werewolfCount: game.werewolf_count, players, votes,
       phaseStartedAt: game.phase_started_at, dayDurationSeconds: game.day_duration_seconds, discussionEndedAt: game.discussion_ended_at, lastBanishedId: game.last_banished_id, lastBanishedRound: game.last_banished_round, hostPlayerId: game.host_player_id
     });
   }
@@ -74,6 +74,10 @@ export class GameRepository {
       .eq('phase', state.phase).eq('round_number', state.roundNumber)
       .select('id'));
     if (!updated.length) throw new Error('The phase changed on another device. Refresh and try again.');
+  }
+
+  async openDayVoting(gameId, round) {
+    return unwrap(await this.db.rpc('open_day_voting', { p_game_id: gameId, p_round: round }));
   }
 
   async endDiscussion(gameId, playerId) {
