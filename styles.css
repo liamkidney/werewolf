@@ -261,9 +261,9 @@ body.light-screen #endgame-screen .endgame-credits-roll{display:flex;flex-direct
 body.light-screen #endgame-screen .endgame-credits-intro,body.light-screen #endgame-screen .endgame-credits-outro{text-align:center;letter-spacing:.22em;font-size:.75rem;font-weight:700;margin:12px 0}
 body.light-screen #endgame-screen .endgame-credits-list{display:flex;flex-direction:column;gap:15px}
 body.light-screen #endgame-screen .endgame-credit{display:grid;grid-template-columns:50% 50%;align-items:start;gap:0;font-family:Arial,Helvetica,sans-serif}
-body.light-screen #endgame-screen .endgame-credit-role{text-align:right;padding:4px 12px 0 0;font-size:.69rem;letter-spacing:.08em;opacity:.76}
+body.light-screen #endgame-screen .endgame-credit-role{text-align:right;padding:4px 12px 0 0;font-size:.8rem;font-weight:400;letter-spacing:0;opacity:.78}
 body.light-screen #endgame-screen .endgame-credit-details{display:flex;flex-direction:column;gap:4px;min-width:0;padding-right:8px}
-body.light-screen #endgame-screen .endgame-credit-name{font-size:.91rem;font-weight:700;letter-spacing:.025em;overflow-wrap:anywhere}
+body.light-screen #endgame-screen .endgame-credit-name{font-size:.8rem;font-weight:400;letter-spacing:0;overflow-wrap:anywhere}
 body.light-screen #endgame-screen .endgame-credit-fate{font-size:.63rem;letter-spacing:.12em;opacity:.65}
 @keyframes endgame-credits-rise{from{transform:translateY(28px)}to{transform:translateY(-28px)}}
 body.light-screen #endgame-screen .endgame-credits:hover .endgame-credits-roll,
@@ -275,4 +275,4 @@ body.light-screen #endgame-screen .endgame-credits-supporting-heading{padding-to
 
 
 /* Keep long elimination credits on one line on mobile. */
-body.light-screen #endgame-screen .endgame-credit-role{white-space:nowrap;font-size:clamp(.54rem,2.5vw,.69rem);padding-right:10px}
+body.light-screen #endgame-screen .endgame-credit-role{white-space:nowrap;font-size:clamp(.66rem,2.5vw,.8rem);padding-right:10px}
