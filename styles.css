@@ -272,3 +272,14 @@ body.light-screen #endgame-screen .endgame-credits:active .endgame-credits-roll{
 
 /* A dramatic pause before the supporting cast. */
 body.light-screen #endgame-screen .endgame-credits-supporting-heading{padding-top:30px;padding-bottom:8px}
+
+/* Gothic invite: ornament stays outside the QR quiet zone. */
+body.light-screen .qr-wrap{isolation:isolate;padding:29px;background:#f7efdf;border:2px solid #673047;border-radius:3px;box-shadow:0 0 0 5px #f7efdf,0 0 0 6px #9d7b75,0 8px 25px #1b102a24}
+body.light-screen .qr-wrap canvas{display:block;position:relative;z-index:1;max-width:100%;height:auto;image-rendering:pixelated}
+body.light-screen .qr-gothic-frame{pointer-events:none;position:absolute;inset:7px;border:1px solid #9b6c75}
+body.light-screen .qr-gothic-frame::before,body.light-screen .qr-gothic-frame::after{content:'✧';position:absolute;top:50%;transform:translateY(-50%);font-size:16px;color:#673047;background:#f7efdf;line-height:1}
+body.light-screen .qr-gothic-frame::before{left:-7px}
+body.light-screen .qr-gothic-frame::after{right:-7px}
+body.light-screen .qr-ornament{position:absolute;left:50%;transform:translateX(-50%);color:#673047;background:#f7efdf;white-space:nowrap;font-family:Georgia,serif;font-size:15px;letter-spacing:.2em;line-height:1}
+body.light-screen .qr-ornament-top{top:-8px}
+body.light-screen .qr-ornament-bottom{bottom:-8px}
