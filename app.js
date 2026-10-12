@@ -9,8 +9,8 @@ const requestedGame = params.get('game');
 let playerCount = 0, werewolfCount = 2;
 let currentGame = null, channel = null, isHost = false, gameStatus = 'lobby', starting = false;
 function showError(message) { $('app-error').textContent = message; $('app-error').hidden = !message; }
-function showLobby() { hero.hidden = true; form.hidden = true; lobby.hidden = false; $('role-screen').hidden = true; }
-function showRole() { hero.hidden = true; form.hidden = true; lobby.hidden = true; $('role-screen').hidden = false; }
+function showLobby() { document.body.classList.add('light-screen'); hero.hidden = true; form.hidden = true; lobby.hidden = false; $('role-screen').hidden = true; }
+function showRole() { document.body.classList.add('light-screen'); hero.hidden = true; form.hidden = true; lobby.hidden = true; $('role-screen').hidden = false; }
 function setBusy(busy) { form.querySelector('button').disabled = busy; }
 function identityKey(gameId) { return 'werewolf:player:' + gameId; }
 async function loadPlayers() {
@@ -18,9 +18,14 @@ async function loadPlayers() {
   const { data, error } = await db.from('players').select('id,name').eq('game_id',currentGame).order('joined_at');
   if (error) { showError(error.message); return; }
   list.replaceChildren();
-  for (const player of data) {
+  for (const [index,player] of data.entries()) {
     const li = document.createElement('li');
-    li.textContent = player.name;
+    const dot = document.createElement('span'); dot.className = 'player-dot dot-' + (index % 6);
+    const name = document.createElement('span');
+    const mine = player.id === localStorage.getItem(identityKey(currentGame));
+    name.textContent = player.name + (mine ? ' (you)' : '');
+    if (mine) name.className = 'my-name';
+    li.append(dot,name);
     list.append(li);
   }
   playerCount = data.length;
@@ -30,7 +35,9 @@ async function loadPlayers() {
 async function enterLobby(gameId, host) {
   currentGame = gameId; isHost = host;
   showLobby();
-  $('lobby-title').textContent = host ? 'Your game lobby' : 'Game lobby';
+  $('host-controls').hidden = !host;
+  $('guest-intro').hidden = host;
+  $('guest-waiting').hidden = host;
   $('lobby-code').textContent = 'Game ' + gameId.slice(0,8).toUpperCase();
   $('host-tools').hidden = !host;
   $('invite-link').value = new URL('?game=' + encodeURIComponent(gameId), location.href).href;
@@ -95,6 +102,7 @@ function updateCounts() {
   $('wolf-plus').disabled = werewolfCount >= 50;
   const valid = playerCount > werewolfCount;
   $('start-game').disabled = !isHost || !valid || starting || gameStatus !== 'lobby';
+  $('minimum-label').textContent = 'Minimum ' + (werewolfCount + 1);
   $('start-status').textContent = starting ? 'Assigning roles…' : gameStatus !== 'lobby' ? 'Game already started.' : !isHost ? 'Only the host can start the game.' : !valid ? 'Waiting for more players.' : 'Ready to start.';
   $('role-warning').hidden = valid;
   $('role-warning').textContent = valid ? '' : 'Add more players than werewolves before starting.';
