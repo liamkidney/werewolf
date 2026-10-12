@@ -7,6 +7,11 @@ import { StateEngine } from './state-engine.js';
 
 const identityKey = id => 'werewolf:player:' + id;
 const hostKey = id => 'werewolf:host:' + id;
+const activeGameKey = 'werewolf:active-game';
+const isTestFrame = () => new URLSearchParams(location.search).has('test_player');
+const cleanGameUrl = () => {
+  if (!isTestFrame()) history.replaceState(null, '', location.pathname + location.hash);
+};
 
 export class GameController {
   constructor({
@@ -38,7 +43,8 @@ export class GameController {
     this.dayVoteSignature = '';
     this.refreshPending = false;
     this.refreshRunning = false;
-    this.requestedGame = new URLSearchParams(location.search).get('game');
+    const params = new URLSearchParams(location.search);
+    this.requestedGame = params.get('game') || (!params.has('new') && !isTestFrame() ? localStorage.getItem(activeGameKey) : null);
   }
 
   renderLobby() {
@@ -80,6 +86,11 @@ export class GameController {
         }
       } catch (error) { this.showActionError(error.message); }
     }
+    if (!new URLSearchParams(location.search).has('game')) {
+      localStorage.removeItem(activeGameKey);
+      this.requestedGame = null;
+      return;
+    }
     document.querySelector('.entry label').textContent = 'Enter your name to join';
     this.screens.form.querySelector('button').textContent = 'Join Game →';
   }
@@ -107,7 +118,6 @@ export class GameController {
       localStorage.setItem(identityKey(gameId), playerId);
       localStorage.setItem('werewolf:name', name);
       if (host) localStorage.setItem(hostKey(gameId), 'true');
-      if (host) history.replaceState(null, '', location.pathname + '?game=' + gameId);
       await this.enterGame(gameId, playerId, host);
     } catch (error) {
       this.showActionError(error.message || 'Could not connect to Supabase.');
@@ -130,6 +140,10 @@ export class GameController {
     }
     // Listen before initial read, then resync on reconnect and when returning to the tab.
     await this.sync.subscribe(gameId, () => this.requestRefresh());
+    if (!isTestFrame()) {
+      localStorage.setItem(activeGameKey, gameId);
+      cleanGameUrl();
+    }
     this.requestRefresh();
   }
 
@@ -148,6 +162,9 @@ export class GameController {
         const id = this.state.id;
         const state = await this.repository.getState(id);
         if (id !== this.state.id || this.eliminated) return;
+        if (state.status === 'finished' && !isTestFrame() && localStorage.getItem(activeGameKey) === id) {
+          localStorage.removeItem(activeGameKey);
+        }
         if (state.players.some(player => player.id === this.playerId && player.eliminated_at)) {
           const murdered = state.lastMurderedId === this.playerId && state.lastMurderedRound === state.roundNumber;
           this.screens.showEliminated(murdered);
