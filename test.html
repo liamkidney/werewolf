@@ -13,7 +13,7 @@
 <div id="grid" class="grid"></div>
 <script type="module">
 import { GameRepository } from './src/game-repository.js';
-const names=['Liam','Mary','John','Frank','Alice','Sarah'];
+const names=['Alice','Ben','Charlie','Diana','Ethan','Fiona'];
 const repo=new GameRepository();
 const grid=document.getElementById('grid'),status=document.getElementById('status'),button=document.getElementById('create'),link=document.getElementById('game-link');
 const setStatus=text=>{status.textContent=text;};
@@ -44,7 +44,7 @@ async function create(){
    frame.src='./?game='+encodeURIComponent(gameId)+'&test_player='+encodeURIComponent(ids[i])+'&test_host='+(i===0?'1':'0');
    card.append(head,frame);grid.append(card);
   }
-  setStatus('Ready. Use Liam’s screen to start the game; all six screens are interactive. New game resets the console.');
+  setStatus('Ready. Use Alice’s screen to start the game; all six screens are interactive. New game resets the console.');
  }catch(error){setStatus('Error: '+(error.message||error));}
  finally{button.disabled=false;}
 }
