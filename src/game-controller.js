@@ -159,7 +159,6 @@ export class GameController {
   }
 
   requestRefresh() {
-    if (this.eliminated) return;
     this.refreshPending = true;
     if (!this.refreshRunning) void this.refresh();
   }
@@ -172,7 +171,8 @@ export class GameController {
         this.refreshPending = false;
         const id = this.state.id;
         const state = await this.repository.getState(id);
-        if (id !== this.state.id || this.eliminated) return;
+        if (id !== this.state.id) return;
+        if (this.eliminated && state.status !== 'finished') return;
         if (state.status === 'finished' && !isTestFrame() && localStorage.getItem(activeGameKey) === id) {
           localStorage.removeItem(activeGameKey);
         }
@@ -198,7 +198,7 @@ export class GameController {
           this.stopDayTimer();
           this.stopNightPoll();
           this.stopSuspenseTimer();
-          void this.sync.stop();
+          // Keep the subscription so eliminated players can see the final result.
           return;
         }
         if (state.status === 'playing' && !this.playerRole) {
