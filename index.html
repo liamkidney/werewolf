@@ -40,20 +40,22 @@
       <p class="error" id="name-error" role="alert" hidden>Please enter your name.</p>
       <button type="submit">Let's Play <span aria-hidden="true">→</span></button>
     </form>
-    <section id="next-step" class="next-step" hidden aria-live="polite">
-      <h2>Ready to host, <span id="host-name"></span>!</h2>
-      <p>Game creation and the QR-code lobby are coming in the next increment.</p>
-      <button id="back-button" type="button">Back</button>
-    </section>
     <section id="lobby" class="lobby" hidden aria-live="polite">
       <h2 id="lobby-title">Game lobby</h2>
       <p id="lobby-code" class="muted"></p>
       <p id="lobby-message" class="muted">Waiting for players…</p>
       <ul id="player-list" class="player-list"></ul>
       <div id="host-tools" hidden>
+        <div class="qr-wrap"><canvas id="join-qr" role="img" aria-label="QR code to join this game"></canvas><p class="qr-caption">Scan to join</p></div>
         <label for="invite-link">Invite link</label>
         <div class="invite-row"><input id="invite-link" readonly aria-label="Invite link"><button id="copy-link" type="button">Copy</button></div>
-        <p class="muted">Share this link with other players. QR codes arrive in Increment 3.</p>
+        <div class="role-config">
+          <div class="role-row"><label for="werewolf-count">Werewolves</label><div class="stepper"><button id="wolf-minus" type="button" aria-label="Fewer werewolves">−</button><output id="werewolf-count" aria-live="polite">2</output><button id="wolf-plus" type="button" aria-label="More werewolves">+</button></div></div>
+          <div class="role-row"><span>Villagers</span><output id="villager-count" aria-live="polite">0</output></div>
+          <p id="role-warning" class="muted" hidden></p>
+        </div>
+        <button id="start-game" type="button" disabled title="Role assignment arrives in Increment 4">Start Game</button>
+        <p class="muted">Game start and secret roles arrive in the next increment.</p>
       </div>
       <button id="leave-lobby" type="button" class="secondary">Back to home</button>
     </section>
