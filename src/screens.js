@@ -131,7 +131,16 @@ export class Screens {
     $('endgame-winner').textContent = wolvesWon ? 'The Werewolves Win' : 'The Villagers Win';
     const list = $('endgame-roles');
     list.replaceChildren();
-    for (const player of roles) {
+    const cast = [...roles].sort((a, b) => Number(b.role === 'werewolf') - Number(a.role === 'werewolf'));
+    let villagersStarted = false;
+    for (const player of cast) {
+      if (player.role !== 'werewolf' && !villagersStarted) {
+        villagersStarted = true;
+        const intermission = document.createElement('div');
+        intermission.className = 'endgame-credits-supporting-gap';
+        intermission.setAttribute('aria-hidden', 'true');
+        list.append(intermission);
+      }
       const entry = document.createElement('div');
       entry.className = 'endgame-credit';
       const role = document.createElement('span');
