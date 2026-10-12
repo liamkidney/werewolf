@@ -131,34 +131,37 @@ export class Screens {
     $('endgame-winner').textContent = wolvesWon ? 'The Werewolves Win' : 'The Villagers Win';
     const list = $('endgame-roles');
     list.replaceChildren();
-    const cast = [...roles].sort((a, b) => Number(b.role === 'werewolf') - Number(a.role === 'werewolf'));
-    let villagersStarted = false;
-    for (const player of cast) {
-      if (player.role !== 'werewolf' && !villagersStarted) {
-        villagersStarted = true;
-        const intermission = document.createElement('div');
-        intermission.className = 'endgame-credits-supporting-gap';
-        intermission.setAttribute('aria-hidden', 'true');
-        list.append(intermission);
-      }
+    const victoriousRole = wolvesWon ? 'werewolf' : 'villager';
+    const stars = roles.filter(player => player.role === victoriousRole && !player.eliminated);
+    const supporting = roles.filter(player => player.role !== victoriousRole || player.eliminated);
+
+    const addCredit = (player, supportingRole) => {
       const entry = document.createElement('div');
       entry.className = 'endgame-credit';
       const role = document.createElement('span');
       role.className = 'endgame-credit-role';
-      role.textContent = player.role === 'werewolf' ? 'WEREWOLF' : 'VILLAGER';
+      const character = player.role === 'werewolf' ? 'WEREWOLF' : 'VILLAGER';
+      const fate = player.elimination_reason === 'murdered' ? 'MURDERED'
+        : player.elimination_reason === 'banished' ? 'BANISHED'
+        : player.eliminated ? 'ELIMINATED' : '';
+      role.textContent = supportingRole && fate ? fate + ' ' + character : character;
       const details = document.createElement('div');
       details.className = 'endgame-credit-details';
       const name = document.createElement('span');
       name.className = 'endgame-credit-name';
       name.textContent = player.name;
-      const fate = document.createElement('span');
-      fate.className = 'endgame-credit-fate';
-      fate.textContent = player.elimination_reason === 'murdered' ? 'MURDERED'
-        : player.elimination_reason === 'banished' ? 'BANISHED'
-        : player.eliminated ? 'ELIMINATED' : 'SURVIVED';
-      details.append(name, fate);
+      details.append(name);
       entry.append(role, details);
       list.append(entry);
+    };
+
+    for (const player of stars) addCredit(player, false);
+    if (supporting.length) {
+      const heading = document.createElement('p');
+      heading.className = 'endgame-credits-intro endgame-credits-supporting-heading';
+      heading.textContent = 'ALSO APPEARING';
+      list.append(heading);
+      for (const player of supporting) addCredit(player, true);
     }
     const roll = $('endgame-screen').querySelector('.endgame-credits-roll');
     roll.style.animation = 'none';
