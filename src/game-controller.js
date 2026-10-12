@@ -35,6 +35,9 @@ export class GameController {
     this.casting = false;
     this.nightCasting = false;
     this.nightPack = null;
+    this.decoyPack = null;
+    this.decoyCasting = false;
+    this.endgameTimer = null;
     this.nightPoll = null;
     this.suspenseTimer = null;
     this.finishing = false;
@@ -71,6 +74,7 @@ export class GameController {
       onAdvance: () => this.advancePhase(),
       onVote: target => this.castVote(target),
       onNightVote: target => this.castNightVote(target),
+      onDecoyVote: target => this.castDecoyVote(target),
       onEndDiscussion: () => this.endDiscussion(),
       onFinishVoting: () => this.finishVoting(),
       onDismissBanishment: () => this.dismissBanishment()
@@ -133,6 +137,9 @@ export class GameController {
     this.stopDayTimer();
     this.stopNightPoll();
     this.stopSuspenseTimer();
+    if (this.endgameTimer !== null) clearTimeout(this.endgameTimer);
+    this.endgameTimer = null;
+    this.decoyPack = null;
     this.isHost = host;
     this.wasHost = host;
     this.state = new GameState({ id: gameId });
@@ -169,6 +176,13 @@ export class GameController {
         if (state.status === 'finished' && !isTestFrame() && localStorage.getItem(activeGameKey) === id) {
           localStorage.removeItem(activeGameKey);
         }
+        if (state.status === 'finished') {
+          this.state = state;
+          this.isHost = state.hostPlayerId === this.playerId;
+          this.decoyPack = state.phase === 'dawn' ? await this.repository.getDecoyPack(id, this.playerId) : null;
+          this.renderFinished(state);
+          return;
+        }
         if (state.players.some(player => player.id === this.playerId && player.eliminated_at)) {
           if (state.lastMurderedId === this.playerId && this.suspenseRemaining(state) > 0) {
             this.state = state;
@@ -193,6 +207,8 @@ export class GameController {
         if (id !== this.state.id || this.eliminated) return;
         this.state = state;
         if (state.phase === 'night' && this.playerRole === 'werewolf') this.nightPack = await this.repository.getNightPack(id, this.playerId);
+        if (state.phase === 'night' && this.playerRole === 'villager') this.decoyPack = await this.repository.getDecoyPack(id, this.playerId);
+        if (state.phase === 'dawn') this.decoyPack = await this.repository.getDecoyPack(id, this.playerId);
         if (state.hostPlayerId) this.isHost = state.hostPlayerId === this.playerId;
         if (this.isHost) this.wasHost = true;
         this.renderCurrentScreen();
@@ -224,6 +240,49 @@ export class GameController {
       this.suspenseTimer = null;
       this.requestRefresh();
     }, this.suspenseRemaining(state) + 30);
+  }
+
+  renderFinished(state) {
+    this.stopNightPoll();
+    this.stopDayTimer();
+    if (this.endgameTimer !== null) clearTimeout(this.endgameTimer);
+    this.endgameTimer = null;
+    const started = Date.parse(state.phaseStartedAt || '');
+    const revealDuration = state.phase === 'dawn' ? 10000 : 4000;
+    const remaining = Number.isFinite(started) ? Math.max(0, started + revealDuration - Date.now()) : 0;
+    if (remaining > 0) {
+      if (state.phase === 'dawn') {
+        if (this.suspenseRemaining(state) > 0) this.showSuspense(state);
+        else {
+          const victim = state.players.find(player => player.id === state.lastMurderedId);
+          if (victim?.id === this.playerId) this.screens.showEliminated(true, this.wasHost ? state.players.find(p => p.id === state.hostPlayerId)?.name : null);
+          else this.screens.renderMurderReveal(victim?.name || 'A villager', false, state.decoyQuestion, this.decoyPack?.results || [], state.players);
+        }
+      } else {
+        const banished = state.players.find(player => player.id === state.lastBanishedId);
+        if (banished?.id === this.playerId) this.screens.showEliminated(false, this.wasHost ? state.players.find(p => p.id === state.hostPlayerId)?.name : null);
+        else this.screens.renderBanishment(banished?.name || 'A player', false, false);
+      }
+      this.endgameTimer = setTimeout(() => { this.endgameTimer = null; this.requestRefresh(); }, remaining + 30);
+      return;
+    }
+    this.stopSuspenseTimer();
+    void this.repository.getFinalRoles(state.id).then(roles => {
+      if (this.state.id === state.id && this.state.status === 'finished') this.screens.renderEndgame(state.winner, roles);
+    }).catch(error => this.showActionError(error.message || 'Could not load final roles.'));
+  }
+
+  async castDecoyVote(targetId) {
+    if (this.eliminated || this.decoyCasting || this.playerRole !== 'villager' || this.state.phase !== 'night' || !targetId) return;
+    this.decoyCasting = true;
+    try {
+      await this.repository.castDecoyVote(this.state.id, this.state.roundNumber, this.playerId, targetId);
+      this.requestRefresh();
+    } catch (error) {
+      this.showActionError(error.message || 'Could not record your answer.');
+    } finally {
+      this.decoyCasting = false;
+    }
   }
 
   stopNightPoll() {
@@ -262,7 +321,7 @@ export class GameController {
       return;
     }
     if (state.phase === 'night') {
-      this.screens.renderNight(state, { playerId: this.playerId, role: this.playerRole, pack: this.nightPack, casting: this.nightCasting });
+      this.screens.renderNight(state, { playerId: this.playerId, role: this.playerRole, pack: this.nightPack, casting: this.nightCasting || this.decoyCasting, decoyPack: this.decoyPack });
       if (this.nightPoll === null) this.nightPoll = setInterval(() => this.requestRefresh(), 1500);
       return;
     }
@@ -273,7 +332,7 @@ export class GameController {
       }
       this.stopSuspenseTimer();
       const victim = state.players.find(player => player.id === state.lastMurderedId);
-      this.screens.renderMurderReveal(victim?.name || 'A villager', this.isHost);
+      this.screens.renderMurderReveal(victim?.name || 'A villager', this.isHost, state.decoyQuestion, this.decoyPack?.results || [], state.players);
       return;
     }
     if (state.phase === 'day') {
@@ -412,7 +471,7 @@ export class GameController {
       this.requestRefresh();
     } finally {
       this.advancing = false;
-      this.screens.renderPhase(this.state, this);
+      if (this.state.status === 'playing' && this.state.phase === 'reveal') this.screens.renderPhase(this.state, this);
     }
   }
 
