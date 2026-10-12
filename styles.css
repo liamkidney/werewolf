@@ -172,3 +172,17 @@ body.light-screen #night-screen:not([hidden]){margin-top:0}
 /* Host lobby uses the same edge-to-edge artwork as the guest lobby. */
 body.light-screen .screen:has(#host-tools:not([hidden])){padding-top:0}
 body.light-screen #host-tools:not([hidden]) .guest-art{width:calc(100% + 48px);max-width:none;margin-left:-24px;margin-right:-24px;flex:none}
+
+/* Night phase: dark palette scoped to the active night screen. */
+body.light-screen:has(#night-screen:not([hidden])),
+body.light-screen:has(#night-screen:not([hidden])) .screen{background:#0b1723;color:#e8edf5}
+body.light-screen #night-screen:not([hidden]){color:#e8edf5}
+body.light-screen #night-screen .phase-art-night{--art-base:#0b1723}
+body.light-screen #night-screen .lobby-eyebrow{color:#aeb9c9}
+body.light-screen #night-screen .night-choice{background:#192a3b;border-color:#3b4e63;color:#edf2f9}
+body.light-screen #night-screen .night-choice:has(input:checked){border-color:#e3a65c}
+body.light-screen #night-screen .night-choice input{accent-color:#e3a65c}
+body.light-screen #night-screen .night-choice .night-bar{background:#58414a}
+body.light-screen #night-screen .night-percent,
+body.light-screen #night-screen .muted{color:#aeb9c9}
+body.light-screen:has(#night-screen:not([hidden])) .site-footer{color:#9eacbc}
