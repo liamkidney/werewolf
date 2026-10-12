@@ -32,6 +32,7 @@ export class GameController {
     this.decoyPack = null;
     this.decoyCasting = false;
     this.endgameTimer = null;
+    this.finalCreditsGameId = null;
     this.nightPoll = null;
     this.suspenseTimer = null;
     this.finishing = false;
@@ -156,6 +157,7 @@ export class GameController {
     this.playerId = playerId;
     this.playerRole = null;
     this.eliminated = false;
+    this.finalCreditsGameId = null;
     this.stopDayTimer();
     this.stopNightPoll();
     this.stopSuspenseTimer();
@@ -193,33 +195,26 @@ export class GameController {
           this.screens.showConnectionError('Your player membership could not be found.');
           return;
         }
-        if (this.eliminated && state.status !== 'finished') return;
+        this.state = state;
+        const me = state.players.find(player => player.id === this.playerId);
+        // Elimination is a permanent player state, independent of the current
+        // round's last victim or the current phase.
+        if (me.eliminated_at) {
+          this.enterEliminatedState(me, state);
+          if (state.status !== 'finished') return;
+        }
         if (state.status === 'finished' && !this.session.testFrame && this.session.activeGame === id) {
           this.session.clearActive(id);
         }
         if (state.status === 'finished') {
-          this.state = state;
-          this.isHost = state.hostPlayerId === this.playerId;
-          this.decoyPack = state.phase === 'dawn' ? await this.repository.getDecoyPack(id, this.playerId) : null;
-          this.renderFinished(state);
-          return;
-        }
-        if (state.players.some(player => player.id === this.playerId && player.eliminated_at)) {
-          if (state.lastMurderedId === this.playerId && this.suspenseRemaining(state) > 0) {
-            this.state = state;
-            this.showSuspense(state);
-            return;
+          if (me.eliminated_at) {
+            // Eliminated players skip the intervening phase/reveal screens.
+            this.showFinalCredits(state);
+          } else {
+            this.isHost = state.hostPlayerId === this.playerId;
+            this.decoyPack = state.phase === 'dawn' ? await this.repository.getDecoyPack(id, this.playerId) : null;
+            this.renderFinished(state);
           }
-          const murdered = state.lastMurderedId === this.playerId && state.lastMurderedRound === state.roundNumber;
-          const successor = this.wasHost && state.hostPlayerId !== this.playerId
-            ? state.players.find(player => player.id === state.hostPlayerId)?.name : null;
-          this.screens.showEliminated(murdered, successor);
-          this.eliminated = true;
-          this.refreshPending = false;
-          this.stopDayTimer();
-          this.stopNightPoll();
-          this.stopSuspenseTimer();
-          // Keep the subscription so eliminated players can see the final result.
           return;
         }
         if (state.status === 'playing' && !this.playerRole) {
@@ -246,6 +241,32 @@ export class GameController {
       this.refreshRunning = false;
       if (this.refreshPending) this.requestRefresh();
     }
+  }
+
+  enterEliminatedState(player, state) {
+    if (this.eliminated) return;
+    this.eliminated = true;
+    this.refreshPending = false;
+    this.stopDayTimer();
+    this.stopNightPoll();
+    this.stopSuspenseTimer();
+    if (this.endgameTimer !== null) clearTimeout(this.endgameTimer);
+    this.endgameTimer = null;
+    const murdered = player.elimination_reason === 'murdered'
+      || (!player.elimination_reason && state.lastMurderedId === this.playerId);
+    const successor = this.wasHost && state.hostPlayerId !== this.playerId
+      ? state.players.find(p => p.id === state.hostPlayerId)?.name : null;
+    this.screens.showEliminated(murdered, successor);
+  }
+
+  showFinalCredits(state) {
+    if (this.finalCreditsGameId === state.id) return;
+    this.finalCreditsGameId = state.id;
+    void this.repository.getFinalRoles(state.id).then(roles => {
+      if (this.state.id === state.id && this.state.status === 'finished') {
+        this.screens.renderEndgame(state.winner, roles);
+      }
+    }).catch(error => this.showActionError(error.message || 'Could not load final roles.'));
   }
 
   suspenseRemaining(state) {
