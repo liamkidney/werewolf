@@ -98,11 +98,13 @@ export class Screens {
     $('advance-phase').disabled = advancing;
   }
 
-  renderDay(state, { playerId, voting, myVote, casting }) {
+  renderDay(state, { playerId, isHost, voting, myVote, casting, endingDiscussion }) {
     this.showScreen('day-screen');
     $('day-round').textContent = state.roundNumber;
     $('day-heading').textContent = voting ? 'Vote to banish' : 'Discuss';
     $('day-clock').hidden = voting;
+    $('end-discussion').hidden = voting || !isHost;
+    $('end-discussion').disabled = endingDiscussion;
     $('day-instruction').textContent = voting
       ? 'Choose one player. Your vote is final.'
       : 'Discuss who should be banished. Voting opens when the timer ends.';
@@ -159,6 +161,7 @@ export class Screens {
     $('wolf-plus').addEventListener('click', () => { void handlers.onWerewolves(1); });
     $('start-game').addEventListener('click', () => { void handlers.onStart(); });
     $('advance-phase').addEventListener('click', () => { void handlers.onAdvance(); });
+    $('end-discussion').addEventListener('click', () => { void handlers.onEndDiscussion(); });
     $('vote-target').addEventListener('change', () => { $('cast-vote').disabled = !$('vote-target').value; });
     $('cast-vote').addEventListener('click', () => { void handlers.onVote($('vote-target').value); });
     $('finish-voting').addEventListener('click', () => { void handlers.onFinishVoting(); });
