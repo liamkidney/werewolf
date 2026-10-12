@@ -67,13 +67,13 @@ export class GameRepository {
     }));
   }
 
-  async advancePhase(state, next) {
-    const updated = unwrap(await this.db.from('games')
-      .update({ phase: next.phase, round_number: next.roundNumber })
-      .eq('id', state.id).eq('status', 'playing')
-      .eq('phase', state.phase).eq('round_number', state.roundNumber)
-      .select('id'));
-    if (!updated.length) throw new Error('The phase changed on another device. Refresh and try again.');
+  async advancePhase(state, next, hostId) {
+    if (next.phase !== (state.phase === 'reveal' ? 'day' : 'night')) {
+      throw new Error('Invalid requested phase transition.');
+    }
+    unwrap(await this.db.rpc('advance_game_phase', {
+      p_game_id: state.id, p_host: hostId, p_phase: state.phase, p_round: state.roundNumber
+    }));
   }
 
   async openDayVoting(gameId, round) {
