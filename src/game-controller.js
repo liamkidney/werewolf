@@ -113,6 +113,8 @@ export class GameController {
     this.showActionError('');
     const button = this.screens.form.querySelector('button');
     button.disabled = true;
+    const originalLabel = button.innerHTML;
+    button.textContent = 'Connecting…';
     try {
       let gameId = this.requestedGame;
       const host = !gameId;
@@ -131,7 +133,10 @@ export class GameController {
       await this.enterGame(gameId, playerId, host);
     } catch (error) {
       this.showActionError(error.message || 'Could not connect to Supabase.');
-    } finally { button.disabled = false; }
+    } finally {
+      button.disabled = false;
+      button.innerHTML = originalLabel;
+    }
   }
 
   async enterGame(gameId, playerId, host) {
