@@ -11,12 +11,20 @@ export class Screens {
     $('app-error').hidden = !message;
   }
 
-  showLobby(gameId, isHost, inviteUrl) {
+  showConnectionError(message) {
+    $('connection-error').textContent = message;
+    $('connection-error').hidden = !message;
+  }
+
+  showScreen(id) {
     document.body.classList.add('light-screen');
     document.querySelector('.hero').hidden = true;
     this.form.hidden = true;
-    $('lobby').hidden = false;
-    $('role-screen').hidden = true;
+    for (const screen of ['lobby', 'role-screen']) $(screen).hidden = screen !== id;
+  }
+
+  showLobby(gameId, isHost, inviteUrl) {
+    this.showScreen('lobby');
     $('host-controls').hidden = !isHost;
     $('host-tools').hidden = !isHost;
     $('guest-intro').hidden = isHost;
@@ -57,11 +65,7 @@ export class Screens {
   }
 
   showRole(role) {
-    document.body.classList.add('light-screen');
-    document.querySelector('.hero').hidden = true;
-    this.form.hidden = true;
-    $('lobby').hidden = true;
-    $('role-screen').hidden = false;
+    this.showScreen('role-screen');
     $('role-name').textContent = role ? (role === 'werewolf' ? 'Werewolf' : 'Villager') : 'Assigning roles…';
     $('role-description').textContent = role
       ? (role === 'werewolf' ? 'You are a werewolf. Keep your identity hidden.' : 'You are a villager. Find the werewolves.')
