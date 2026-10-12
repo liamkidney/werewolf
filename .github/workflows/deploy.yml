@@ -33,25 +33,15 @@ jobs:
           ref: dev
           path: development
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          cache: pip
-          cache-dependency-path: development/requirements-build.txt
-
-      - name: Install build dependencies
-        run: python3 -m pip install -r development/requirements-build.txt
-
-      - name: Test game engine
+      - name: Test
         run: cd development && npm test
 
-      - name: Build and validate both sites
+      - name: Prepare static files
         run: |
-          python3 development/scripts/build.py production _site
-          python3 development/scripts/build.py development _site/dev
+          mkdir -p _site/dev
+          rsync -a --exclude='.git/' --exclude='.github/' --exclude='tests/' --exclude='scripts/' --exclude='supabase/' --exclude='node_modules/' --exclude='package*.json' --exclude='requirements-build.txt' production/ _site/
+          rsync -a --exclude='.git/' --exclude='.github/' --exclude='tests/' --exclude='scripts/' --exclude='supabase/' --exclude='node_modules/' --exclude='package*.json' --exclude='requirements-build.txt' development/ _site/dev/
           touch _site/.nojekyll
-
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
