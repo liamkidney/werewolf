@@ -24,7 +24,13 @@ export class GameController {
     this.advancing = false;
     this.refreshPending = false;
     this.refreshRunning = false;
+    this.actionError = '';
     this.requestedGame = new URLSearchParams(location.search).get('game');
+  }
+
+  showActionError(message) {
+    this.actionError = message;
+    this.screens.showError(message);
   }
 
   async init() {
@@ -46,7 +52,7 @@ export class GameController {
           await this.enterGame(this.requestedGame, savedId, localStorage.getItem(hostKey(this.requestedGame)) === 'true');
           return;
         }
-      } catch (error) { this.screens.showError(error.message); }
+      } catch (error) { this.showActionError(error.message); }
     }
     document.querySelector('.entry label').textContent = 'Enter your name to join';
     this.screens.form.querySelector('button').textContent = 'Join Game →';
@@ -57,7 +63,7 @@ export class GameController {
     const nameError = document.getElementById('name-error');
     if (!name) { nameError.hidden = false; this.screens.nameInput.focus(); return; }
     nameError.hidden = true;
-    this.screens.showError('');
+    this.showActionError('');
     const button = this.screens.form.querySelector('button');
     button.disabled = true;
     try {
@@ -72,13 +78,12 @@ export class GameController {
       const playerId = localStorage.getItem(identityKey(gameId)) || crypto.randomUUID();
       await this.repository.joinGame(gameId, playerId, name);
       localStorage.setItem(identityKey(gameId), playerId);
-      localStorage.setItem('werewolf:last-game', gameId);
       localStorage.setItem('werewolf:name', name);
       if (host) localStorage.setItem(hostKey(gameId), 'true');
       if (host) history.replaceState(null, '', location.pathname + '?game=' + gameId);
       await this.enterGame(gameId, playerId, host);
     } catch (error) {
-      this.screens.showError(error.message || 'Could not connect to Supabase.');
+      this.showActionError(error.message || 'Could not connect to Supabase.');
     } finally { button.disabled = false; }
   }
 
@@ -122,9 +127,9 @@ export class GameController {
           }
         }
       }
-      this.screens.showError('');
+      this.screens.showConnectionError('');
     } catch (error) {
-      this.screens.showError(error.message || 'Could not refresh the game.');
+      this.screens.showConnectionError(error.message || 'Could not refresh the game.');
     } finally {
       this.refreshRunning = false;
       if (this.refreshPending) this.requestRefresh();
@@ -138,21 +143,21 @@ export class GameController {
     try {
       await this.repository.setWerewolfCount(this.state.id, next);
       this.requestRefresh();
-    } catch (error) { this.screens.showError(error.message); }
+    } catch (error) { this.showActionError(error.message); }
   }
 
   async advancePhase() {
     if (!this.isHost || this.advancing || this.state.status !== 'playing') return;
     this.advancing = true;
     this.screens.renderPhase(this.state, this);
-    this.screens.showError('');
+    this.showActionError('');
     try {
       const fresh = await this.repository.getState(this.state.id);
       const next = this.engine.nextPhase(fresh);
       await this.repository.advancePhase(fresh, next);
       this.requestRefresh();
     } catch (error) {
-      this.screens.showError(error.message || 'Could not advance the game.');
+      this.showActionError(error.message || 'Could not advance the game.');
       this.requestRefresh();
     } finally {
       this.advancing = false;
@@ -164,7 +169,7 @@ export class GameController {
     if (!this.isHost || this.starting || !this.engine.canStart(this.state)) return;
     this.starting = true;
     this.screens.renderLobby(this.state, this);
-    this.screens.showError('');
+    this.showActionError('');
     try {
       // Re-read just before assigning to avoid using a stale Realtime snapshot.
       const fresh = await this.repository.getState(this.state.id);
@@ -173,7 +178,7 @@ export class GameController {
       await this.repository.startGame(fresh, assignments);
       this.requestRefresh();
     } catch (error) {
-      this.screens.showError(error.message || 'Could not start the game.');
+      this.showActionError(error.message || 'Could not start the game.');
     } finally {
       this.starting = false;
       this.screens.renderLobby(this.state, this);
