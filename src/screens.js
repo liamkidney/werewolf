@@ -132,17 +132,30 @@ export class Screens {
     const list = $('endgame-roles');
     list.replaceChildren();
     for (const player of roles) {
-      const row = document.createElement('tr');
-      const displayStatus = player.elimination_reason === 'murdered' ? 'Murdered'
-        : player.elimination_reason === 'banished' ? 'Banished'
-        : player.eliminated ? 'Eliminated' : 'Alive';
-      for (const value of [player.name, player.role === 'werewolf' ? 'Werewolf' : 'Villager', displayStatus]) {
-        const cell = document.createElement('td');
-        cell.textContent = value;
-        row.append(cell);
-      }
-      list.append(row);
+      const entry = document.createElement('div');
+      entry.className = 'endgame-credit';
+      const role = document.createElement('span');
+      role.className = 'endgame-credit-role';
+      role.textContent = player.role === 'werewolf' ? 'WEREWOLF' : 'VILLAGER';
+      const details = document.createElement('div');
+      details.className = 'endgame-credit-details';
+      const name = document.createElement('span');
+      name.className = 'endgame-credit-name';
+      name.textContent = player.name;
+      const fate = document.createElement('span');
+      fate.className = 'endgame-credit-fate';
+      fate.textContent = player.elimination_reason === 'murdered' ? 'MURDERED'
+        : player.elimination_reason === 'banished' ? 'BANISHED'
+        : player.eliminated ? 'ELIMINATED' : 'SURVIVED';
+      details.append(name, fate);
+      entry.append(role, details);
+      list.append(entry);
     }
+    const roll = $('endgame-screen').querySelector('.endgame-credits-roll');
+    roll.style.animation = 'none';
+    void roll.offsetWidth;
+    roll.style.animation = '';
+
   }
 
   renderNight(state, { playerId, role, pack, casting, decoyPack }) {
