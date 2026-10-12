@@ -72,3 +72,8 @@ body.marquee-mode .screen{width:100%;max-width:none;min-height:100dvh;padding:12
 .marquee-screen #finish-voting{position:absolute;right:14px;bottom:calc(env(safe-area-inset-bottom) + 12px);width:auto;min-height:36px;padding:6px 14px;font-size:.8rem;background:#333;color:#fff;border:1px solid #666}
 .banishment-screen p{font-size:1.15rem}
 @media(orientation:landscape){.marquee-vote{font-size:clamp(4rem,18vh,12rem)}}
+
+.marquee-error{position:absolute;top:12px;left:12px;right:12px;text-align:center;font-size:.85rem;color:#ffb5b5}
+@media(orientation:portrait){
+  .marquee-vote{transform:rotate(90deg);width:90dvh;max-width:90dvh;flex:none;font-size:clamp(3rem,15dvh,8rem)}
+}
