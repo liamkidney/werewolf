@@ -149,11 +149,12 @@ export class GameController {
         const state = await this.repository.getState(id);
         if (id !== this.state.id || this.eliminated) return;
         if (state.players.some(player => player.id === this.playerId && player.eliminated_at)) {
+          const murdered = state.lastMurderedId === this.playerId && state.lastMurderedRound === state.roundNumber;
+          this.screens.showEliminated(murdered);
           this.eliminated = true;
           this.refreshPending = false;
           this.stopDayTimer();
           this.stopNightPoll();
-          this.screens.showEliminated();
           void this.sync.stop();
           return;
         }
@@ -212,6 +213,11 @@ export class GameController {
     if (state.phase === 'night') {
       this.screens.renderNight(state, { playerId: this.playerId, role: this.playerRole, pack: this.nightPack, casting: this.nightCasting });
       if (this.nightPoll === null) this.nightPoll = setInterval(() => this.requestRefresh(), 1500);
+      return;
+    }
+    if (state.phase === 'dawn') {
+      const victim = state.players.find(player => player.id === state.lastMurderedId);
+      this.screens.renderMurderReveal(victim?.name || 'A villager', this.isHost);
       return;
     }
     if (state.phase === 'day') {
@@ -342,7 +348,7 @@ export class GameController {
     this.showActionError('');
     try {
       const fresh = await this.repository.getState(this.state.id);
-      const next = this.stateEngine.transition(fresh, { type: fresh.phase === 'reveal' ? 'START_DAY' : 'START_NIGHT' });
+      const next = this.stateEngine.transition(fresh, { type: fresh.phase === 'reveal' || fresh.phase === 'dawn' ? 'START_DAY' : 'START_NIGHT' });
       await this.repository.advancePhase(fresh, next, this.playerId);
       this.requestRefresh();
     } catch (error) {
