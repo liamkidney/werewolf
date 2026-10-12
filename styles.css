@@ -167,3 +167,7 @@ body.light-screen .guest-intro:not([hidden]){padding-top:0}
 body.light-screen #day-screen:not([hidden]),
 body.light-screen #night-screen:not([hidden]){margin-top:0}
 .art img,.guest-art img,.phase-art img{object-position:center center}
+
+/* Host lobby uses the same edge-to-edge artwork as the guest lobby. */
+body.light-screen .screen:has(#host-tools:not([hidden])){padding-top:0}
+body.light-screen #host-tools:not([hidden]) .guest-art{width:calc(100% + 48px);max-width:none;margin-left:-24px;margin-right:-24px;flex:none}
