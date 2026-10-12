@@ -25,7 +25,7 @@ export class Screens {
     document.body.classList.toggle('marquee-mode', id === 'marquee-screen');
     document.querySelector('.hero').hidden = true;
     this.form.hidden = true;
-    for (const screen of ['lobby', 'role-screen', 'day-screen', 'night-screen', 'dawn-screen', 'marquee-screen', 'banishment-screen']) $(screen).hidden = screen !== id;
+    for (const screen of ['lobby', 'role-screen', 'day-screen', 'night-screen', 'dawn-screen', 'suspense-screen', 'marquee-screen', 'banishment-screen']) $(screen).hidden = screen !== id;
   }
 
   showLobby(gameId, isHost, inviteUrl) {
@@ -105,6 +105,10 @@ export class Screens {
     $('phase-waiting').textContent = state.phase === 'reveal' ? 'Waiting for the host to start the day…' : 'Waiting for the host to continue…';
     $('advance-phase').textContent = advancing ? 'Updating…' : phase?.action || 'Continue';
     $('advance-phase').disabled = advancing;
+  }
+
+  renderSuspense() {
+    this.showScreen('suspense-screen');
   }
 
   renderMurderReveal(name, isHost) {
