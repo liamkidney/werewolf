@@ -36,3 +36,10 @@ test('six-player game supports one werewolf', () => {
   assert.equal(engine.canStart(state), true);
   assert.equal(engine.assignRoles(state, () => 0).filter(role => role.role === 'werewolf').length, 1);
 });
+
+test('start requires at least three players and more players than werewolves', () => {
+  const state = { status: 'lobby', werewolfCount: 1, players: [{ id: 'a' }, { id: 'b' }] };
+  assert.equal(engine.canStart(state), false);
+  assert.equal(engine.canStart({ ...state, players: [...state.players, { id: 'c' }] }), true);
+  assert.equal(engine.canStart({ ...state, werewolfCount: 3, players: [{ id: 'a' }, { id: 'b' }, { id: 'c' }] }), false);
+});
