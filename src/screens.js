@@ -141,7 +141,7 @@ export class Screens {
       const role = document.createElement('span');
       role.className = 'endgame-credit-role';
       const character = player.role === 'werewolf' ? 'Werewolf' : 'Villager';
-      const fate = player.elimination_reason === 'murdered' ? 'MURDERED'
+      const fate = player.elimination_reason === 'murdered' ? 'Murdered'
         : player.elimination_reason === 'banished' ? 'Banished'
         : player.eliminated ? 'Eliminated' : '';
       role.textContent = supportingRole && fate ? fate + ' ' + character : character;
