@@ -76,6 +76,7 @@ export class Screens {
     this.showScreen('banishment-screen');
     $('banishment-screen').classList.toggle('murdered-screen', murdered);
     $('banishment-screen').querySelector('.murder-art').hidden = !murdered;
+    $('banishment-screen').querySelector('.banished-art').hidden = murdered;
     $('elimination-heading').textContent = murdered ? 'MURDERED' : 'BANISHED';
     $('banished-name').textContent = murdered ? 'You were murdered' : 'You have been banished';
     $('banishment-description').textContent = 'You are out of the game.' + (newHostName ? ' ' + newHostName + ' is now the host.' : '');
