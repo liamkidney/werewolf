@@ -49,7 +49,7 @@ export class GameController {
     this.refreshPending = false;
     this.refreshRunning = false;
     const params = new URLSearchParams(location.search);
-    this.requestedGame = params.get('game') || (!params.has('new') && !isTestFrame() ? localStorage.getItem(activeGameKey) : null);
+    this.requestedGame = params.get('game') || (params.has('resume') && !isTestFrame() ? localStorage.getItem(activeGameKey) : null);
   }
 
   renderLobby() {
@@ -82,7 +82,11 @@ export class GameController {
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden && this.state.id && !this.eliminated) this.requestRefresh();
     });
-    if (!this.requestedGame) return;
+    if (!this.requestedGame) {
+      const savedGame = localStorage.getItem(activeGameKey);
+      document.getElementById('resume-game').hidden = !savedGame || isTestFrame();
+      return;
+    }
     const savedId = localStorage.getItem(identityKey(this.requestedGame));
     if (savedId) {
       try {
@@ -93,8 +97,8 @@ export class GameController {
       } catch (error) { this.showActionError(error.message); }
     }
     if (!new URLSearchParams(location.search).has('game')) {
-      localStorage.removeItem(activeGameKey);
       this.requestedGame = null;
+      document.getElementById('resume-game').hidden = true;
       return;
     }
     document.querySelector('.entry label').textContent = 'Enter your name to join';
