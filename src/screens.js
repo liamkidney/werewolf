@@ -25,7 +25,7 @@ export class Screens {
     document.body.classList.toggle('marquee-mode', id === 'marquee-screen');
     document.querySelector('.hero').hidden = true;
     this.form.hidden = true;
-    for (const screen of ['lobby', 'role-screen', 'day-screen', 'night-screen', 'dawn-screen', 'suspense-screen', 'marquee-screen', 'banishment-screen']) $(screen).hidden = screen !== id;
+    for (const screen of ['lobby', 'role-screen', 'day-screen', 'night-screen', 'dawn-screen', 'endgame-screen', 'suspense-screen', 'marquee-screen', 'banishment-screen']) $(screen).hidden = screen !== id;
   }
 
   showLobby(gameId, isHost, inviteUrl) {
@@ -112,19 +112,56 @@ export class Screens {
     this.showScreen('suspense-screen');
   }
 
-  renderMurderReveal(name, isHost) {
+  renderMurderReveal(name, isHost, question = null, results = [], players = []) {
     this.showScreen('dawn-screen');
     $('dawn-victim').textContent = name;
+    $('dawn-decoy').hidden = !question;
+    $('dawn-decoy-question').textContent = question || '';
+    const max = Math.max(0, ...results.map(item => item.votes));
+    const leaders = results.filter(item => item.votes === max && max > 0);
+    const names = leaders.map(item => players.find(player => player.id === item.id)?.name || 'Unknown');
+    const total = results.reduce((sum, item) => sum + item.votes, 0);
+    $('dawn-decoy-result').textContent = !total ? 'No votes were cast.'
+      : names.join(', ') + ' — ' + max + (max === 1 ? ' vote' : ' votes') + ' (' + total + ' total).';
     $('dismiss-dawn').hidden = !isHost;
     $('dawn-waiting').hidden = isHost;
   }
 
-  renderNight(state, { playerId, role, pack, casting }) {
+  renderEndgame(winner, roles) {
+    this.showScreen('endgame-screen');
+    $('endgame-winner').textContent = winner === 'village' ? 'The Villagers Win!' : 'The Werewolves Win!';
+    const list = $('endgame-roles');
+    list.replaceChildren();
+    for (const player of roles) {
+      const item = document.createElement('li');
+      item.textContent = player.name + ' — ' + (player.role === 'werewolf' ? 'Werewolf' : 'Villager');
+      list.append(item);
+    }
+  }
+
+  renderNight(state, { playerId, role, pack, casting, decoyPack }) {
     this.showScreen('night-screen');
     $('night-round').textContent = state.roundNumber;
     $('night-heading').textContent = 'Night has fallen';
     const wolf = role === 'werewolf';
-    $('night-instruction').textContent = wolf ? 'Agree on one villager to eliminate.' : 'Close your eyes. Waiting for dawn…';
+    $('night-instruction').textContent = wolf ? 'Agree on one villager to eliminate.' : 'Cast your vote. The results will be revealed at dawn.';
+    $('night-villager-controls').hidden = wolf;
+    if (!wolf) {
+      $('decoy-question').textContent = state.decoyQuestion || decoyPack?.question || 'Who is least trustworthy?';
+      const choices = $('decoy-targets');
+      choices.replaceChildren();
+      for (const player of state.players.filter(p => !p.eliminated_at && p.id !== playerId)) {
+        const label = document.createElement('label');
+        label.className = 'night-choice';
+        const radio = document.createElement('input');
+        radio.type = 'radio'; radio.name = 'decoy-target'; radio.value = player.id;
+        radio.checked = decoyPack?.myVote === player.id;
+        radio.disabled = casting;
+        const name = document.createElement('span'); name.className = 'night-name'; name.textContent = player.name;
+        label.append(radio, name); choices.append(label);
+      }
+      $('decoy-progress').textContent = decoyPack?.myVote ? 'Vote recorded. You can change it until dawn.' : 'Choose another player.';
+    }
     $('night-wolf-controls').hidden = !wolf;
     if (!wolf) return;
     const wolves = pack?.wolves || [];
@@ -234,6 +271,9 @@ export class Screens {
     $('end-discussion').addEventListener('click', () => { void handlers.onEndDiscussion(); });
     $('vote-target').addEventListener('change', () => { $('cast-vote').disabled = !$('vote-target').value; });
     $('cast-vote').addEventListener('click', () => { void handlers.onVote($('vote-target').value); });
+    $('decoy-targets').addEventListener('change', event => {
+      if (event.target.matches('input[name="decoy-target"]')) void handlers.onDecoyVote(event.target.value);
+    });
     $('night-targets').addEventListener('change', event => {
       if (event.target.matches('input[name="night-target"]')) void handlers.onNightVote(event.target.value);
     });
