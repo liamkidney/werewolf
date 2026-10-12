@@ -44,9 +44,10 @@ jobs:
       - name: Test
         run: cd development && npm test
 
-      - name: Build production
+      - name: Copy existing production site
         run: |
-          SITE_ROOT="$GITHUB_WORKSPACE/production" SITE_BASE="/werewolf/" SITE_OUT="$GITHUB_WORKSPACE/_site" npm run build --prefix development
+          mkdir -p _site
+          rsync -a --exclude='.git/' --exclude='.github/' --exclude='tests/' --exclude='scripts/' --exclude='supabase/' --exclude='node_modules/' --exclude='package*.json' production/ _site/
 
       - name: Build development
         run: |
@@ -54,7 +55,6 @@ jobs:
 
       - name: Stamp footer and prepare Pages
         run: |
-          sed -i "s/__BUILD_VERSION__/$(git -C production rev-parse --short HEAD)/g" _site/index.html
           sed -i "s/__BUILD_VERSION__/$(git -C development rev-parse --short HEAD)/g" _site/dev/index.html
           touch _site/.nojekyll
 
