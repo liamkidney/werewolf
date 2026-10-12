@@ -33,6 +33,7 @@ export class GameController {
     this.finishing = false;
     this.endingDiscussion = false;
     this.dayTicker = null;
+    this.openingVoting = false;
     this.dayVotingOpen = false;
     this.dayVoteSignature = '';
     this.refreshPending = false;
@@ -235,6 +236,7 @@ export class GameController {
     if (state.phase !== 'day') { this.stopDayTimer(); return; }
     const deadline = Date.parse(state.phaseStartedAt || '') + (state.dayDurationSeconds ?? 120) * 1000;
     const seconds = Number.isFinite(deadline) ? Math.max(0, Math.ceil((deadline - Date.now()) / 1000)) : (state.dayDurationSeconds ?? 120);
+    if (seconds === 0 && state.step === 'discussion' && !this.openingVoting) void this.openDayVoting();
     const voting = this.stateEngine.step(state) === 'voting';
     const active = state.players.filter(player => !player.eliminated_at);
     const votes = state.votes.filter(vote => vote.round_number === state.roundNumber);
@@ -257,6 +259,19 @@ export class GameController {
       ? myVote ? 'Vote locked. Waiting for everyone… ' + votes.length + '/' + active.length
         : 'Votes cast: ' + votes.length + '/' + active.length
       : '';
+  }
+
+  async openDayVoting() {
+    if (this.openingVoting || this.eliminated || this.state.phase !== 'day') return;
+    this.openingVoting = true;
+    try {
+      await this.repository.openDayVoting(this.state.id, this.state.roundNumber);
+      this.requestRefresh();
+    } catch (error) {
+      this.screens.showConnectionError(error.message || 'Could not open voting.');
+    } finally {
+      this.openingVoting = false;
+    }
   }
 
   async endDiscussion() {
