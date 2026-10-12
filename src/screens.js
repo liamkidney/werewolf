@@ -133,11 +133,9 @@ export class Screens {
     list.replaceChildren();
     for (const player of roles) {
       const row = document.createElement('tr');
-      const status = player.elimination_reason || player.elimination_type || player.eliminated_by || player.status;
-      const normalized = typeof status === 'string' ? status.toLowerCase() : '';
-      const displayStatus = normalized.includes('murder') ? 'Murdered'
-        : normalized.includes('banish') ? 'Banished'
-        : player.eliminated_at ? 'Eliminated' : 'Alive';
+      const displayStatus = player.elimination_reason === 'murdered' ? 'Murdered'
+        : player.elimination_reason === 'banished' ? 'Banished'
+        : player.eliminated ? 'Eliminated' : 'Alive';
       for (const value of [player.name, player.role === 'werewolf' ? 'Werewolf' : 'Villager', displayStatus]) {
         const cell = document.createElement('td');
         cell.textContent = value;
