@@ -38,7 +38,7 @@ test('cannot start with insufficient players or zero werewolves', () => {
 
 test('invalid random indexes fail without changing input', () => {
   const engine = new GameEngine();
-  const state = new GameState({ id: 'g', werewolfCount: 1, players: [{ id: 'a' }, { id: 'b' }] });
+  const state = new GameState({ id: 'g', werewolfCount: 1, players: [{ id: 'a' }, { id: 'b' }, { id: 'c' }] });
   assert.throws(() => engine.assignRoles(state, () => 2), /Invalid random index/);
   assert.equal(state.players[0].id, 'a');
 });
