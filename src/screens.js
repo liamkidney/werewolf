@@ -66,7 +66,7 @@ export class Screens {
     $('start-status').textContent = starting ? 'Assigning roles…'
       : state.status !== 'lobby' ? 'Game already started.'
       : !isHost ? 'Only the host can start the game.'
-      : !valid ? 'Waiting for more players.' : 'Ready to start.';
+      : !valid ? 'Waiting for more players.' : '';
     $('role-warning').hidden = valid;
     $('role-warning').textContent = valid ? '' : 'Add more players than werewolves before starting.';
   }
@@ -288,6 +288,5 @@ export class Screens {
         $('copy-link').textContent = 'Copied!';
       } catch { $('invite-link').select(); }
     });
-    $('leave-lobby').addEventListener('click', () => { location.href = location.pathname; });
   }
 }
