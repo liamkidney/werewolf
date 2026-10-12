@@ -95,11 +95,17 @@
       <div id="night-wolf-controls" hidden>
         <h3>Werewolves</h3>
         <ul id="night-wolves" class="player-list"></ul>
-        <label for="night-target">Choose a villager</label>
-        <select id="night-target"><option value="">Choose a villager</option></select>
-        <button id="cast-night-vote" type="button">Nominate</button>
+        <h3>Choose a villager</h3>
+        <div id="night-targets" class="night-targets" role="radiogroup" aria-label="Choose a villager"></div>
         <p id="night-progress" class="muted"></p>
       </div>
+    </section>
+    <section id="dawn-screen" class="banishment-screen" hidden>
+      <p class="lobby-eyebrow">DAWN</p>
+      <h2 id="dawn-victim"></h2>
+      <p>Was murdered during the night.</p>
+      <button id="dismiss-dawn" type="button">Start Day</button>
+      <p id="dawn-waiting" class="muted" hidden>Waiting for the host to start the day…</p>
     </section>
     <section id="day-screen" class="day-screen" hidden>
       <p class="lobby-eyebrow">DAY <span id="day-round"></span></p>
