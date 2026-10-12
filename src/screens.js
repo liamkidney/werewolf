@@ -71,10 +71,17 @@ export class Screens {
 
   showRole(role) {
     this.showScreen('role-screen');
+    document.querySelector('.role-reminder').hidden = false;
     $('role-name').textContent = role ? (role === 'werewolf' ? 'Werewolf' : 'Villager') : 'Assigning roles…';
     $('role-description').textContent = role
       ? (role === 'werewolf' ? 'You are a werewolf. Keep your identity hidden.' : 'You are a villager. Find the werewolves.')
       : 'Please wait a moment.';
+  }
+
+  showSpectator() {
+    $('role-name').textContent = 'Eliminated';
+    $('role-description').textContent = 'You are watching the rest of the game.';
+    document.querySelector('.role-reminder').hidden = true;
   }
 
   renderPhase(state, { isHost, advancing }) {
