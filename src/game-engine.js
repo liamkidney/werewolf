@@ -3,7 +3,7 @@ import { StateEngine } from './state-engine.js';
 // Pure rules: no Supabase, DOM, localStorage or network calls.
 export class GameEngine {
   canStart(state) {
-    return state.status === 'lobby' && state.players.length > state.werewolfCount
+    return state.status === 'lobby' && state.players.length >= 3 && state.players.length > state.werewolfCount
       && state.werewolfCount >= 1 && state.werewolfCount <= 50;
   }
 
