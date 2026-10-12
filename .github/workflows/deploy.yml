@@ -1,0 +1,53 @@
+name: Deploy Werewolf Pages
+
+on:
+  push:
+    branches: [main, dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout production
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: production
+
+      - name: Checkout development
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+          path: development
+
+      - name: Assemble site
+        run: |
+          mkdir -p _site/dev
+          rsync -a --exclude='.git' --exclude='.github' production/ _site/
+          rsync -a --exclude='.git' --exclude='.github' development/ _site/dev/
+          touch _site/.nojekyll
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
