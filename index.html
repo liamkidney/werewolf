@@ -88,6 +88,28 @@
         <p id="phase-waiting" class="muted" hidden>Waiting for the host to continue…</p>
       </div>
     </section>
+    <section id="day-screen" class="day-screen" hidden>
+      <p class="lobby-eyebrow">DAY <span id="day-round"></span></p>
+      <h2 id="day-heading">Discuss</h2>
+      <div id="day-clock" class="day-clock" role="timer">2:00</div>
+      <p id="day-instruction">Discuss who should be banished. Voting opens when the timer ends.</p>
+      <div id="vote-controls" hidden>
+        <label for="vote-target">Who should be banished?</label>
+        <select id="vote-target"><option value="">Choose a player</option></select>
+        <button id="cast-vote" type="button">Cast vote</button>
+      </div>
+      <p id="vote-progress" class="muted"></p>
+    </section>
+    <section id="marquee-screen" class="marquee-screen" hidden>
+      <div id="marquee-vote" class="marquee-vote"></div>
+      <button id="finish-voting" type="button" hidden>Done</button>
+    </section>
+    <section id="banishment-screen" class="banishment-screen" hidden>
+      <p class="lobby-eyebrow">BANISHED</p>
+      <h2 id="banished-name"></h2>
+      <p>They are out of the game. Night has fallen.</p>
+      <button id="dismiss-banishment" type="button">Continue to night</button>
+    </section>
     <p id="app-error" class="error" role="alert" hidden></p>
     <p id="connection-error" class="error" role="alert" hidden></p>
   </main>
