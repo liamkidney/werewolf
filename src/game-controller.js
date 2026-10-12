@@ -36,6 +36,7 @@ export class GameController {
     this.nightCasting = false;
     this.nightPack = null;
     this.nightPoll = null;
+    this.suspenseTimer = null;
     this.finishing = false;
     this.endingDiscussion = false;
     this.dayTicker = null;
@@ -131,6 +132,7 @@ export class GameController {
     this.eliminated = false;
     this.stopDayTimer();
     this.stopNightPoll();
+    this.stopSuspenseTimer();
     this.isHost = host;
     this.wasHost = host;
     this.state = new GameState({ id: gameId });
@@ -168,6 +170,11 @@ export class GameController {
           localStorage.removeItem(activeGameKey);
         }
         if (state.players.some(player => player.id === this.playerId && player.eliminated_at)) {
+          if (state.lastMurderedId === this.playerId && this.suspenseRemaining(state) > 0) {
+            this.state = state;
+            this.showSuspense(state);
+            return;
+          }
           const murdered = state.lastMurderedId === this.playerId && state.lastMurderedRound === state.roundNumber;
           const successor = this.wasHost && state.hostPlayerId !== this.playerId
             ? state.players.find(player => player.id === state.hostPlayerId)?.name : null;
@@ -176,6 +183,7 @@ export class GameController {
           this.refreshPending = false;
           this.stopDayTimer();
           this.stopNightPoll();
+          this.stopSuspenseTimer();
           void this.sync.stop();
           return;
         }
@@ -196,6 +204,26 @@ export class GameController {
       this.refreshRunning = false;
       if (this.refreshPending) this.requestRefresh();
     }
+  }
+
+  suspenseRemaining(state) {
+    if (state.phase !== 'dawn') return 0;
+    const started = Date.parse(state.phaseStartedAt || '');
+    return Number.isFinite(started) ? Math.max(0, started + 6000 - Date.now()) : 0;
+  }
+
+  stopSuspenseTimer() {
+    if (this.suspenseTimer !== null) clearTimeout(this.suspenseTimer);
+    this.suspenseTimer = null;
+  }
+
+  showSuspense(state) {
+    this.screens.renderSuspense();
+    if (this.suspenseTimer !== null) return;
+    this.suspenseTimer = setTimeout(() => {
+      this.suspenseTimer = null;
+      this.requestRefresh();
+    }, this.suspenseRemaining(state) + 30);
   }
 
   stopNightPoll() {
@@ -228,6 +256,7 @@ export class GameController {
     if (this.eliminated) return;
     this.stopDayTimer();
     if (state.phase !== 'night') this.stopNightPoll();
+    if (state.phase !== 'dawn') this.stopSuspenseTimer();
     if (state.status !== 'playing') {
       this.renderLobby();
       return;
@@ -238,6 +267,11 @@ export class GameController {
       return;
     }
     if (state.phase === 'dawn') {
+      if (this.suspenseRemaining(state) > 0) {
+        this.showSuspense(state);
+        return;
+      }
+      this.stopSuspenseTimer();
       const victim = state.players.find(player => player.id === state.lastMurderedId);
       this.screens.renderMurderReveal(victim?.name || 'A villager', this.isHost);
       return;
