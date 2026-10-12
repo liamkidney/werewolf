@@ -21,5 +21,7 @@ export class GameState {
     return new GameState({ ...this, ...changes });
   }
 
+  // The step is derived from persisted phase/timestamps for backward compatibility.
+  // Future schema versions can persist it explicitly.
   get villagerCount() { return Math.max(0, this.players.length - this.werewolfCount); }
 }
