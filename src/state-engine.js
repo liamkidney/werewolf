@@ -7,6 +7,7 @@ export class StateEngine {
 
   step(state, now = Date.now()) {
     if (state.status !== 'playing') return state.status === 'lobby' ? 'waiting' : 'finished';
+    if (state.step) return state.step;
     if (state.phase === 'reveal') return 'roles';
     if (state.phase === 'results') return 'announcement';
     if (state.phase === 'night') return 'actions';
