@@ -2,20 +2,9 @@ import { GameState } from './game-state.js';
 import { GameEngine, secureRandomInt } from './game-engine.js';
 import { GameRepository } from './game-repository.js';
 import { GameSync } from './game-sync.js';
+import { GameSession } from './game-session.js';
 import { Screens } from './screens.js';
 import { StateEngine } from './state-engine.js';
-
-const environment = location.pathname.includes('/dev/') ? 'dev' : 'production';
-const storagePrefix = 'werewolf:' + environment + ':';
-const identityKey = id => storagePrefix + 'player:' + id;
-const activeGameKey = storagePrefix + 'active-game';
-const nameKey = storagePrefix + 'name';
-const isTestFrame = () => new URLSearchParams(location.search).has('test_player');
-const gameUrl = id => {
-  const url = new URL(location.pathname, location.href);
-  url.searchParams.set('game', id);
-  return url.href;
-};
 
 export class GameController {
   constructor({
@@ -24,6 +13,7 @@ export class GameController {
     screens = new Screens()
   } = {}) {
     this.repository = repository;
+    this.session = new GameSession();
     this.engine = engine;
     this.stateEngine = new StateEngine();
     this.screens = screens;
@@ -52,8 +42,7 @@ export class GameController {
     this.dayVoteSignature = '';
     this.refreshPending = false;
     this.refreshRunning = false;
-    const params = new URLSearchParams(location.search);
-    this.requestedGame = params.get('game') || (params.has('resume') && !isTestFrame() ? localStorage.getItem(activeGameKey) : null);
+    this.requestedGame = this.session.requestedGame;
   }
 
   renderLobby() {
@@ -70,7 +59,7 @@ export class GameController {
   }
 
   async init() {
-    this.screens.nameInput.value = localStorage.getItem(nameKey) || localStorage.getItem('werewolf:name') || '';
+    this.screens.nameInput.value = this.session.name;
     this.screens.bind({
       onJoin: () => this.joinFromForm(),
       onWerewolves: delta => this.changeWerewolves(delta),
@@ -87,23 +76,23 @@ export class GameController {
       if (!document.hidden && this.state.id) this.requestRefresh();
     });
     if (!this.requestedGame) {
-      const savedGame = localStorage.getItem(activeGameKey);
-      if (savedGame && !isTestFrame()) {
+      const savedGame = this.session.activeGame;
+      if (savedGame && !this.session.testFrame) {
         try {
-          const playerId = localStorage.getItem(identityKey(savedGame));
+          const playerId = this.session.playerId(savedGame);
           const [game, member] = await Promise.all([
             this.repository.getGame(savedGame),
             playerId ? this.repository.hasPlayer(savedGame, playerId) : Promise.resolve(false)
           ]);
           document.getElementById('resume-game').hidden = !game || !member;
-          if (!game || !member) localStorage.removeItem(activeGameKey);
+          if (!game || !member) this.session.clearActive(savedGame);
         } catch (error) {
           this.screens.showConnectionError('Could not check the previous game. Try reloading.');
         }
       }
       return;
     }
-    const savedId = isTestFrame() ? null : localStorage.getItem(identityKey(this.requestedGame));
+    const savedId = this.session.testFrame ? null : this.session.playerId(this.requestedGame);
     if (savedId) {
       try {
         if (await this.repository.hasPlayer(this.requestedGame, savedId)) {
@@ -145,11 +134,11 @@ export class GameController {
       } else {
         gameId = await this.repository.createGame();
       }
-      const playerId = localStorage.getItem(identityKey(gameId)) || crypto.randomUUID();
+      const playerId = this.session.playerId(gameId) || crypto.randomUUID();
       await this.repository.joinGame(gameId, playerId, name);
       if (host) await this.repository.claimHost(gameId, playerId);
-      localStorage.setItem(identityKey(gameId), playerId);
-      localStorage.setItem(nameKey, name);
+      this.session.savePlayer(gameId, playerId);
+      this.session.name = name;
       await this.enterGame(gameId, playerId);
     } catch (error) {
       this.showActionError(error.message || 'Could not connect to Supabase.');
@@ -172,10 +161,9 @@ export class GameController {
     this.isHost = false;
     this.wasHost = false;
     this.state = new GameState({ id: gameId });
-    const inviteUrl = gameUrl(gameId);
+    const inviteUrl = this.session.invitation(gameId);
     if (!isTestFrame()) {
-      localStorage.setItem(activeGameKey, gameId);
-      history.replaceState(null, '', location.pathname + location.hash);
+      this.session.enter(gameId);
     }
     this.screens.showLobby(gameId, false, inviteUrl);
     // The database determines who the host is; never restore authority from storage.
@@ -203,7 +191,7 @@ export class GameController {
         }
         if (this.eliminated && state.status !== 'finished') return;
         if (state.status === 'finished' && !isTestFrame() && localStorage.getItem(activeGameKey) === id) {
-          localStorage.removeItem(activeGameKey);
+          this.session.clearActive(id);
         }
         if (state.status === 'finished') {
           this.state = state;
@@ -241,7 +229,7 @@ export class GameController {
         const previousHost = this.isHost;
         this.isHost = state.hostPlayerId === this.playerId;
         if (this.isHost && !previousHost && state.status === 'lobby') {
-          this.screens.showLobby(id, true, gameUrl(id));
+          this.screens.showLobby(id, true, this.session.invitation(id));
           void this.screens.renderQr(gameUrl(id)).catch(() => this.showActionError('Could not generate QR code. Use the invite link instead.'));
         }
         if (this.isHost) this.wasHost = true;
