@@ -43,7 +43,9 @@ jobs:
       - name: Generate browser and iOS icons
         run: |
           python3 -m pip install --quiet cairosvg Pillow
-          python3 development/scripts/build_icons.py _site/favicon.svg _site
+          if [ -f _site/favicon.svg ]; then
+            python3 development/scripts/build_icons.py _site/favicon.svg _site
+          fi
           python3 development/scripts/build_icons.py _site/dev/favicon.svg _site/dev
 
       - name: Configure Pages
