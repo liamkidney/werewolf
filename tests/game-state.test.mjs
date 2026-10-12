@@ -17,11 +17,12 @@ test('state snapshots and nested players are immutable', () => {
 
 test('all phases transition to a defined phase', () => {
   const engine = new GameEngine();
-  for (const phase of Object.keys(PHASES)) {
+  for (const phase of Object.keys(PHASES).filter(phase => phase !== 'day')) {
     const result = engine.nextPhase({ status: 'playing', phase, roundNumber: 3 });
     assert.ok(PHASES[result.phase]);
     assert.equal(result.roundNumber, phase === 'results' ? 4 : 3);
   }
+  assert.throws(() => engine.nextPhase({ status: 'playing', phase: 'day', roundNumber: 1 }), /automatically/);
   assert.throws(() => engine.nextPhase({ status: 'playing', phase: 'invalid', roundNumber: 1 }));
 });
 
