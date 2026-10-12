@@ -6,32 +6,16 @@
   <meta name="theme-color" content="#0b1723">
   <meta name="description" content="Werewolf — a party game of deception and deduction.">
   <title>Werewolf</title>
-  <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=3">
+  <link rel="icon" href="./favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
   <link rel="stylesheet" href="./styles.css">
   <script type="module" src="./app.js"></script>
 </head>
 <body>
   <main class="screen">
     <section class="hero" aria-label="Werewolf">
-      <div class="art" aria-hidden="true">
-        <svg viewBox="0 0 420 310" role="presentation" preserveAspectRatio="xMidYMid meet">
-          <defs>
-            <radialGradient id="moon" cx="45%" cy="42%" r="60%">
-              <stop stop-color="#fff5d6"/><stop offset=".8" stop-color="#f2e3bf"/><stop offset="1" stop-color="#d2c4a6"/>
-            </radialGradient>
-          </defs>
-          <circle cx="242" cy="128" r="108" fill="url(#moon)"/>
-          <path d="M0 248 Q80 210 145 245 Q200 200 268 234 Q350 196 420 247 V310 H0Z" fill="#21364b"/>
-          <path d="M0 276 Q85 235 155 272 Q255 217 420 268 V310 H0Z" fill="#101e2c"/>
-          <g fill="#0b1723">
-            <path d="M0 310 V115 l-18 35 13-3-22 40 19-4-25 47 22-5-23 44 28-7V310Z"/>
-            <path d="M44 310 V92 l-27 54 16-5-29 54 24-6-34 58 32-8-28 48 38-8V310Z"/>
-            <path d="M392 310 V105 l-20 42 14-4-25 50 20-5-29 52 28-8-26 50 36-10V310Z"/>
-            <path d="M424 310 V145 l-21 41 13-4-22 44 19-5-24 50 30-7V310Z"/>
-            <path d="M145 246 Q168 236 188 215 L209 193 222 176 232 147 245 127 251 97 261 119 271 111 278 141 271 168 258 184 266 204 291 221 304 243 295 248 284 234 269 226 263 252 256 283 247 283 245 254 237 234 215 235 203 283 194 283 192 246 182 246 168 280 158 280 159 244 145 258 118 263 98 257 91 244 114 250 133 249Z"/>
-          </g>
-        </svg>
-      </div>
+      <div class="art" aria-hidden="true"><img src="./images/werewolf-night-dark.png" alt=""></div>
       <h1>WEREWOLF</h1>
       <p class="tagline">A party game of deception<br>and deduction</p>
     </section>
@@ -51,9 +35,7 @@
         <div class="invite-row"><input id="invite-link" readonly aria-label="Invite link"><button id="copy-link" type="button" aria-label="Copy invite link">Copy</button></div>
       </div>
       <div id="guest-intro" class="guest-intro" hidden>
-        <div class="guest-art" aria-hidden="true">
-          <svg viewBox="0 0 320 190"><circle cx="160" cy="83" r="70" fill="#e9e6e1"/><path d="M0 177l22-55 12 27 16-41 19 52 21-33 23 40 32-38 26 39 23-32 26 37 21-43 18 45 20-30 21 32v13H0Z" fill="#cbd0d5"/><path d="M83 156q23-11 37-30l17-18 13-26 11-21 8 20 12-8 8 24-8 20 11 20 20 15-6 9-20-13-7 26h-10l-5-25-18 1-7 25h-10l-4-23-19 12-16-3Z" fill="#243448"/><path d="M0 182q160-39 320 0v8H0Z" fill="#f6f5f2"/></svg>
-        </div>
+        <div class="guest-art" aria-hidden="true"><img src="./images/werewolf-night-light.png" alt=""></div>
         <h2>You're in!</h2>
         <p>Waiting for the host to start the game…</p>
       </div>
@@ -84,6 +66,7 @@
       </div>
     </section>
     <section id="night-screen" class="day-screen" hidden>
+      <div class="phase-art phase-art-night" aria-hidden="true"><img src="./images/werewolf-night-light.png" alt=""></div>
       <p class="lobby-eyebrow">NIGHT <span id="night-round"></span></p>
       <h2 id="night-heading">Night has fallen</h2>
       <p id="night-instruction">Close your eyes.</p>
@@ -124,6 +107,7 @@
       <a href="./?new=1">Play again</a>
     </section>
     <section id="day-screen" class="day-screen" hidden>
+      <div class="phase-art phase-art-day" aria-hidden="true"></div>
       <p class="lobby-eyebrow">DAY <span id="day-round"></span></p>
       <h2 id="day-heading">Discuss</h2>
       <div id="day-clock" class="day-clock" role="timer">2:00</div>
