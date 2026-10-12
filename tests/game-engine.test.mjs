@@ -1,12 +1,7 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 
-async function load(relativePath) {
-  const source = await readFile(new URL(relativePath, import.meta.url), 'utf8');
-  return import('data:text/javascript;base64,' + Buffer.from(source).toString('base64'));
-}
-const { GameEngine } = await load('../src/game-engine.js');
+import { GameEngine } from '../src/game-engine.js';
 const engine = new GameEngine();
 
 test('phases advance in order and increment round after results', () => {
