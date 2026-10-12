@@ -28,3 +28,22 @@ test('independent actions require all active actors and unanimous werewolf conse
   assert.equal(engine.evaluateNightAction(action, wolves, [{ voter_id: 'a', target_id: 'x' }, { voter_id: 'b', target_id: 'y' }]).complete, false);
   assert.deepEqual(engine.evaluateNightAction(action, wolves, [{ voter_id: 'a', target_id: 'x' }, { voter_id: 'b', target_id: 'x' }]), { complete: true, targetId: 'x' });
 });
+
+test('complete two-round lifecycle preserves discussion before voting', () => {
+  let state = { status: 'playing', phase: 'reveal', step: 'roles', roundNumber: 1 };
+  assert.equal(engine.step(state), 'roles');
+  state = { ...state, ...engine.transition(state, { type: 'START_DAY' }), step: 'discussion' };
+  assert.equal(engine.step(state), 'discussion');
+  state = { ...state, step: 'voting' };
+  assert.equal(engine.step(state), 'voting');
+  state = { ...state, phase: 'results', step: 'announcement' };
+  assert.equal(engine.step(state), 'announcement');
+  state = { ...state, ...engine.transition(state, { type: 'START_NIGHT' }), step: 'actions' };
+  assert.equal(state.roundNumber, 2);
+  assert.equal(engine.step(state), 'actions');
+  state = { ...state, phase: 'day', step: 'discussion' };
+  assert.equal(engine.step(state), 'discussion');
+  state = { ...state, step: 'voting' };
+  assert.equal(engine.step(state), 'voting');
+  assert.throws(() => engine.transition(state, { type: 'START_NIGHT' }));
+});
