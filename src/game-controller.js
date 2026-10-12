@@ -162,7 +162,7 @@ export class GameController {
     this.wasHost = false;
     this.state = new GameState({ id: gameId });
     const inviteUrl = this.session.invitation(gameId);
-    if (!isTestFrame()) {
+    if (!this.session.testFrame) {
       this.session.enter(gameId);
     }
     this.screens.showLobby(gameId, false, inviteUrl);
@@ -190,7 +190,7 @@ export class GameController {
           return;
         }
         if (this.eliminated && state.status !== 'finished') return;
-        if (state.status === 'finished' && !isTestFrame() && localStorage.getItem(activeGameKey) === id) {
+        if (state.status === 'finished' && !this.session.testFrame && this.session.activeGame === id) {
           this.session.clearActive(id);
         }
         if (state.status === 'finished') {
@@ -230,7 +230,7 @@ export class GameController {
         this.isHost = state.hostPlayerId === this.playerId;
         if (this.isHost && !previousHost && state.status === 'lobby') {
           this.screens.showLobby(id, true, this.session.invitation(id));
-          void this.screens.renderQr(gameUrl(id)).catch(() => this.showActionError('Could not generate QR code. Use the invite link instead.'));
+          void this.screens.renderQr(this.session.invitation(id)).catch(() => this.showActionError('Could not generate QR code. Use the invite link instead.'));
         }
         if (this.isHost) this.wasHost = true;
         this.renderCurrentScreen();
