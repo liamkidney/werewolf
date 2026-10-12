@@ -1,3 +1,5 @@
+import { PHASES } from './game-phases.js';
+
 const $ = id => document.getElementById(id);
 
 export class Screens {
@@ -73,25 +75,16 @@ export class Screens {
   }
 
   renderPhase(state, { isHost, advancing }) {
-    const labels = {
-      reveal: ['Roles assigned', 'Check your secret role. The host will begin the first night.'],
-      night: ['Night falls', 'Everyone closes their eyes. Night actions will be added in a future iteration.'],
-      day: ['Day breaks', 'Discuss what happened and who you suspect.'],
-      voting: ['Time to vote', 'Discuss your choice. In-app voting will be added in a future iteration.'],
-      results: ['Results', 'This round is complete. Vote resolution and eliminations are coming later.']
-    };
-    const next = {
-      reveal: 'Begin night', night: 'Begin day', day: 'Begin voting',
-      voting: 'Show results', results: 'Next night'
-    };
-    const [title, description] = labels[state.phase] || ['Game in progress', 'Waiting for the host.'];
+    const phase = PHASES[state.phase];
+    const title = phase?.title || 'Game in progress';
+    const description = phase?.description || 'Waiting for the host.';
     $('phase-panel').hidden = false;
     $('phase-round').textContent = 'ROUND ' + state.roundNumber;
     $('phase-title').textContent = title;
     $('phase-description').textContent = description;
     $('phase-host-controls').hidden = !isHost;
     $('phase-waiting').hidden = isHost;
-    $('advance-phase').textContent = advancing ? 'Updating…' : next[state.phase] || 'Continue';
+    $('advance-phase').textContent = advancing ? 'Updating…' : phase?.action || 'Continue';
     $('advance-phase').disabled = advancing;
   }
 
