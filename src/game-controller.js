@@ -23,6 +23,10 @@ export class GameController {
     this.isHost = false;
     this.starting = false;
     this.advancing = false;
+    this.casting = false;
+    this.finishing = false;
+    this.dayTicker = null;
+    this.dayVotingOpen = false;
     this.refreshPending = false;
     this.refreshRunning = false;
     this.requestedGame = new URLSearchParams(location.search).get('game');
@@ -47,7 +51,10 @@ export class GameController {
       onJoin: () => this.joinFromForm(),
       onWerewolves: delta => this.changeWerewolves(delta),
       onStart: () => this.startGame(),
-      onAdvance: () => this.advancePhase()
+      onAdvance: () => this.advancePhase(),
+      onVote: target => this.castVote(target),
+      onFinishVoting: () => this.finishVoting(),
+      onDismissBanishment: () => this.dismissBanishment()
     });
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden && this.state.id) this.requestRefresh();
@@ -98,6 +105,7 @@ export class GameController {
   async enterGame(gameId, playerId, host) {
     this.playerId = playerId;
     this.playerRole = null;
+    this.stopDayTimer();
     this.isHost = host;
     this.state = new GameState({ id: gameId });
     const inviteUrl = new URL('?game=' + encodeURIComponent(gameId), location.href).href;
@@ -125,16 +133,12 @@ export class GameController {
         const id = this.state.id;
         const state = await this.repository.getState(id);
         if (id !== this.state.id) return;
-        this.state = state;
-        this.renderLobby();
-        if (state.status === 'playing') {
-          const role = await this.repository.getMyRole(id, this.playerId);
-          if (id === this.state.id) {
-            this.playerRole = role;
-            this.screens.showRole(role);
-            this.screens.renderPhase(this.state, this);
-          }
+        if (state.status === 'playing' && !this.playerRole) {
+          this.playerRole = await this.repository.getMyRole(id, this.playerId);
         }
+        if (id !== this.state.id) return;
+        this.state = state;
+        this.renderCurrentScreen();
       }
       this.screens.showConnectionError('');
     } catch (error) {
@@ -143,6 +147,98 @@ export class GameController {
       this.refreshRunning = false;
       if (this.refreshPending) this.requestRefresh();
     }
+  }
+
+  stopDayTimer() {
+    if (this.dayTicker !== null) clearInterval(this.dayTicker);
+    this.dayTicker = null;
+  }
+
+  renderCurrentScreen() {
+    const state = this.state;
+    this.stopDayTimer();
+    if (state.status !== 'playing') {
+      this.renderLobby();
+      return;
+    }
+    if (state.phase === 'day') {
+      this.renderDay();
+      this.dayTicker = setInterval(() => this.renderDay(), 250);
+      return;
+    }
+    const banished = state.players.find(player => player.id === state.lastBanishedId);
+    const dismissedKey = 'werewolf:banishment:' + state.id + ':' + state.lastBanishedRound;
+    if (state.phase === 'night' && banished && state.lastBanishedRound === state.roundNumber - 1
+      && localStorage.getItem(dismissedKey) !== 'true') {
+      this.screens.renderBanishment(banished.name);
+      return;
+    }
+    this.screens.showRole(this.playerRole);
+    this.screens.renderPhase(state, this);
+  }
+
+  renderDay() {
+    const state = this.state;
+    if (state.phase !== 'day') { this.stopDayTimer(); return; }
+    const deadline = Date.parse(state.phaseStartedAt || '') + 120000;
+    const seconds = Number.isFinite(deadline) ? Math.max(0, Math.ceil((deadline - Date.now()) / 1000)) : 120;
+    const voting = seconds === 0;
+    const active = state.players.filter(player => !player.eliminated_at);
+    const votes = state.votes.filter(vote => vote.round_number === state.roundNumber);
+    const myVote = votes.find(vote => vote.voter_id === this.playerId);
+    if (voting && votes.length === active.length && myVote) {
+      this.stopDayTimer();
+      const target = state.players.find(player => player.id === myVote.target_id);
+      this.screens.renderMarquee(target?.name || 'Unknown', this.isHost, this.finishing);
+      return;
+    }
+    // Avoid rebuilding the select list on every clock tick.
+    if (this.dayVotingOpen !== voting || document.getElementById('day-screen').hidden) {
+      this.screens.renderDay(state, { playerId: this.playerId, voting, myVote, casting: this.casting });
+      this.dayVotingOpen = voting;
+    }
+    if (!voting) this.screens.updateClock(seconds);
+    document.getElementById('vote-progress').textContent = voting
+      ? myVote ? 'Vote locked. Waiting for everyone… ' + votes.length + '/' + active.length
+        : 'Votes cast: ' + votes.length + '/' + active.length
+      : '';
+  }
+
+  async castVote(targetId) {
+    if (this.casting || !targetId || this.state.phase !== 'day') return;
+    this.casting = true;
+    this.showActionError('');
+    try {
+      await this.repository.castVote(this.state.id, this.state.roundNumber, this.playerId, targetId);
+      this.requestRefresh();
+    } catch (error) {
+      this.showActionError(error.message || 'Could not cast vote.');
+    } finally {
+      this.casting = false;
+    }
+  }
+
+  async finishVoting() {
+    if (!this.isHost || this.finishing || this.state.phase !== 'day') return;
+    this.finishing = true;
+    this.screens.renderMarquee(
+      this.state.players.find(player => player.id === this.state.votes.find(vote =>
+        vote.voter_id === this.playerId && vote.round_number === this.state.roundNumber)?.target_id)?.name || '',
+      true, true
+    );
+    try {
+      await this.repository.finishDay(this.state.id, this.state.roundNumber);
+      this.requestRefresh();
+    } catch (error) {
+      this.showActionError(error.message || 'Could not complete voting.');
+    } finally {
+      this.finishing = false;
+    }
+  }
+
+  dismissBanishment() {
+    localStorage.setItem('werewolf:banishment:' + this.state.id + ':' + this.state.lastBanishedRound, 'true');
+    this.renderCurrentScreen();
   }
 
   async changeWerewolves(delta) {
