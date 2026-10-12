@@ -87,7 +87,7 @@ body.marquee-mode .screen{width:100%;max-width:none;min-height:100dvh;padding:12
 .night-choice:has(input:checked){border-color:#d92d3a}
 
 /* Persistent navigation and deployed build identification. */
-.resume-game{display:block;text-align:center;color:#f2e3bf;font-size:.95rem;margin:-22px 0 24px;text-underline-offset:4px}
+.resume-game{display:block;text-align:center;color:#f2e3bf;font-size:.95rem;margin:0;text-underline-offset:4px}
 .site-footer{margin-top:auto;padding:20px 0 4px;display:flex;align-items:center;justify-content:center;gap:16px;font-size:.75rem;color:#84909c}
 .site-footer a{color:inherit;text-decoration:underline;text-underline-offset:3px}
 .version-label{opacity:.8;font-variant-numeric:tabular-nums}
