@@ -10,7 +10,8 @@ export class GameSync {
     const channel = this.repository.subscribeToGame(gameId, onChange);
     this.channel = channel;
     channel.subscribe(status => {
-      if (status === 'SUBSCRIBED') onChange();
+      if (channel !== this.channel) return;
+      if (status === 'SUBSCRIBED' || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') onChange();
     });
   }
 
