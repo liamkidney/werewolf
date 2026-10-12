@@ -89,14 +89,7 @@ export class Screens {
 
   renderPhase(state, { isHost, advancing }) {
     const phase = PHASES[state.phase];
-    const title = phase?.title || 'Game in progress';
-    const description = phase?.description || 'Waiting for the host.';
-    $('phase-panel').hidden = false;
-    $('phase-title').textContent = title;
-    $('phase-description').textContent = description;
     $('phase-host-controls').hidden = !isHost;
-    $('phase-waiting').hidden = isHost;
-    $('phase-waiting').textContent = state.phase === 'reveal' ? 'Waiting for the host to start the day…' : 'Waiting for the host to continue…';
     $('advance-phase').textContent = advancing ? 'Updating…' : phase?.action || 'Continue';
     $('advance-phase').disabled = advancing;
   }
