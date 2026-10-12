@@ -57,19 +57,11 @@ export class Screens {
     const count = state.players.length;
     $('lobby-message').textContent = count + (count === 1 ? ' player joined' : ' players joined');
     $('werewolf-count').textContent = state.werewolfCount;
-    $('villager-count').textContent = state.villagerCount;
     $('minimum-label').textContent = 'Minimum ' + (state.werewolfCount + 1);
     $('wolf-minus').disabled = starting || state.werewolfCount <= 1 || state.status !== 'lobby';
     $('wolf-plus').disabled = starting || state.werewolfCount >= 50 || state.status !== 'lobby';
-    const valid = canStart;
-    $('start-game').disabled = !isHost || !valid || starting;
-    $('start-status').hidden = valid && !starting && state.status === 'lobby';
-    $('start-status').textContent = starting ? 'Assigning roles…'
-      : state.status !== 'lobby' ? 'Game already started.'
-      : !isHost ? 'Only the host can start the game.'
-      : !valid ? 'Waiting for more players.' : '';
-    $('role-warning').hidden = valid;
-    $('role-warning').textContent = valid ? '' : 'Add more players than werewolves before starting.';
+    $('start-game').disabled = !isHost || !canStart || starting;
+    $('start-game').textContent = starting ? 'Assigning roles…' : 'Start Game';
   }
 
   showRole(role) {
