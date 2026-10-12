@@ -113,7 +113,10 @@ export class GameController {
         this.screens.renderLobby(state, this);
         if (state.status === 'playing') {
           const role = await this.repository.getMyRole(id, this.playerId);
-          if (id === this.state.id) this.screens.showRole(role);
+          if (id === this.state.id) {
+            this.state = this.state.with({ myRole: role });
+            this.screens.showRole(this.state.myRole);
+          }
         }
       }
       this.screens.showError('');
