@@ -1,9 +1,10 @@
 // Immutable snapshot of persisted game data. No browser or database dependencies.
 export class GameState {
-  constructor({ id = null, status = 'lobby', phase = 'reveal', roundNumber = 1, werewolfCount = 2, players = [], phaseStartedAt = null, dayDurationSeconds = 120, discussionEndedAt = null, lastBanishedId = null, lastBanishedRound = null, hostPlayerId = null, votes = [] } = {}) {
+  constructor({ id = null, status = 'lobby', phase = 'reveal', step = null, roundNumber = 1, werewolfCount = 2, players = [], phaseStartedAt = null, dayDurationSeconds = 120, discussionEndedAt = null, lastBanishedId = null, lastBanishedRound = null, hostPlayerId = null, votes = [] } = {}) {
     this.id = id;
     this.status = status;
     this.phase = phase;
+    this.step = step;
     this.roundNumber = roundNumber;
     this.werewolfCount = werewolfCount;
     this.phaseStartedAt = phaseStartedAt;
@@ -21,7 +22,5 @@ export class GameState {
     return new GameState({ ...this, ...changes });
   }
 
-  // The step is derived from persisted phase/timestamps for backward compatibility.
-  // Future schema versions can persist it explicitly.
   get villagerCount() { return Math.max(0, this.players.length - this.werewolfCount); }
 }
