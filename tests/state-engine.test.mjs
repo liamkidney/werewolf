@@ -6,6 +6,7 @@ const engine = new StateEngine();
 test('reveal requires host start day and results starts next night', () => {
   assert.deepEqual(engine.transition({ status: 'playing', phase: 'reveal', roundNumber: 1 }, { type: 'START_DAY' }), { phase: 'day', roundNumber: 1 });
   assert.deepEqual(engine.transition({ status: 'playing', phase: 'results', roundNumber: 1 }, { type: 'START_NIGHT' }), { phase: 'night', roundNumber: 2 });
+  assert.deepEqual(engine.transition({ status: 'playing', phase: 'dawn', roundNumber: 2 }, { type: 'START_DAY' }), { phase: 'day', roundNumber: 2 });
   assert.throws(() => engine.transition({ status: 'playing', phase: 'day', roundNumber: 1 }, { type: 'START_NIGHT' }));
 });
 test('day discussion and voting are distinct derived steps', () => {
@@ -41,7 +42,9 @@ test('complete two-round lifecycle preserves discussion before voting', () => {
   state = { ...state, ...engine.transition(state, { type: 'START_NIGHT' }), step: 'actions' };
   assert.equal(state.roundNumber, 2);
   assert.equal(engine.step(state), 'actions');
-  state = { ...state, phase: 'day', step: 'discussion' };
+  state = { ...state, phase: 'dawn', step: 'murder_reveal' };
+  assert.equal(engine.step(state), 'murder_reveal');
+  state = { ...state, ...engine.transition(state, { type: 'START_DAY' }), step: 'discussion' };
   assert.equal(engine.step(state), 'discussion');
   state = { ...state, step: 'voting' };
   assert.equal(engine.step(state), 'voting');
