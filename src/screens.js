@@ -35,7 +35,7 @@ export class Screens {
     $('invite-link').value = inviteUrl;
   }
 
-  renderLobby(state, { isHost, playerId, starting, engine }) {
+  renderLobby(state, { isHost, playerId, starting, canStart }) {
     const list = $('player-list');
     list.replaceChildren();
     state.players.forEach((player, index) => {
@@ -56,7 +56,7 @@ export class Screens {
     $('minimum-label').textContent = 'Minimum ' + (state.werewolfCount + 1);
     $('wolf-minus').disabled = starting || state.werewolfCount <= 1 || state.status !== 'lobby';
     $('wolf-plus').disabled = starting || state.werewolfCount >= 50 || state.status !== 'lobby';
-    const valid = engine.canStart(state);
+    const valid = canStart;
     $('start-game').disabled = !isHost || !valid || starting;
     $('start-status').textContent = starting ? 'Assigning roles…'
       : state.status !== 'lobby' ? 'Game already started.'
