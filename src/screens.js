@@ -1,4 +1,5 @@
 import { PHASES } from './game-phases.js';
+import QRCode from 'qrcode';
 
 const $ = id => document.getElementById(id);
 
@@ -247,7 +248,6 @@ export class Screens {
   }
 
   async renderQr(inviteUrl) {
-    const { default: QRCode } = await import('https://esm.sh/qrcode@1.5.4');
     await QRCode.toCanvas($('join-qr'), inviteUrl, {
       width: 220, margin: 2, color: { dark: '#111d2c', light: '#ffffff' }
     });
