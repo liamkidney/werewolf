@@ -36,7 +36,6 @@ export class Screens {
     $('host-controls').hidden = !isHost;
     $('host-tools').hidden = !isHost;
     $('guest-intro').hidden = isHost;
-    $('guest-waiting').hidden = isHost;
     $('invite-link').value = inviteUrl;
   }
 
