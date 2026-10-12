@@ -1,0 +1,24 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { StateEngine } from '../src/state-engine.js';
+
+const engine = new StateEngine();
+test('reveal requires host start day and results starts next night', () => {
+  assert.deepEqual(engine.transition({ status: 'playing', phase: 'reveal', roundNumber: 1 }, { type: 'START_DAY' }), { phase: 'day', roundNumber: 1 });
+  assert.deepEqual(engine.transition({ status: 'playing', phase: 'results', roundNumber: 1 }, { type: 'START_NIGHT' }), { phase: 'night', roundNumber: 2 });
+  assert.throws(() => engine.transition({ status: 'playing', phase: 'day', roundNumber: 1 }, { type: 'START_NIGHT' }));
+});
+test('day discussion and voting are distinct derived steps', () => {
+  const day = { status: 'playing', phase: 'day', phaseStartedAt: '2026-01-01T00:00:00Z', dayDurationSeconds: 120 };
+  assert.equal(engine.step(day, Date.parse('2026-01-01T00:01:00Z')), 'discussion');
+  assert.equal(engine.step(day, Date.parse('2026-01-01T00:02:00Z')), 'voting');
+  assert.equal(engine.step({ ...day, discussionEndedAt: '2026-01-01T00:00:10Z' }), 'voting');
+});
+test('independent actions require all active actors and unanimous werewolf consensus', () => {
+  const action = engine.requiredNightActions([{ role: 'werewolf' }, { role: 'villager' }])[0];
+  assert.equal(action.type, 'kill');
+  const wolves = [{ id: 'a' }, { id: 'b' }, { id: 'c', eliminated_at: 'yesterday' }];
+  assert.equal(engine.evaluateNightAction(action, wolves, [{ voter_id: 'a', target_id: 'x' }]).complete, false);
+  assert.equal(engine.evaluateNightAction(action, wolves, [{ voter_id: 'a', target_id: 'x' }, { voter_id: 'b', target_id: 'y' }]).complete, false);
+  assert.deepEqual(engine.evaluateNightAction(action, wolves, [{ voter_id: 'a', target_id: 'x' }, { voter_id: 'b', target_id: 'x' }]), { complete: true, targetId: 'x' });
+});
