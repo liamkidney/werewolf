@@ -286,12 +286,17 @@ export class Screens {
     $('dismiss-dawn').addEventListener('click', () => { void handlers.onAdvance(); });
     $('finish-voting').addEventListener('click', () => { void handlers.onFinishVoting(); });
     $('dismiss-banishment').addEventListener('click', () => { void handlers.onDismissBanishment(); });
+    let feedbackTimeout;
     $('copy-link').addEventListener('click', async () => {
+      const feedback = $('copy-feedback');
+      clearTimeout(feedbackTimeout);
       try {
         await navigator.clipboard.writeText($('invite-link').value);
-        $('copy-link').setAttribute('aria-label', 'Link copied');
-        $('copy-link').setAttribute('title', 'Link copied');
-      } catch { $('invite-link').select(); }
+        feedback.textContent = 'Copied!';
+      } catch {
+        feedback.textContent = 'Unable to copy';
+      }
+      feedbackTimeout = setTimeout(() => { feedback.textContent = ''; }, 2000);
     });
   }
 }
