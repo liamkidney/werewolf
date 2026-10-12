@@ -187,10 +187,10 @@ export class GameController {
     const active = state.players.filter(player => !player.eliminated_at);
     const votes = state.votes.filter(vote => vote.round_number === state.roundNumber);
     const myVote = votes.find(vote => vote.voter_id === this.playerId);
-    if (voting && votes.length === active.length && myVote) {
+    if (voting && votes.length === active.length) {
       this.stopDayTimer();
       const target = state.players.find(player => player.id === myVote.target_id);
-      this.screens.renderMarquee(target?.name || 'Unknown', this.isHost, this.finishing);
+      this.screens.renderMarquee(target?.name || (this.isHost ? 'Votes in' : 'Spectating'), this.isHost, this.finishing);
       return;
     }
     // Avoid rebuilding the select list on every clock tick.
