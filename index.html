@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1723">
+  <meta name="description" content="Werewolf — a party game of deception and deduction.">
+  <title>Werewolf</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <main class="screen">
+    <section class="hero" aria-label="Werewolf">
+      <div class="art" aria-hidden="true">
+        <svg viewBox="0 0 420 310" role="presentation" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <radialGradient id="moon" cx="45%" cy="42%" r="60%">
+              <stop stop-color="#fff5d6"/><stop offset=".8" stop-color="#f2e3bf"/><stop offset="1" stop-color="#d2c4a6"/>
+            </radialGradient>
+          </defs>
+          <circle cx="242" cy="128" r="108" fill="url(#moon)"/>
+          <path d="M0 248 Q80 210 145 245 Q200 200 268 234 Q350 196 420 247 V310 H0Z" fill="#21364b"/>
+          <path d="M0 276 Q85 235 155 272 Q255 217 420 268 V310 H0Z" fill="#101e2c"/>
+          <g fill="#0b1723">
+            <path d="M0 310 V115 l-18 35 13-3-22 40 19-4-25 47 22-5-23 44 28-7V310Z"/>
+            <path d="M44 310 V92 l-27 54 16-5-29 54 24-6-34 58 32-8-28 48 38-8V310Z"/>
+            <path d="M392 310 V105 l-20 42 14-4-25 50 20-5-29 52 28-8-26 50 36-10V310Z"/>
+            <path d="M424 310 V145 l-21 41 13-4-22 44 19-5-24 50 30-7V310Z"/>
+            <path d="M145 246 Q168 236 188 215 L209 193 222 176 232 147 245 127 251 97 261 119 271 111 278 141 271 168 258 184 266 204 291 221 304 243 295 248 284 234 269 226 263 252 256 283 247 283 245 254 237 234 215 235 203 283 194 283 192 246 182 246 168 280 158 280 159 244 145 258 118 263 98 257 91 244 114 250 133 249Z"/>
+          </g>
+        </svg>
+      </div>
+      <h1>WEREWOLF</h1>
+      <p class="tagline">A party game of deception<br>and deduction</p>
+    </section>
+    <form id="new-game" class="entry" novalidate>
+      <label for="player-name">What's your name?</label>
+      <input id="player-name" name="name" type="text" placeholder="Enter your name" autocomplete="nickname" maxlength="32" required>
+      <p class="error" id="name-error" role="alert" hidden>Please enter your name.</p>
+      <button type="submit">Let's Play <span aria-hidden="true">→</span></button>
+    </form>
+    <section id="next-step" class="next-step" hidden aria-live="polite">
+      <h2>Ready to host, <span id="host-name"></span>!</h2>
+      <p>Game creation and the QR-code lobby are coming in the next increment.</p>
+      <button id="back-button" type="button">Back</button>
+    </section>
+  </main>
+</body>
+</html>
