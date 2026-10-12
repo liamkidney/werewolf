@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Fredericka+the+Great&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fredericka+the+Great&family=Gloria+Hallelujah&family=Permanent+Marker&family=Rock+Salt&display=swap');
 :root{font-family:Arial,Helvetica,sans-serif;color:#fff;background:#0b1723;font-synthesis:none}
 *{box-sizing:border-box}
 html{min-height:100%}
@@ -230,3 +230,6 @@ body.light-screen #role-screen .role-secret p{margin:0}
 body.marquee-mode,body.marquee-mode .screen{background:#172638!important;color:#f0eee5!important}
 body.marquee-mode .marquee-screen{background:#172638;color:#f0eee5}
 body.marquee-mode .marquee-vote{font-family:'Fredericka the Great',Georgia,serif;font-weight:400;letter-spacing:.025em;text-shadow:0 1px 1px #d5d3c355}
+
+body.marquee-mode,body.marquee-mode .screen{background:#0d1117!important}
+body.marquee-mode .marquee-screen{background:#0d1117}
