@@ -124,13 +124,26 @@ export class Screens {
 
   renderEndgame(winner, roles) {
     this.showScreen('endgame-screen');
-    $('endgame-winner').textContent = winner === 'village' ? 'The Villagers Win!' : 'The Werewolves Win!';
+    const wolvesWon = winner !== 'village';
+    $('endgame-screen').classList.toggle('wolves-won', wolvesWon);
+    $('endgame-screen').querySelector('.endgame-day-art').hidden = wolvesWon;
+    $('endgame-screen').querySelector('.endgame-night-art').hidden = !wolvesWon;
+    $('endgame-winner').textContent = wolvesWon ? 'The Werewolves Win' : 'The Villagers Win';
     const list = $('endgame-roles');
     list.replaceChildren();
     for (const player of roles) {
-      const item = document.createElement('li');
-      item.textContent = player.name + ' — ' + (player.role === 'werewolf' ? 'Werewolf' : 'Villager');
-      list.append(item);
+      const row = document.createElement('tr');
+      const status = player.elimination_reason || player.elimination_type || player.eliminated_by || player.status;
+      const normalized = typeof status === 'string' ? status.toLowerCase() : '';
+      const displayStatus = normalized.includes('murder') ? 'Murdered'
+        : normalized.includes('banish') ? 'Banished'
+        : player.eliminated_at ? 'Eliminated' : 'Alive';
+      for (const value of [player.name, player.role === 'werewolf' ? 'Werewolf' : 'Villager', displayStatus]) {
+        const cell = document.createElement('td');
+        cell.textContent = value;
+        row.append(cell);
+      }
+      list.append(row);
     }
   }
 
