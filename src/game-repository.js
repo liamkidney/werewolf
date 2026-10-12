@@ -90,6 +90,16 @@ export class GameRepository {
     return unwrap(await this.db.rpc('finish_day_vote', { p_game_id: gameId, p_round: round }));
   }
 
+  async getNightPack(gameId, playerId) {
+    return unwrap(await this.db.rpc('get_night_pack', { p_game_id: gameId, p_player_id: playerId }));
+  }
+
+  async castNightVote(gameId, round, voterId, targetId) {
+    return unwrap(await this.db.rpc('cast_night_vote', {
+      p_game_id: gameId, p_round: round, p_voter: voterId, p_target: targetId
+    }));
+  }
+
   subscribeToGame(gameId, onChange) {
     return this.db.channel('lobby-' + gameId)
       .on('postgres_changes', {
