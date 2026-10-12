@@ -20,9 +20,10 @@ export class Screens {
 
   showScreen(id) {
     document.body.classList.add('light-screen');
+    document.body.classList.toggle('marquee-mode', id === 'marquee-screen');
     document.querySelector('.hero').hidden = true;
     this.form.hidden = true;
-    for (const screen of ['lobby', 'role-screen']) $(screen).hidden = screen !== id;
+    for (const screen of ['lobby', 'role-screen', 'day-screen', 'marquee-screen', 'banishment-screen']) $(screen).hidden = screen !== id;
   }
 
   showLobby(gameId, isHost, inviteUrl) {
@@ -88,6 +89,45 @@ export class Screens {
     $('advance-phase').disabled = advancing;
   }
 
+  renderDay(state, { playerId, voting, myVote, casting }) {
+    this.showScreen('day-screen');
+    $('day-round').textContent = state.roundNumber;
+    $('day-heading').textContent = voting ? 'Vote to banish' : 'Discuss';
+    $('day-clock').hidden = voting;
+    $('day-instruction').textContent = voting
+      ? 'Choose one player. Your vote is final.'
+      : 'Discuss who should be banished. Voting opens when the timer ends.';
+    const active = state.players.filter(player => !player.eliminated_at);
+    const voted = state.votes.filter(vote => vote.round_number === state.roundNumber).length;
+    $('vote-controls').hidden = !voting || !!myVote || !active.some(player => player.id === playerId);
+    const select = $('vote-target');
+    const selected = select.value;
+    select.replaceChildren(new Option('Choose a player', ''));
+    for (const player of active) select.add(new Option(player.name, player.id));
+    if (active.some(player => player.id === selected)) select.value = selected;
+    $('cast-vote').disabled = casting || !select.value;
+    $('vote-progress').textContent = !voting ? '' : myVote
+      ? 'Vote locked. Waiting for everyone… ' + voted + '/' + active.length
+      : 'Votes cast: ' + voted + '/' + active.length;
+  }
+
+  updateClock(seconds) {
+    $('day-clock').textContent = Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0');
+  }
+
+  renderMarquee(name, isHost, finishing) {
+    this.showScreen('marquee-screen');
+    $('marquee-vote').textContent = name;
+    $('finish-voting').hidden = !isHost;
+    $('finish-voting').disabled = finishing;
+    $('finish-voting').textContent = finishing ? 'Finishing…' : 'Done';
+  }
+
+  renderBanishment(name) {
+    this.showScreen('banishment-screen');
+    $('banished-name').textContent = name;
+  }
+
   async renderQr(inviteUrl) {
     const { default: QRCode } = await import('https://esm.sh/qrcode@1.5.4');
     await QRCode.toCanvas($('join-qr'), inviteUrl, {
@@ -105,6 +145,10 @@ export class Screens {
     $('wolf-plus').addEventListener('click', () => { void handlers.onWerewolves(1); });
     $('start-game').addEventListener('click', () => { void handlers.onStart(); });
     $('advance-phase').addEventListener('click', () => { void handlers.onAdvance(); });
+    $('vote-target').addEventListener('change', () => { $('cast-vote').disabled = !$('vote-target').value; });
+    $('cast-vote').addEventListener('click', () => { void handlers.onVote($('vote-target').value); });
+    $('finish-voting').addEventListener('click', () => { void handlers.onFinishVoting(); });
+    $('dismiss-banishment').addEventListener('click', () => { void handlers.onDismissBanishment(); });
     $('copy-link').addEventListener('click', async () => {
       try {
         await navigator.clipboard.writeText($('invite-link').value);
