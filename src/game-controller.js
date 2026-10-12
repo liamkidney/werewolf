@@ -175,7 +175,7 @@ export class GameController {
     const inviteUrl = gameUrl(gameId);
     if (!isTestFrame()) {
       localStorage.setItem(activeGameKey, gameId);
-      history.replaceState(null, '', gameUrl(gameId));
+      history.replaceState(null, '', location.pathname + location.hash);
     }
     this.screens.showLobby(gameId, false, inviteUrl);
     // The database determines who the host is; never restore authority from storage.
