@@ -56,9 +56,7 @@ export class GameRepository {
   }
 
   async setWerewolfCount(gameId, count) {
-    const updated = unwrap(await this.db.from('games')
-      .update({ werewolf_count: count }).eq('id', gameId).eq('status', 'lobby').select('id'));
-    if (!updated.length) throw new Error('The lobby is no longer available.');
+    unwrap(await this.db.rpc('set_lobby_werewolf_count_manual', { p_game_id: gameId, p_count: count }));
   }
 
   async startGame(state, assignments) {
