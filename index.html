@@ -100,11 +100,15 @@
       <p id="dawn-waiting" class="muted" hidden>Waiting for the host to start the day…</p>
     </section>
     <section id="endgame-screen" class="banishment-screen" hidden>
+      <div class="phase-art phase-art-day endgame-day-art" aria-hidden="true"><img src="./images/werewolf-day.png" alt=""></div>
+      <div class="phase-art phase-art-night endgame-night-art" aria-hidden="true" hidden><img src="./images/werewolf-night-dark.png" alt=""></div>
       <p class="lobby-eyebrow">GAME OVER</p>
       <h2 id="endgame-winner"></h2>
       <h3>Everyone's roles</h3>
-      <ul id="endgame-roles" class="player-list"></ul>
-      <a href="./?new=1">Play again</a>
+      <div class="endgame-table-wrap"><table class="endgame-table">
+        <thead><tr><th>Name</th><th>Role</th><th>Status</th></tr></thead>
+        <tbody id="endgame-roles"></tbody>
+      </table></div>
     </section>
     <section id="day-screen" class="day-screen" hidden>
       <div class="phase-art phase-art-day" aria-hidden="true"><img src="./images/werewolf-day.png" alt=""></div>
