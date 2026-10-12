@@ -1,6 +1,6 @@
 // Immutable snapshot of persisted game data. No browser or database dependencies.
 export class GameState {
-  constructor({ id = null, status = 'lobby', phase = 'reveal', roundNumber = 1, werewolfCount = 2, players = [], phaseStartedAt = null, dayDurationSeconds = 120, lastBanishedId = null, lastBanishedRound = null, hostPlayerId = null, votes = [] } = {}) {
+  constructor({ id = null, status = 'lobby', phase = 'reveal', roundNumber = 1, werewolfCount = 2, players = [], phaseStartedAt = null, dayDurationSeconds = 120, discussionEndedAt = null, lastBanishedId = null, lastBanishedRound = null, hostPlayerId = null, votes = [] } = {}) {
     this.id = id;
     this.status = status;
     this.phase = phase;
@@ -8,6 +8,7 @@ export class GameState {
     this.werewolfCount = werewolfCount;
     this.phaseStartedAt = phaseStartedAt;
     this.dayDurationSeconds = dayDurationSeconds;
+    this.discussionEndedAt = discussionEndedAt;
     this.lastBanishedId = lastBanishedId;
     this.lastBanishedRound = lastBanishedRound;
     this.hostPlayerId = hostPlayerId;
