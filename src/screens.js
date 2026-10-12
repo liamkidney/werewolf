@@ -28,6 +28,8 @@ export class Screens {
     this.form.hidden = true;
     $('resume-game').hidden = true;
     $('game-footer').hidden = false;
+    $('role-reveal').classList.remove('revealed');
+    $('role-reveal').querySelector('.role-secret').setAttribute('aria-hidden', 'true');
     for (const screen of ['lobby', 'role-screen', 'day-screen', 'night-screen', 'dawn-screen', 'endgame-screen', 'suspense-screen', 'marquee-screen', 'banishment-screen']) $(screen).hidden = screen !== id;
   }
 
@@ -67,6 +69,8 @@ export class Screens {
     this.showScreen('role-screen');
     document.querySelector('.role-reminder').hidden = false;
     $('role-name').textContent = role ? (role === 'werewolf' ? 'Werewolf' : 'Villager') : 'Assigning roles…';
+    $('role-reveal').classList.remove('revealed');
+    $('role-reveal').querySelector('.role-secret').setAttribute('aria-hidden', 'true');
     $('role-description').textContent = role
       ? (role === 'werewolf' ? 'You are a werewolf. Keep your identity hidden.' : 'You are a villager. Find the werewolves.')
       : 'Please wait a moment.';
@@ -267,6 +271,30 @@ export class Screens {
     $('wolf-minus').addEventListener('click', () => { void handlers.onWerewolves(-1); });
     $('wolf-plus').addEventListener('click', () => { void handlers.onWerewolves(1); });
     $('start-game').addEventListener('click', () => { void handlers.onStart(); });
+    const reveal = $('role-reveal');
+    const setRevealed = visible => {
+      reveal.classList.toggle('revealed', visible);
+      reveal.querySelector('.role-secret').setAttribute('aria-hidden', String(!visible));
+    };
+    reveal.addEventListener('pointerdown', event => {
+      if (event.button !== 0) return;
+      reveal.setPointerCapture(event.pointerId);
+      setRevealed(true);
+    });
+    for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) {
+      reveal.addEventListener(type, () => setRevealed(false));
+    }
+    reveal.addEventListener('keydown', event => {
+      if (event.code === 'Space' || event.code === 'Enter') {
+        event.preventDefault();
+        if (!event.repeat) setRevealed(true);
+      }
+    });
+    reveal.addEventListener('keyup', event => {
+      if (event.code === 'Space' || event.code === 'Enter') setRevealed(false);
+    });
+    reveal.addEventListener('blur', () => setRevealed(false));
+    reveal.addEventListener('contextmenu', event => event.preventDefault());
     $('advance-phase').addEventListener('click', () => { void handlers.onAdvance(); });
     $('end-discussion').addEventListener('click', () => { void handlers.onEndDiscussion(); });
     $('vote-targets').addEventListener('change', event => {
