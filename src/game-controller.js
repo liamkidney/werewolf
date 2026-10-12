@@ -2,7 +2,7 @@ import { GameState } from './game-state.js';
 import { GameEngine, secureRandomInt } from './game-engine.js';
 import { GameRepository } from './game-repository.js';
 import { GameSync } from './game-sync.js';
-import { Screens } from './screens.js?v=20261012b';
+import { Screens } from './screens.js';
 import { StateEngine } from './state-engine.js';
 
 const identityKey = id => 'werewolf:player:' + id;
