@@ -260,11 +260,11 @@ body.light-screen #endgame-screen .endgame-credits{width:100%;overflow:hidden;po
 body.light-screen #endgame-screen .endgame-credits-roll{display:flex;flex-direction:column;gap:22px;animation:endgame-credits-rise 32s linear 1 both}
 body.light-screen #endgame-screen .endgame-credits-intro,body.light-screen #endgame-screen .endgame-credits-outro{text-align:center;letter-spacing:.22em;font-size:.75rem;font-weight:700;margin:12px 0}
 body.light-screen #endgame-screen .endgame-credits-list{display:flex;flex-direction:column;gap:15px}
-body.light-screen #endgame-screen .endgame-credit{display:grid;grid-template-columns:50% 50%;align-items:start;gap:0;font-family:Arial,Helvetica,sans-serif}
-body.light-screen #endgame-screen .endgame-credit-role{text-align:right;padding:4px 12px 0 0;font-size:.8rem;font-weight:400;letter-spacing:0;opacity:.78}
-body.light-screen #endgame-screen .endgame-credit-details{display:flex;flex-direction:column;gap:4px;min-width:0;padding-right:8px}
-body.light-screen #endgame-screen .endgame-credit-name{font-size:.8rem;font-weight:400;letter-spacing:0;overflow-wrap:anywhere}
-body.light-screen #endgame-screen .endgame-credit-fate{font-size:.63rem;letter-spacing:.12em;opacity:.65}
+body.light-screen #endgame-screen .endgame-credit{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:baseline;column-gap:0;font-family:Arial,Helvetica,sans-serif;font-size:clamp(.68rem,2.7vw,.85rem);font-weight:400;line-height:1.45}
+body.light-screen #endgame-screen .endgame-credit-role,body.light-screen #endgame-screen .endgame-credit-name{font:inherit;letter-spacing:0;line-height:inherit}
+body.light-screen #endgame-screen .endgame-credit-role{text-align:right;padding:0 12px 0 0;white-space:nowrap;opacity:.8}
+body.light-screen #endgame-screen .endgame-credit-details{display:block;min-width:0;padding:0 0 0 12px;text-align:left}
+body.light-screen #endgame-screen .endgame-credit-name{display:block;overflow-wrap:anywhere}
 @keyframes endgame-credits-rise{from{transform:translateY(28px)}to{transform:translateY(-28px)}}
 body.light-screen #endgame-screen .endgame-credits:hover .endgame-credits-roll,
 body.light-screen #endgame-screen .endgame-credits:active .endgame-credits-roll{animation-play-state:paused}
@@ -273,6 +273,3 @@ body.light-screen #endgame-screen .endgame-credits:active .endgame-credits-roll{
 /* A dramatic pause before the supporting cast. */
 body.light-screen #endgame-screen .endgame-credits-supporting-heading{padding-top:30px;padding-bottom:8px}
 
-
-/* Keep long elimination credits on one line on mobile. */
-body.light-screen #endgame-screen .endgame-credit-role{white-space:nowrap;font-size:clamp(.66rem,2.5vw,.8rem);padding-right:10px}
