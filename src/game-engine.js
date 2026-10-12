@@ -9,6 +9,7 @@ export class GameEngine {
 
   nextPhase(state) {
     if (state.status !== 'playing') throw new Error('Game is not in progress.');
+    if (state.phase === 'day') throw new Error('Voting begins automatically after the discussion timer.');
     const phase = PHASES[state.phase]?.next;
     if (!phase) throw new Error('Unknown game phase.');
     return {
