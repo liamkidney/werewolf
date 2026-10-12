@@ -75,6 +75,12 @@ export class GameController {
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden && this.state.id) this.requestRefresh();
     });
+    if (this.requestedGame) {
+      // Show join intent immediately, before any asynchronous game lookup.
+      document.querySelector('.entry label').textContent = 'Enter your name to join';
+      this.screens.form.querySelector('button').textContent = 'Join Game →';
+      document.getElementById('resume-game').hidden = true;
+    }
     if (!this.requestedGame) {
       const savedGame = this.session.activeGame;
       if (savedGame && !this.session.testFrame) {
@@ -111,8 +117,6 @@ export class GameController {
       this.screens.form.querySelector('button').disabled = true;
       return;
     }
-    document.querySelector('.entry label').textContent = 'Enter your name to join';
-    this.screens.form.querySelector('button').textContent = 'Join Game →';
   }
 
   async joinFromForm() {
