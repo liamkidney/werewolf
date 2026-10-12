@@ -5,12 +5,16 @@ import { GameSync } from './game-sync.js';
 import { Screens } from './screens.js?v=20261012c';
 import { StateEngine } from './state-engine.js';
 
-const identityKey = id => 'werewolf:player:' + id;
-const hostKey = id => 'werewolf:host:' + id;
-const activeGameKey = 'werewolf:active-game';
+const environment = location.pathname.includes('/dev/') ? 'dev' : 'production';
+const storagePrefix = 'werewolf:' + environment + ':';
+const identityKey = id => storagePrefix + 'player:' + id;
+const activeGameKey = storagePrefix + 'active-game';
+const nameKey = storagePrefix + 'name';
 const isTestFrame = () => new URLSearchParams(location.search).has('test_player');
-const cleanGameUrl = () => {
-  if (!isTestFrame()) history.replaceState(null, '', location.pathname + location.hash);
+const gameUrl = id => {
+  const url = new URL(location.pathname, location.href);
+  url.searchParams.set('game', id);
+  return url.href;
 };
 
 export class GameController {
@@ -66,7 +70,7 @@ export class GameController {
   }
 
   async init() {
-    this.screens.nameInput.value = localStorage.getItem('werewolf:name') || '';
+    this.screens.nameInput.value = localStorage.getItem(nameKey) || localStorage.getItem('werewolf:name') || '';
     this.screens.bind({
       onJoin: () => this.joinFromForm(),
       onWerewolves: delta => this.changeWerewolves(delta),
@@ -80,25 +84,42 @@ export class GameController {
       onDismissBanishment: () => this.dismissBanishment()
     });
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden && this.state.id && !this.eliminated) this.requestRefresh();
+      if (!document.hidden && this.state.id) this.requestRefresh();
     });
     if (!this.requestedGame) {
       const savedGame = localStorage.getItem(activeGameKey);
-      document.getElementById('resume-game').hidden = !savedGame || isTestFrame();
+      if (savedGame && !isTestFrame()) {
+        try {
+          const playerId = localStorage.getItem(identityKey(savedGame));
+          const [game, member] = await Promise.all([
+            this.repository.getGame(savedGame),
+            playerId ? this.repository.hasPlayer(savedGame, playerId) : Promise.resolve(false)
+          ]);
+          document.getElementById('resume-game').hidden = !game || !member;
+          if (!game || !member) localStorage.removeItem(activeGameKey);
+        } catch (error) {
+          this.screens.showConnectionError('Could not check the previous game. Try reloading.');
+        }
+      }
       return;
     }
-    const savedId = localStorage.getItem(identityKey(this.requestedGame));
+    const savedId = isTestFrame() ? null : localStorage.getItem(identityKey(this.requestedGame));
     if (savedId) {
       try {
         if (await this.repository.hasPlayer(this.requestedGame, savedId)) {
-          await this.enterGame(this.requestedGame, savedId, localStorage.getItem(hostKey(this.requestedGame)) === 'true');
+          await this.enterGame(this.requestedGame, savedId);
           return;
         }
-      } catch (error) { this.showActionError(error.message); }
+      } catch (error) {
+        this.showActionError(error.message || 'Could not restore your game.');
+        return;
+      }
     }
-    if (!new URLSearchParams(location.search).has('game')) {
+    const game = await this.repository.getGame(this.requestedGame);
+    if (!game || game.status !== 'lobby') {
       this.requestedGame = null;
-      document.getElementById('resume-game').hidden = true;
+      this.showActionError('This game is unavailable or has already started. Return home to create a game.');
+      this.screens.form.querySelector('button').disabled = true;
       return;
     }
     document.querySelector('.entry label').textContent = 'Enter your name to join';
@@ -128,9 +149,8 @@ export class GameController {
       await this.repository.joinGame(gameId, playerId, name);
       if (host) await this.repository.claimHost(gameId, playerId);
       localStorage.setItem(identityKey(gameId), playerId);
-      localStorage.setItem('werewolf:name', name);
-      if (host) localStorage.setItem(hostKey(gameId), 'true');
-      await this.enterGame(gameId, playerId, host);
+      localStorage.setItem(nameKey, name);
+      await this.enterGame(gameId, playerId);
     } catch (error) {
       this.showActionError(error.message || 'Could not connect to Supabase.');
     } finally {
@@ -139,7 +159,7 @@ export class GameController {
     }
   }
 
-  async enterGame(gameId, playerId, host) {
+  async enterGame(gameId, playerId) {
     this.playerId = playerId;
     this.playerRole = null;
     this.eliminated = false;
@@ -149,21 +169,17 @@ export class GameController {
     if (this.endgameTimer !== null) clearTimeout(this.endgameTimer);
     this.endgameTimer = null;
     this.decoyPack = null;
-    this.isHost = host;
-    this.wasHost = host;
+    this.isHost = false;
+    this.wasHost = false;
     this.state = new GameState({ id: gameId });
-    const inviteUrl = new URL('?game=' + encodeURIComponent(gameId), location.href).href;
-    this.screens.showLobby(gameId, host, inviteUrl);
-    if (host) {
-      try { await this.screens.renderQr(inviteUrl); }
-      catch { this.showActionError('Could not generate QR code. Use the invite link instead.'); }
-    }
-    // Listen before initial read, then resync on reconnect and when returning to the tab.
-    await this.sync.subscribe(gameId, () => this.requestRefresh());
+    const inviteUrl = gameUrl(gameId);
     if (!isTestFrame()) {
       localStorage.setItem(activeGameKey, gameId);
-      cleanGameUrl();
+      history.replaceState(null, '', gameUrl(gameId));
     }
+    this.screens.showLobby(gameId, false, inviteUrl);
+    // The database determines who the host is; never restore authority from storage.
+    await this.sync.subscribe(gameId, () => this.requestRefresh());
     this.requestRefresh();
   }
 
@@ -181,6 +197,10 @@ export class GameController {
         const id = this.state.id;
         const state = await this.repository.getState(id);
         if (id !== this.state.id) return;
+        if (!state.players.some(player => player.id === this.playerId)) {
+          this.screens.showConnectionError('Your player membership could not be found.');
+          return;
+        }
         if (this.eliminated && state.status !== 'finished') return;
         if (state.status === 'finished' && !isTestFrame() && localStorage.getItem(activeGameKey) === id) {
           localStorage.removeItem(activeGameKey);
@@ -218,7 +238,12 @@ export class GameController {
         if (state.phase === 'night' && this.playerRole === 'werewolf') this.nightPack = await this.repository.getNightPack(id, this.playerId);
         if (state.phase === 'night' && this.playerRole === 'villager') this.decoyPack = await this.repository.getDecoyPack(id, this.playerId);
         if (state.phase === 'dawn') this.decoyPack = await this.repository.getDecoyPack(id, this.playerId);
-        if (state.hostPlayerId) this.isHost = state.hostPlayerId === this.playerId;
+        const previousHost = this.isHost;
+        this.isHost = state.hostPlayerId === this.playerId;
+        if (this.isHost && !previousHost && state.status === 'lobby') {
+          this.screens.showLobby(id, true, gameUrl(id));
+          void this.screens.renderQr(gameUrl(id)).catch(() => this.showActionError('Could not generate QR code. Use the invite link instead.'));
+        }
         if (this.isHost) this.wasHost = true;
         this.renderCurrentScreen();
       }
