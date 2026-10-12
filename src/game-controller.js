@@ -37,9 +37,6 @@ export class GameController {
     this.nightPack = null;
     this.nightPoll = null;
     this.suspenseTimer = null;
-    this.suspenseKey = null;
-    this.suspenseUntil = 0;
-    this.suspenseCompleted = new Set();
     this.finishing = false;
     this.endingDiscussion = false;
     this.dayTicker = null;
@@ -136,7 +133,6 @@ export class GameController {
     this.stopDayTimer();
     this.stopNightPoll();
     this.stopSuspenseTimer();
-    this.suspenseCompleted.clear();
     this.isHost = host;
     this.wasHost = host;
     this.state = new GameState({ id: gameId });
@@ -212,14 +208,8 @@ export class GameController {
 
   suspenseRemaining(state) {
     if (state.phase !== 'dawn') return 0;
-    const key = state.id + ':' + state.roundNumber;
-    if (this.suspenseCompleted.has(key)) return 0;
-    if (this.suspenseKey !== key) {
-      this.stopSuspenseTimer();
-      this.suspenseKey = key;
-      this.suspenseUntil = Date.now() + 6000;
-    }
-    return Math.max(0, this.suspenseUntil - Date.now());
+    const started = Date.parse(state.phaseStartedAt || '');
+    return Number.isFinite(started) ? Math.max(0, started + 6000 - Date.now()) : 0;
   }
 
   stopSuspenseTimer() {
@@ -230,10 +220,8 @@ export class GameController {
   showSuspense(state) {
     this.screens.renderSuspense();
     if (this.suspenseTimer !== null) return;
-    const key = this.suspenseKey;
     this.suspenseTimer = setTimeout(() => {
       this.suspenseTimer = null;
-      this.suspenseCompleted.add(key);
       this.requestRefresh();
     }, this.suspenseRemaining(state) + 30);
   }
