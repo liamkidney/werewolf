@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Werewolf · Six-player test console</title>
+<style>
+:root{font-family:system-ui,-apple-system,sans-serif;color:#182230;background:#edf0f4}*{box-sizing:border-box}body{margin:0;padding:20px}header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;margin:0 0 16px}h1{font-size:1.5rem;margin:0}p{margin:5px 0;color:#55616e;font-size:.9rem}.tools{display:flex;flex-wrap:wrap;align-items:center;gap:10px}button{background:#b9293b;color:white;border:0;border-radius:9px;padding:12px 18px;font:inherit;font-weight:650;cursor:pointer}button:disabled{opacity:.5;cursor:wait}a{color:#34587b}#status{margin:10px 0 18px;min-height:20px}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.player{background:white;border:1px solid #d8dee6;border-radius:14px;overflow:hidden;min-width:0}.player-head{padding:11px 14px;background:#fff;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e1e5ea;font-weight:700}.player-head small{font-weight:500;color:#66717e}.player iframe{display:block;width:100%;height:660px;border:0;background:#f6f5f2}.empty{height:250px;display:grid;place-items:center;color:#798390}#game-link{overflow-wrap:anywhere;font-size:.85rem}@media(max-width:1000px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:620px){body{padding:10px}.grid{grid-template-columns:1fr}.player iframe{height:670px}}
+</style>
+</head>
+<body>
+<header><div><h1>Werewolf · Test console</h1><p>Six independent players, one real Supabase game. Development only.</p></div><div class="tools"><button id="create">Create six-player game</button><a href="./">Normal game ↗</a></div></header>
+<div id="status" role="status">Create a game to begin.</div><div id="game-link"></div>
+<div id="grid" class="grid"></div>
+<script type="module">
+import { GameRepository } from './src/game-repository.js';
+const names=['Liam','Mary','John','Frank','Alice','Sarah'];
+const repo=new GameRepository();
+const grid=document.getElementById('grid'),status=document.getElementById('status'),button=document.getElementById('create'),link=document.getElementById('game-link');
+const setStatus=text=>{status.textContent=text;};
+async function create(){
+ button.disabled=true;grid.replaceChildren();link.replaceChildren();setStatus('Creating game…');
+ try{
+  const gameId=await repo.createGame();
+  const ids=names.map(()=>crypto.randomUUID());
+  for(let i=0;i<names.length;i++){
+   await repo.joinGame(gameId,ids[i],names[i]);
+  }
+  await repo.claimHost(gameId,ids[0]);
+  // Two wolves by default; use the host's ordinary controls to adjust.
+  const gameLink=document.createElement('a');
+  gameLink.href='./?game='+encodeURIComponent(gameId);
+  gameLink.textContent='Game '+gameId+' · open separately';
+  gameLink.target='_blank';gameLink.rel='noopener';
+  link.append(gameLink);
+  for(let i=0;i<names.length;i++){
+   const card=document.createElement('section');card.className='player';
+   const head=document.createElement('div');head.className='player-head';
+   const title=document.createElement('span');title.textContent=names[i];
+   const detail=document.createElement('small');detail.textContent=i===0?'Host':'Player '+(i+1);
+   head.append(title,detail);
+   const frame=document.createElement('iframe');
+   frame.title=names[i]+' game screen';
+   frame.loading='eager';
+   frame.src='./?game='+encodeURIComponent(gameId)+'&test_player='+encodeURIComponent(ids[i])+'&test_host='+(i===0?'1':'0');
+   card.append(head,frame);grid.append(card);
+  }
+  setStatus('Ready. Use Liam’s screen to start the game; all six screens are interactive. New game resets the console.');
+ }catch(error){setStatus('Error: '+(error.message||error));}
+ finally{button.disabled=false;}
+}
+button.addEventListener('click',()=>void create());
+</script>
+</body></html>
