@@ -37,7 +37,6 @@ export class Screens {
     $('host-tools').hidden = !isHost;
     $('guest-intro').hidden = isHost;
     $('guest-waiting').hidden = isHost;
-    $('lobby-code').textContent = 'Game ' + gameId.slice(0, 8).toUpperCase();
     $('invite-link').value = inviteUrl;
   }
 
@@ -278,7 +277,8 @@ export class Screens {
     $('copy-link').addEventListener('click', async () => {
       try {
         await navigator.clipboard.writeText($('invite-link').value);
-        $('copy-link').textContent = 'Copied!';
+        $('copy-link').setAttribute('aria-label', 'Link copied');
+        $('copy-link').setAttribute('title', 'Link copied');
       } catch { $('invite-link').select(); }
     });
   }
