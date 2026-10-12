@@ -78,10 +78,10 @@ export class Screens {
       : 'Please wait a moment.';
   }
 
-  showEliminated(murdered = false) {
+  showEliminated(murdered = false, newHostName = null) {
     this.showScreen('banishment-screen');
     $('banished-name').textContent = murdered ? 'You were murdered' : 'You have been banished';
-    $('banishment-description').textContent = 'You are out of the game.';
+    $('banishment-description').textContent = 'You are out of the game.' + (newHostName ? ' ' + newHostName + ' is now the host.' : '');
     $('dismiss-banishment').hidden = true;
     $('banishment-waiting').hidden = true;
   }
