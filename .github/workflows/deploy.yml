@@ -42,6 +42,8 @@ jobs:
           rsync -a --exclude='.git/' --exclude='.github/' --exclude='tests/' --exclude='scripts/' --exclude='supabase/' --exclude='node_modules/' --exclude='package*.json' --exclude='requirements-build.txt' production/ _site/
           rsync -a --exclude='.git/' --exclude='.github/' --exclude='tests/' --exclude='scripts/' --exclude='supabase/' --exclude='node_modules/' --exclude='package*.json' --exclude='requirements-build.txt' development/ _site/dev/
           touch _site/.nojekyll
+          sed -i "s/__BUILD_VERSION__/$(git -C production rev-parse --short HEAD)/g" _site/index.html
+          sed -i "s/__BUILD_VERSION__/$(git -C development rev-parse --short HEAD)/g" _site/dev/index.html
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
