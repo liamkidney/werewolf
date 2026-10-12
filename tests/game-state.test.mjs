@@ -15,15 +15,18 @@ test('state snapshots and nested players are immutable', () => {
   assert.equal(next.players[0].name, 'A');
 });
 
-test('all phases transition to a defined phase', () => {
+test('only host-controlled phases can advance manually', () => {
   const engine = new GameEngine();
-  for (const phase of Object.keys(PHASES).filter(phase => phase !== 'day')) {
+  for (const [phase, expected, round] of [['reveal', 'day', 3], ['results', 'night', 4]]) {
     const result = engine.nextPhase({ status: 'playing', phase, roundNumber: 3 });
     assert.ok(PHASES[result.phase]);
-    assert.equal(result.roundNumber, phase === 'results' ? 4 : 3);
+    assert.equal(result.phase, expected);
+    assert.equal(result.roundNumber, round);
   }
   assert.throws(() => engine.nextPhase({ status: 'playing', phase: 'day', roundNumber: 1 }), /automatically/);
-  assert.throws(() => engine.nextPhase({ status: 'playing', phase: 'invalid', roundNumber: 1 }));
+  for (const phase of ['night', 'voting', 'invalid']) {
+    assert.throws(() => engine.nextPhase({ status: 'playing', phase, roundNumber: 1 }), /not permitted/);
+  }
 });
 
 test('cannot start with insufficient players or zero werewolves', () => {
