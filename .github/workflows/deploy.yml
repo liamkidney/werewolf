@@ -44,7 +44,7 @@ jobs:
         run: python3 -m pip install -r development/requirements-build.txt
 
       - name: Test game engine
-        run: node --test development/tests/*.test.mjs
+        run: cd development && npm test
 
       - name: Build and validate both sites
         run: |
