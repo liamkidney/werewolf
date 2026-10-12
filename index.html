@@ -92,6 +92,11 @@
       <p class="lobby-eyebrow">NIGHT <span id="night-round"></span></p>
       <h2 id="night-heading">Night has fallen</h2>
       <p id="night-instruction">Close your eyes.</p>
+      <div id="night-villager-controls" hidden>
+        <h3 id="decoy-question"></h3>
+        <div id="decoy-targets" class="night-targets" role="radiogroup" aria-label="Answer the night question"></div>
+        <p id="decoy-progress" class="muted"></p>
+      </div>
       <div id="night-wolf-controls" hidden>
         <h3>Werewolves</h3>
         <ul id="night-wolves" class="player-list"></ul>
@@ -108,8 +113,20 @@
       <p class="lobby-eyebrow">DAWN</p>
       <h2 id="dawn-victim"></h2>
       <p>Was murdered during the night.</p>
+      <div id="dawn-decoy" class="decoy-results" hidden>
+        <p class="lobby-eyebrow">VILLAGERS' VOTE</p>
+        <h3 id="dawn-decoy-question"></h3>
+        <p id="dawn-decoy-result"></p>
+      </div>
       <button id="dismiss-dawn" type="button">Start Day</button>
       <p id="dawn-waiting" class="muted" hidden>Waiting for the host to start the day…</p>
+    </section>
+    <section id="endgame-screen" class="banishment-screen" hidden>
+      <p class="lobby-eyebrow">GAME OVER</p>
+      <h2 id="endgame-winner"></h2>
+      <h3>Everyone's roles</h3>
+      <ul id="endgame-roles" class="player-list"></ul>
+      <a href="./?new=1">Play again</a>
     </section>
     <section id="day-screen" class="day-screen" hidden>
       <p class="lobby-eyebrow">DAY <span id="day-round"></span></p>
