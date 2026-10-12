@@ -39,7 +39,7 @@ export class GameRepository {
   async getState(gameId) {
     const [game, players, votes] = await Promise.all([
       this.getGame(gameId),
-      this.db.from('players').select('id,name,eliminated_at').eq('game_id', gameId).order('joined_at').then(unwrap),
+      this.db.from('players').select('id,name,eliminated_at,elimination_reason').eq('game_id', gameId).order('joined_at').then(unwrap),
       this.db.from('day_votes').select('voter_id,target_id,round_number').eq('game_id', gameId).then(unwrap)
     ]);
     if (!game) throw new Error('Game not found.');
