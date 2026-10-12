@@ -319,7 +319,7 @@ export class GameController {
   }
 
   async advancePhase() {
-    if (this.eliminated || !this.isHost || this.advancing || this.state.status !== 'playing') return;
+    if (this.eliminated || !this.isHost || this.advancing || this.state.status !== 'playing' || this.state.phase === 'night') return;
     this.advancing = true;
     this.screens.renderPhase(this.state, this);
     this.showActionError('');
