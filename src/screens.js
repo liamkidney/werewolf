@@ -83,7 +83,7 @@ export class Screens {
     $('banishment-screen').classList.toggle('murdered-screen', murdered);
     $('banishment-screen').querySelector('.murder-art').hidden = !murdered;
     $('banishment-screen').querySelector('.banished-art').hidden = murdered;
-    $('elimination-heading').textContent = murdered ? 'MURDERED' : 'BANISHED';
+    $('elimination-heading').textContent = murdered ? 'Murdered' : 'BANISHED';
     $('banished-name').textContent = murdered ? 'You were murdered' : 'You have been banished';
     $('banishment-description').textContent = 'You are out of the game.' + (newHostName ? ' ' + newHostName + ' is now the host.' : '');
     $('dismiss-banishment').hidden = true;
@@ -140,16 +140,16 @@ export class Screens {
       entry.className = 'endgame-credit';
       const role = document.createElement('span');
       role.className = 'endgame-credit-role';
-      const character = player.role === 'werewolf' ? 'WEREWOLF' : 'VILLAGER';
+      const character = player.role === 'werewolf' ? 'Werewolf' : 'Villager';
       const fate = player.elimination_reason === 'murdered' ? 'MURDERED'
-        : player.elimination_reason === 'banished' ? 'BANISHED'
-        : player.eliminated ? 'ELIMINATED' : '';
+        : player.elimination_reason === 'banished' ? 'Banished'
+        : player.eliminated ? 'Eliminated' : '';
       role.textContent = supportingRole && fate ? fate + ' ' + character : character;
       const details = document.createElement('div');
       details.className = 'endgame-credit-details';
       const name = document.createElement('span');
       name.className = 'endgame-credit-name';
-      name.textContent = player.name;
+      name.textContent = player.name.toLocaleUpperCase();
       details.append(name);
       entry.append(role, details);
       list.append(entry);
