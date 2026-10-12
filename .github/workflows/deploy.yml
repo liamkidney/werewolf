@@ -52,6 +52,19 @@ jobs:
           python3 development/scripts/build.py development _site/dev
           touch _site/.nojekyll
 
+
+      - name: Stamp deployed version
+        run: |
+          python3 - <<'PY'
+          import subprocess
+          from pathlib import Path
+          for checkout, output in [('production', '_site/index.html'), ('development', '_site/dev/index.html')]:
+              version = subprocess.check_output(['git', '-C', checkout, 'rev-parse', '--short', 'HEAD'], text=True).strip()
+              path = Path(output)
+              content = path.read_text(encoding='utf-8')
+              path.write_text(content.replace('__BUILD_VERSION__', version), encoding='utf-8')
+          PY
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
