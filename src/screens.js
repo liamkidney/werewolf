@@ -25,6 +25,8 @@ export class Screens {
     document.body.classList.toggle('marquee-mode', id === 'marquee-screen');
     document.querySelector('.hero').hidden = true;
     this.form.hidden = true;
+    $('resume-game').hidden = true;
+    $('game-footer').hidden = false;
     for (const screen of ['lobby', 'role-screen', 'day-screen', 'night-screen', 'dawn-screen', 'endgame-screen', 'suspense-screen', 'marquee-screen', 'banishment-screen']) $(screen).hidden = screen !== id;
   }
 
