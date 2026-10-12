@@ -7,9 +7,10 @@ const lobby = $('lobby'), hero = document.querySelector('.hero'), list = $('play
 const params = new URLSearchParams(location.search);
 const requestedGame = params.get('game');
 let playerCount = 0, werewolfCount = 2;
-let currentGame = null, channel = null, isHost = false;
+let currentGame = null, channel = null, isHost = false, gameStatus = 'lobby', starting = false;
 function showError(message) { $('app-error').textContent = message; $('app-error').hidden = !message; }
-function showLobby() { hero.hidden = true; form.hidden = true; lobby.hidden = false; }
+function showLobby() { hero.hidden = true; form.hidden = true; lobby.hidden = false; $('role-screen').hidden = true; }
+function showRole() { hero.hidden = true; form.hidden = true; lobby.hidden = true; $('role-screen').hidden = false; }
 function setBusy(busy) { form.querySelector('button').disabled = busy; }
 function identityKey(gameId) { return 'werewolf:player:' + gameId; }
 async function loadPlayers() {
@@ -38,11 +39,12 @@ async function enterLobby(gameId, host) {
     catch (e) { showError('Could not generate QR code. Use the invite link instead.'); }
   }
   await loadGameConfig();
-  await loadPlayers();
+  if (gameStatus === 'lobby') await loadPlayers();
   if (channel) await db.removeChannel(channel);
   channel = db.channel('lobby-' + gameId)
     .on('postgres_changes', {event:'*',schema:'public',table:'players',filter:'game_id=eq.'+gameId}, loadPlayers)
     .on('postgres_changes', {event:'UPDATE',schema:'public',table:'games',filter:'id=eq.'+gameId}, loadGameConfig)
+    .on('postgres_changes', {event:'INSERT',schema:'public',table:'player_roles',filter:'game_id=eq.'+gameId}, loadMyRole)
     .subscribe();
 }
 async function join(gameId, name, host) {
@@ -76,15 +78,18 @@ function updateCounts() {
   $('wolf-minus').disabled = werewolfCount <= 1;
   $('wolf-plus').disabled = werewolfCount >= 50;
   const valid = playerCount > werewolfCount;
+  $('start-game').disabled = !isHost || !valid || starting || gameStatus !== 'lobby';
   $('role-warning').hidden = valid;
   $('role-warning').textContent = valid ? '' : 'Add more players than werewolves before starting.';
 }
 async function loadGameConfig() {
   if (!currentGame) return;
-  const {data,error} = await db.from('games').select('werewolf_count').eq('id',currentGame).single();
+  const {data,error} = await db.from('games').select('werewolf_count,status').eq('id',currentGame).single();
   if (error) {showError(error.message);return;}
   werewolfCount = data.werewolf_count;
+  gameStatus = data.status;
   updateCounts();
+  if (gameStatus === 'playing') await loadMyRole();
 }
 async function changeWerewolves(delta) {
   if (!isHost || !currentGame) return;
@@ -97,6 +102,57 @@ async function changeWerewolves(delta) {
 }
 $('wolf-minus').addEventListener('click',()=>changeWerewolves(-1));
 $('wolf-plus').addEventListener('click',()=>changeWerewolves(1));
+
+
+async function loadMyRole() {
+  if (!currentGame) return;
+  const playerId = localStorage.getItem(identityKey(currentGame));
+  if (!playerId) return;
+  const {data,error} = await db.from('player_roles').select('role').eq('game_id',currentGame).eq('player_id',playerId).maybeSingle();
+  if (error) {showError(error.message);return;}
+  if (!data) {
+    if (gameStatus === 'playing') {
+      showRole();
+      $('role-name').textContent='Assigning roles…';
+      $('role-description').textContent='Please wait a moment.';
+    }
+    return;
+  }
+  showRole();
+  $('role-name').textContent=data.role==='werewolf'?'Werewolf':'Villager';
+  $('role-description').textContent=data.role==='werewolf'?'You are a werewolf. Keep your identity hidden.':'You are a villager. Find the werewolves.';
+}
+function shuffle(players) {
+  const result=[...players];
+  for(let i=result.length-1;i>0;i--){
+    const random=new Uint32Array(1);
+    crypto.getRandomValues(random);
+    const j=random[0]%(i+1);
+    [result[i],result[j]]=[result[j],result[i]];
+  }
+  return result;
+}
+async function startGame() {
+  if (!isHost || !currentGame || starting || gameStatus!=='lobby') return;
+  starting=true;updateCounts();showError('');
+  try {
+    const {data:game,error:gameError}=await db.from('games').select('werewolf_count,status').eq('id',currentGame).single();
+    if(gameError) throw gameError;
+    if(game.status!=='lobby') throw new Error('Game already started.');
+    const {data:players,error:playerError}=await db.from('players').select('id').eq('game_id',currentGame);
+    if(playerError) throw playerError;
+    if(players.length<=game.werewolf_count) throw new Error('You need more players than werewolves.');
+    const assigned=shuffle(players).map((player,index)=>({player_id:player.id,game_id:currentGame,role:index<game.werewolf_count?'werewolf':'villager'}));
+    const {error:roleError}=await db.from('player_roles').insert(assigned);
+    if(roleError) throw roleError;
+    const {data:updated,error:updateError}=await db.from('games').update({status:'playing'}).eq('id',currentGame).eq('status','lobby').select('id');
+    if(updateError) throw updateError;
+    if(!updated.length) throw new Error('Game was already started.');
+    await loadGameConfig();
+  } catch(e) {showError(e.message||'Could not start the game.');}
+  finally {starting=false;updateCounts();}
+}
+$('start-game').addEventListener('click',startGame);
 
 form.addEventListener('submit',async event=>{
   event.preventDefault();
