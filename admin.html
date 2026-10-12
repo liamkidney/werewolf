@@ -14,12 +14,21 @@
 <script type="module">
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2';
 const db=createClient('https://guldhewlhxhsxchbattf.supabase.co','sb_publishable_6g3XdNkAJesxzGzFZ9ulYg_redoxZWj');
-const names=['games','players','player_roles'];
+const names=['games','players','player_roles','day_votes','night_votes'];
 const $=id=>document.getElementById(id);
+const restricted=new Set(['night_votes']);
 const format=value=>value===null?'null':typeof value==='object'?JSON.stringify(value):String(value);
 async function loadTable(name){
  const panel=$(name), count=$(name+'-count');
  panel.replaceChildren();
+ if(restricted.has(name)){
+   count.textContent='Restricted';
+   panel.className='scroll';
+   const message=document.createElement('p');message.className='empty';
+   message.textContent='Night nominations are intentionally unavailable through the public database API. They can only be retrieved through the werewolf-specific RPC during an active night.';
+   panel.append(message);
+   return;
+ }
  count.textContent='Loading…';
  const {data,error}=await db.from(name).select('*').limit(1000);
  if(error){panel.className='scroll error';panel.textContent=error.message;count.textContent='Error';return;}
@@ -50,5 +59,7 @@ refresh();
 <section class="section"><div class="section-heading"><h2>public.games</h2><span id="games-count" class="count"></span></div><div id="games" class="scroll"></div></section>
 <section class="section"><div class="section-heading"><h2>public.players</h2><span id="players-count" class="count"></span></div><div id="players" class="scroll"></div></section>
 <section class="section"><div class="section-heading"><h2>public.player_roles</h2><span id="player_roles-count" class="count"></span></div><div id="player_roles" class="scroll"></div></section>
-<p class="hint">Showing up to 1,000 rows per table. Data is fetched from Supabase on each refresh; no changes can be made here.</p>
+<section class="section"><div class="section-heading"><h2>public.day_votes</h2><span id="day_votes-count" class="count"></span></div><div id="day_votes" class="scroll"></div></section>
+<section class="section"><div class="section-heading"><h2>public.night_votes</h2><span id="night_votes-count" class="count"></span></div><div id="night_votes" class="scroll"></div></section>
+<p class="hint">Showing up to 1,000 rows per accessible table. Night votes are listed but protected from public inspection. Data is fetched from Supabase on each refresh; no changes can be made here.</p>
 </main></body></html>
