@@ -19,7 +19,7 @@ export class GameRepository {
   }
 
   async getGame(gameId) {
-    return unwrap(await this.db.from('games').select('id,status,werewolf_count,phase,round_number').eq('id', gameId).maybeSingle());
+    return unwrap(await this.db.from('games').select('id,status,werewolf_count,phase,round_number,phase_started_at,last_banished_id,last_banished_round').eq('id', gameId).maybeSingle());
   }
 
   async hasPlayer(gameId, playerId) {
@@ -33,13 +33,15 @@ export class GameRepository {
   }
 
   async getState(gameId) {
-    const [game, players] = await Promise.all([
+    const [game, players, votes] = await Promise.all([
       this.getGame(gameId),
-      this.db.from('players').select('id,name').eq('game_id', gameId).order('joined_at').then(unwrap)
+      this.db.from('players').select('id,name,eliminated_at').eq('game_id', gameId).order('joined_at').then(unwrap),
+      this.db.from('day_votes').select('voter_id,target_id,round_number').eq('game_id', gameId).then(unwrap)
     ]);
     if (!game) throw new Error('Game not found.');
     return new GameState({
-      id: game.id, status: game.status, phase: game.phase, roundNumber: game.round_number, werewolfCount: game.werewolf_count, players
+      id: game.id, status: game.status, phase: game.phase, roundNumber: game.round_number, werewolfCount: game.werewolf_count, players, votes,
+      phaseStartedAt: game.phase_started_at, lastBanishedId: game.last_banished_id, lastBanishedRound: game.last_banished_round
     });
   }
 
@@ -70,6 +72,16 @@ export class GameRepository {
     if (!updated.length) throw new Error('The phase changed on another device. Refresh and try again.');
   }
 
+  async castVote(gameId, round, voterId, targetId) {
+    unwrap(await this.db.rpc('cast_day_vote', {
+      p_game_id: gameId, p_round: round, p_voter: voterId, p_target: targetId
+    }));
+  }
+
+  async finishDay(gameId, round) {
+    return unwrap(await this.db.rpc('finish_day_vote', { p_game_id: gameId, p_round: round }));
+  }
+
   subscribeToGame(gameId, onChange) {
     return this.db.channel('lobby-' + gameId)
       .on('postgres_changes', {
@@ -80,6 +92,9 @@ export class GameRepository {
       }, onChange)
       .on('postgres_changes', {
         event: 'INSERT', schema: 'public', table: 'player_roles', filter: 'game_id=eq.' + gameId
+      }, onChange)
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'day_votes', filter: 'game_id=eq.' + gameId
       }, onChange);
   }
 
