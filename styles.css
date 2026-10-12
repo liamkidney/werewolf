@@ -61,8 +61,8 @@ body.light-screen .qr-wrap{display:grid;justify-items:center;align-self:center;p
 body.light-screen .qr-wrap canvas{width:min(54vw,225px)}
 body.light-screen .invite-row{margin:0;display:flex;background:#eeedf0;border-radius:13px;align-items:center;padding:3px 5px;gap:0}
 body.light-screen .invite-row input{background:transparent;border:0;min-height:44px;padding:0 10px;font-size:.85rem;text-overflow:ellipsis}
-body.light-screen .invite-row button{min-height:42px;background:transparent;color:#263344;font-size:.9rem;padding:4px 12px}
-body.light-screen .lobby-code{font-size:.75rem;text-align:center;margin:-4px 0}
+body.light-screen .invite-row button{display:grid;place-items:center;flex:none;width:42px;min-height:42px;border-radius:10px;background:transparent;color:#263344;padding:0}
+body.light-screen .invite-row button svg{display:block;width:20px;height:20px}
 body.light-screen .players-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;border-top:1px solid #dedddc;padding-top:15px;font-size:.98rem}
 body.light-screen .players-heading span{color:#737984;font-size:.84rem}
 body.light-screen .player-list{display:flex;flex-direction:column;gap:0;border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 1px 14px #15243a09}
