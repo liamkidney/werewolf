@@ -8,8 +8,6 @@ create table if not exists public.night_votes (
   primary key (game_id, round_number, voter_id)
 );
 alter table public.night_votes enable row level security;
-grant select on public.night_votes to anon, authenticated;
-create policy "MVP night votes read" on public.night_votes for select to anon, authenticated using (true);
 -- Existing anonymous player identity is client-provided, so this is MVP identity checking, not secure authentication.
 create or replace function public.get_night_pack(p_game_id uuid, p_player_id uuid)
 returns jsonb language plpgsql security definer set search_path = '' as $$
