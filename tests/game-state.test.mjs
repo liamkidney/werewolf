@@ -17,7 +17,7 @@ test('state snapshots and nested players are immutable', () => {
 
 test('only host-controlled phases can advance manually', () => {
   const engine = new GameEngine();
-  for (const [phase, expected, round] of [['reveal', 'day', 3], ['results', 'night', 4]]) {
+  for (const [phase, expected, round] of [['reveal', 'day', 3], ['dawn', 'day', 3], ['results', 'night', 4]]) {
     const result = engine.nextPhase({ status: 'playing', phase, roundNumber: 3 });
     assert.ok(PHASES[result.phase]);
     assert.equal(result.phase, expected);
