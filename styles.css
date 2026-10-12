@@ -5,7 +5,7 @@ body{margin:0;min-height:100vh;min-height:100dvh;background:radial-gradient(elli
 .screen{width:min(100%,460px);min-height:100vh;min-height:100dvh;margin:0 auto;padding:calc(env(safe-area-inset-top) + 26px) 28px calc(env(safe-area-inset-bottom) + 40px);display:flex;flex-direction:column;gap:36px}
 .hero{text-align:center}
 .art{width:100%;max-width:none;margin:0 auto -5px}
-.art img{display:block;width:100%;height:auto}
+.art img{display:block;width:100%;height:100%;object-fit:cover;object-position:center 40%}
 h1{font-family:Impact,'Arial Black',sans-serif;font-size:clamp(3.5rem,14vw,5.3rem);font-style:italic;letter-spacing:.035em;line-height:1;margin:0;transform:rotate(-2deg);text-shadow:2px 3px 0 #1b2632}
 .tagline{font-size:clamp(1.1rem,4.5vw,1.35rem);line-height:1.5;margin:30px 0 0}
 .entry{display:grid;gap:20px}
@@ -84,15 +84,15 @@ body.light-screen #start-game{min-height:60px;font-size:1.25rem}
 body.light-screen #start-status{font-size:.8rem;text-align:center}
 body.light-screen .guest-intro{text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;padding-top:5px}
 body.light-screen .guest-intro[hidden],body.light-screen .guest-waiting[hidden]{display:none}
-body.light-screen .guest-art{width:min(100%,290px)}
-body.light-screen .guest-art img{display:block;width:100%;height:auto}
+body.light-screen .guest-art{width:100%;aspect-ratio:2/1}
+body.light-screen .guest-art img{display:block;width:100%;height:100%;object-fit:cover;object-position:center 40%}
 body.light-screen .guest-intro h2{font-size:2.4rem;margin:0}
 body.light-screen .guest-intro p{font-size:1.15rem;line-height:1.5;color:#555e6d;margin:0 0 10px;max-width:300px}
 body.light-screen .guest-waiting{display:flex;gap:14px;align-items:center;justify-content:center;padding:20px 16px;background:#ecebed;border-radius:15px;color:#434b59;line-height:1.5;margin-top:auto}
 body.light-screen .guest-waiting span:first-child{font-size:1.5rem}
 body.light-screen .role-screen{color:#131d2c}
 body.light-screen .role-reminder{border-color:#dedddc;color:#5e6775}
-@media(max-height:740px){body.light-screen .screen{padding-top:calc(env(safe-area-inset-top) + 12px);gap:10px}body.light-screen .lobby{gap:10px}body.light-screen .qr-wrap canvas{width:min(44vw,170px)}body.light-screen .guest-art{width:190px}body.light-screen .guest-art img{max-height:120px;object-fit:cover;object-position:top}body.light-screen .player-list li{padding:9px 13px;min-height:44px}body.light-screen .guest-intro{gap:6px}body.light-screen .guest-intro h2{font-size:2rem}}
+@media(max-height:740px){body.light-screen .screen{padding-top:calc(env(safe-area-inset-top) + 12px);gap:10px}body.light-screen .lobby{gap:10px}body.light-screen .qr-wrap canvas{width:min(44vw,170px)}body.light-screen .guest-art{width:190px}body.light-screen .guest-art img{object-fit:cover;object-position:center 40%}body.light-screen .player-list li{padding:9px 13px;min-height:44px}body.light-screen .guest-intro{gap:6px}body.light-screen .guest-intro h2{font-size:2rem}}
 
 /* Game phase progression */
 .phase-panel{margin:26px auto 0;padding:24px 18px;max-width:440px;border:1px solid #ddd8d0;border-radius:18px;background:#fff;text-align:center}
@@ -138,12 +138,12 @@ body.marquee-mode .screen{width:100%;max-width:none;min-height:100dvh;padding:12
 body.marquee-mode .site-footer{position:fixed;bottom:calc(env(safe-area-inset-bottom) + 12px);left:12px;right:12px;z-index:11;color:#aaa;padding:0}
 
 /* Shared artwork: illustrations taper into their matching page backgrounds. */
-.art,.guest-art,.phase-art{position:relative;overflow:hidden}
-.art img,.guest-art img,.phase-art img{display:block;width:100%;height:auto}
+.art,.guest-art,.phase-art{position:relative;overflow:hidden;aspect-ratio:2/1}
+.art img,.guest-art img,.phase-art img{display:block;width:100%;height:100%;object-fit:cover;object-position:center 40%}
 .art::after,.guest-art::after,.phase-art::after{content:"";position:absolute;pointer-events:none;inset:auto 0 0;height:24%;background:linear-gradient(to bottom,transparent,var(--art-base))}
 .art{--art-base:#0b1723}
 .guest-art,.phase-art{--art-base:#f6f5f2}
-.phase-art{width:min(100%,340px);margin:0 auto -10px}
+.phase-art{width:100%;margin:0 auto -10px}
 .phase-art-day{display:block}
 
 /* Full-bleed landing art, with the heading and form on the normal content grid. */
