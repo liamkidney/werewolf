@@ -8,7 +8,6 @@ const params = new URLSearchParams(location.search);
 const requestedGame = params.get('game');
 let playerCount = 0, werewolfCount = 2;
 let currentGame = null, channel = null, isHost = false, gameStatus = 'lobby', starting = false;
-let lobbyRefresh = null;
 function showError(message) { $('app-error').textContent = message; $('app-error').hidden = !message; }
 function showLobby() { hero.hidden = true; form.hidden = true; lobby.hidden = false; $('role-screen').hidden = true; }
 function showRole() { hero.hidden = true; form.hidden = true; lobby.hidden = true; $('role-screen').hidden = false; }
@@ -34,21 +33,35 @@ async function enterLobby(gameId, host) {
   $('lobby-title').textContent = host ? 'Your game lobby' : 'Game lobby';
   $('lobby-code').textContent = 'Game ' + gameId.slice(0,8).toUpperCase();
   $('host-tools').hidden = !host;
-  if (lobbyRefresh) clearInterval(lobbyRefresh);
-  lobbyRefresh = setInterval(() => { if (currentGame && gameStatus === 'lobby') { loadPlayers(); loadGameConfig(); } }, 5000);
   $('invite-link').value = new URL('?game=' + encodeURIComponent(gameId), location.href).href;
   if (host) {
     try { await QRCode.toCanvas($('join-qr'), $('invite-link').value, {width:220, margin:2, color:{dark:'#111d2c',light:'#ffffff'}}); }
     catch (e) { showError('Could not generate QR code. Use the invite link instead.'); }
   }
-  await loadGameConfig();
-  if (gameStatus === 'lobby') await loadPlayers();
   if (channel) await db.removeChannel(channel);
   channel = db.channel('lobby-' + gameId)
-    .on('postgres_changes', {event:'*',schema:'public',table:'players',filter:'game_id=eq.'+gameId}, loadPlayers)
-    .on('postgres_changes', {event:'UPDATE',schema:'public',table:'games',filter:'id=eq.'+gameId}, loadGameConfig)
-    .on('postgres_changes', {event:'INSERT',schema:'public',table:'player_roles',filter:'game_id=eq.'+gameId}, loadMyRole)
-    .subscribe();
+    .on('postgres_changes', {event:'*',schema:'public',table:'players',filter:'game_id=eq.'+gameId}, () => { void loadPlayers(); })
+    .on('postgres_changes', {event:'UPDATE',schema:'public',table:'games',filter:'id=eq.'+gameId}, payload => {
+      // The game status is the authoritative signal for everyone to reveal their role.
+      if (payload.new.status === 'playing') {
+        gameStatus = 'playing';
+        updateCounts();
+        void loadMyRole();
+      } else {
+        void loadGameConfig();
+      }
+    })
+    .on('postgres_changes', {event:'INSERT',schema:'public',table:'player_roles',filter:'game_id=eq.'+gameId}, payload => {
+      if (payload.new.player_id === localStorage.getItem(identityKey(gameId))) void loadMyRole();
+    });
+  // Subscribe before the initial reads so we cannot miss a game-start event.
+  channel.subscribe(status => {
+    if (status === 'SUBSCRIBED') {
+      // Also resynchronises after a dropped connection or a suspended phone.
+      void loadGameConfig();
+      void loadPlayers();
+    }
+  });
 }
 async function join(gameId, name, host) {
   const existing = localStorage.getItem(identityKey(gameId));
