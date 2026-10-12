@@ -21,6 +21,7 @@ export class GameController {
     this.playerId = null;
     this.playerRole = null;
     this.isHost = false;
+    this.eliminated = false;
     this.starting = false;
     this.advancing = false;
     this.casting = false;
@@ -60,7 +61,7 @@ export class GameController {
       onDismissBanishment: () => this.dismissBanishment()
     });
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden && this.state.id) this.requestRefresh();
+      if (!document.hidden && this.state.id && !this.eliminated) this.requestRefresh();
     });
     if (!this.requestedGame) return;
     const savedId = localStorage.getItem(identityKey(this.requestedGame));
@@ -109,6 +110,7 @@ export class GameController {
   async enterGame(gameId, playerId, host) {
     this.playerId = playerId;
     this.playerRole = null;
+    this.eliminated = false;
     this.stopDayTimer();
     this.isHost = host;
     this.state = new GameState({ id: gameId });
@@ -124,6 +126,7 @@ export class GameController {
   }
 
   requestRefresh() {
+    if (this.eliminated) return;
     this.refreshPending = true;
     if (!this.refreshRunning) void this.refresh();
   }
@@ -136,11 +139,19 @@ export class GameController {
         this.refreshPending = false;
         const id = this.state.id;
         const state = await this.repository.getState(id);
-        if (id !== this.state.id) return;
+        if (id !== this.state.id || this.eliminated) return;
+        if (state.players.some(player => player.id === this.playerId && player.eliminated_at)) {
+          this.eliminated = true;
+          this.refreshPending = false;
+          this.stopDayTimer();
+          this.screens.showEliminated();
+          void this.sync.stop();
+          return;
+        }
         if (state.status === 'playing' && !this.playerRole) {
           this.playerRole = await this.repository.getMyRole(id, this.playerId);
         }
-        if (id !== this.state.id) return;
+        if (id !== this.state.id || this.eliminated) return;
         this.state = state;
         if (state.hostPlayerId) this.isHost = state.hostPlayerId === this.playerId;
         this.renderCurrentScreen();
@@ -161,6 +172,7 @@ export class GameController {
 
   renderCurrentScreen() {
     const state = this.state;
+    if (this.eliminated) return;
     this.stopDayTimer();
     if (state.status !== 'playing') {
       this.renderLobby();
@@ -183,6 +195,7 @@ export class GameController {
   }
 
   renderDay() {
+    if (this.eliminated) return;
     const state = this.state;
     if (state.phase !== 'day') { this.stopDayTimer(); return; }
     const deadline = Date.parse(state.phaseStartedAt || '') + (state.dayDurationSeconds ?? 120) * 1000;
@@ -212,7 +225,7 @@ export class GameController {
   }
 
   async endDiscussion() {
-    if (!this.isHost || this.endingDiscussion || this.state.phase !== 'day' || this.state.discussionEndedAt) return;
+    if (this.eliminated || !this.isHost || this.endingDiscussion || this.state.phase !== 'day' || this.state.discussionEndedAt) return;
     this.endingDiscussion = true;
     this.showActionError('');
     try {
@@ -226,7 +239,7 @@ export class GameController {
   }
 
   async castVote(targetId) {
-    if (this.casting || !targetId || targetId === this.playerId || this.state.phase !== 'day') return;
+    if (this.eliminated || this.casting || !targetId || targetId === this.playerId || this.state.phase !== 'day') return;
     this.casting = true;
     this.showActionError('');
     try {
@@ -240,7 +253,7 @@ export class GameController {
   }
 
   async finishVoting() {
-    if (!this.isHost || this.finishing || this.state.phase !== 'day') return;
+    if (this.eliminated || !this.isHost || this.finishing || this.state.phase !== 'day') return;
     this.finishing = true;
     this.screens.renderMarquee(
       this.state.players.find(player => player.id === this.state.votes.find(vote =>
@@ -258,12 +271,12 @@ export class GameController {
   }
 
   async dismissBanishment() {
-    if (!this.isHost || this.advancing || this.state.phase !== 'results') return;
+    if (this.eliminated || !this.isHost || this.advancing || this.state.phase !== 'results') return;
     await this.advancePhase();
   }
 
   async changeWerewolves(delta) {
-    if (!this.isHost || this.starting || this.state.status !== 'lobby') return;
+    if (this.eliminated || !this.isHost || this.starting || this.state.status !== 'lobby') return;
     const next = this.engine.nextWerewolfCount(this.state, delta);
     if (next === this.state.werewolfCount) return;
     try {
@@ -273,7 +286,7 @@ export class GameController {
   }
 
   async advancePhase() {
-    if (!this.isHost || this.advancing || this.state.status !== 'playing') return;
+    if (this.eliminated || !this.isHost || this.advancing || this.state.status !== 'playing') return;
     this.advancing = true;
     this.screens.renderPhase(this.state, this);
     this.showActionError('');
@@ -292,7 +305,7 @@ export class GameController {
   }
 
   async startGame() {
-    if (!this.isHost || this.starting || !this.engine.canStart(this.state)) return;
+    if (this.eliminated || !this.isHost || this.starting || !this.engine.canStart(this.state)) return;
     this.starting = true;
     this.renderLobby();
     this.showActionError('');
