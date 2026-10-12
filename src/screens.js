@@ -63,6 +63,7 @@ export class Screens {
     $('wolf-plus').disabled = starting || state.werewolfCount >= 50 || state.status !== 'lobby';
     const valid = canStart;
     $('start-game').disabled = !isHost || !valid || starting;
+    $('start-status').hidden = valid && !starting && state.status === 'lobby';
     $('start-status').textContent = starting ? 'Assigning roles…'
       : state.status !== 'lobby' ? 'Game already started.'
       : !isHost ? 'Only the host can start the game.'
