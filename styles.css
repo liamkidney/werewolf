@@ -260,7 +260,7 @@ body.light-screen #endgame-screen .endgame-credits{width:100%;overflow:hidden;po
 body.light-screen #endgame-screen .endgame-credits-roll{display:flex;flex-direction:column;gap:22px;animation:endgame-credits-rise 32s linear 1 both}
 body.light-screen #endgame-screen .endgame-credits-intro,body.light-screen #endgame-screen .endgame-credits-outro{text-align:center;letter-spacing:.22em;font-size:.75rem;font-weight:700;margin:12px 0}
 body.light-screen #endgame-screen .endgame-credits-list{display:flex;flex-direction:column;gap:15px}
-body.light-screen #endgame-screen .endgame-credit{display:grid;grid-template-columns:43% 57%;align-items:start;gap:0;font-family:Arial,Helvetica,sans-serif}
+body.light-screen #endgame-screen .endgame-credit{display:grid;grid-template-columns:50% 50%;align-items:start;gap:0;font-family:Arial,Helvetica,sans-serif}
 body.light-screen #endgame-screen .endgame-credit-role{text-align:right;padding:4px 12px 0 0;font-size:.69rem;letter-spacing:.08em;opacity:.76}
 body.light-screen #endgame-screen .endgame-credit-details{display:flex;flex-direction:column;gap:4px;min-width:0;padding-right:8px}
 body.light-screen #endgame-screen .endgame-credit-name{font-size:.91rem;font-weight:700;letter-spacing:.025em;overflow-wrap:anywhere}
@@ -273,13 +273,6 @@ body.light-screen #endgame-screen .endgame-credits:active .endgame-credits-roll{
 /* A dramatic pause before the supporting cast. */
 body.light-screen #endgame-screen .endgame-credits-supporting-heading{padding-top:30px;padding-bottom:8px}
 
-/* Gothic invite: ornament stays outside the QR quiet zone. */
-body.light-screen .qr-wrap{isolation:isolate;padding:29px;background:#f7efdf;border:2px solid #673047;border-radius:3px;box-shadow:0 0 0 5px #f7efdf,0 0 0 6px #9d7b75,0 8px 25px #1b102a24}
-body.light-screen .qr-wrap canvas{display:block;position:relative;z-index:1;max-width:100%;height:auto;image-rendering:pixelated}
-body.light-screen .qr-gothic-frame{pointer-events:none;position:absolute;inset:7px;border:1px solid #9b6c75}
-body.light-screen .qr-gothic-frame::before,body.light-screen .qr-gothic-frame::after{content:'✧';position:absolute;top:50%;transform:translateY(-50%);font-size:16px;color:#673047;background:#f7efdf;line-height:1}
-body.light-screen .qr-gothic-frame::before{left:-7px}
-body.light-screen .qr-gothic-frame::after{right:-7px}
-body.light-screen .qr-ornament{position:absolute;left:50%;transform:translateX(-50%);color:#673047;background:#f7efdf;white-space:nowrap;font-family:Georgia,serif;font-size:15px;letter-spacing:.2em;line-height:1}
-body.light-screen .qr-ornament-top{top:-8px}
-body.light-screen .qr-ornament-bottom{bottom:-8px}
+
+/* Keep long elimination credits on one line on mobile. */
+body.light-screen #endgame-screen .endgame-credit-role{white-space:nowrap;font-size:clamp(.54rem,2.5vw,.69rem);padding-right:10px}
