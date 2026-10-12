@@ -301,7 +301,7 @@ export class Screens {
 
   async renderQr(inviteUrl) {
     await QRCode.toCanvas($('join-qr'), inviteUrl, {
-      width: 220, margin: 4, errorCorrectionLevel: 'H', color: { dark: '#541b32', light: '#f7efdf' }
+      width: 220, margin: 2, color: { dark: '#111d2c', light: '#ffffff' }
     });
   }
 
