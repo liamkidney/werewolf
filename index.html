@@ -41,21 +41,32 @@
       <button type="submit">Let's Play <span aria-hidden="true">→</span></button>
     </form>
     <section id="lobby" class="lobby" hidden aria-live="polite">
-      <h2 id="lobby-title">Game lobby</h2>
-      <p id="lobby-code" class="muted"></p>
-      <p id="lobby-message" class="muted">Waiting for players…</p>
-      <ul id="player-list" class="player-list"></ul>
+      <p class="lobby-eyebrow">GAME LOBBY</p>
       <div id="host-tools" hidden>
-        <div class="qr-wrap"><canvas id="join-qr" role="img" aria-label="QR code to join this game"></canvas><p class="qr-caption">Scan to join</p></div>
-        <label for="invite-link">Invite link</label>
-        <div class="invite-row"><input id="invite-link" readonly aria-label="Invite link"><button id="copy-link" type="button">Copy</button></div>
+        <h2 class="join-heading">Scan to join</h2>
+        <div class="qr-wrap"><canvas id="join-qr" role="img" aria-label="QR code to join this game"></canvas></div>
+        <div class="invite-row"><input id="invite-link" readonly aria-label="Invite link"><button id="copy-link" type="button" aria-label="Copy invite link">Copy</button></div>
+      </div>
+      <div id="guest-intro" class="guest-intro" hidden>
+        <div class="guest-art" aria-hidden="true">
+          <svg viewBox="0 0 320 190"><circle cx="160" cy="83" r="70" fill="#e9e6e1"/><path d="M0 177l22-55 12 27 16-41 19 52 21-33 23 40 32-38 26 39 23-32 26 37 21-43 18 45 20-30 21 32v13H0Z" fill="#cbd0d5"/><path d="M83 156q23-11 37-30l17-18 13-26 11-21 8 20 12-8 8 24-8 20 11 20 20 15-6 9-20-13-7 26h-10l-5-25-18 1-7 25h-10l-4-23-19 12-16-3Z" fill="#243448"/><path d="M0 182q160-39 320 0v8H0Z" fill="#f6f5f2"/></svg>
+        </div>
+        <h2>You're in!</h2>
+        <p>Waiting for the host to start the game…</p>
+      </div>
+      <p id="lobby-code" class="muted lobby-code"></p>
+      <div class="players-heading"><strong id="lobby-message">Waiting for players…</strong><span id="minimum-label">Minimum 3</span></div>
+      <ul id="player-list" class="player-list"></ul>
+      <div id="host-controls" hidden>
         <div class="role-config">
           <div class="role-row"><label for="werewolf-count">Werewolves</label><div class="stepper"><button id="wolf-minus" type="button" aria-label="Fewer werewolves">−</button><output id="werewolf-count" aria-live="polite">2</output><button id="wolf-plus" type="button" aria-label="More werewolves">+</button></div></div>
-          <div class="role-row"><span>Villagers</span><output id="villager-count" aria-live="polite">0</output></div>
+          <div class="role-row villager-row"><span>Villagers</span><output id="villager-count" aria-live="polite">0</output></div>
           <p id="role-warning" class="muted" hidden></p>
         </div>
-        <button id="start-game" type="button" disabled>Start Game</button><p id="start-status" class="muted" aria-live="polite"></p>
+        <button id="start-game" type="button" disabled>Start Game</button>
+        <p id="start-status" class="muted" aria-live="polite"></p>
       </div>
+      <div id="guest-waiting" class="guest-waiting" hidden><span aria-hidden="true">⌛</span><span>The game will start soon.<br>Keep this screen open.</span></div>
       <button id="leave-lobby" type="button" class="secondary">Back to home</button>
     </section>
     <section id="role-screen" class="role-screen" hidden aria-live="polite">
