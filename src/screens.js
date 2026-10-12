@@ -92,7 +92,6 @@ export class Screens {
     const title = phase?.title || 'Game in progress';
     const description = phase?.description || 'Waiting for the host.';
     $('phase-panel').hidden = false;
-    $('phase-round').textContent = 'ROUND ' + state.roundNumber;
     $('phase-title').textContent = title;
     $('phase-description').textContent = description;
     $('phase-host-controls').hidden = !isHost;
