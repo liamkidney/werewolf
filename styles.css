@@ -211,3 +211,16 @@ body.light-screen:has(#banishment-screen.murdered-screen:not([hidden])) .site-fo
 body.light-screen .screen:has(#banishment-screen:not([hidden])){padding-top:0}
 body.light-screen #banishment-screen:not([hidden]) .phase-art:not([hidden]){width:calc(100% + 48px);max-width:none;margin-left:-24px;margin-right:-24px;flex:none}
 body.light-screen #banishment-screen:not([hidden]){margin-top:0}
+
+/* Secret role: full-width light-night art and momentary press-to-reveal. */
+body.light-screen .screen:has(#role-screen:not([hidden])){padding-top:0}
+body.light-screen #role-screen:not([hidden]){margin-top:0;padding-top:0;display:flex;flex-direction:column;align-items:stretch;gap:18px}
+body.light-screen #role-screen .phase-art-role{width:calc(100% + 48px);max-width:none;margin-left:-24px;margin-right:-24px;flex:none}
+body.light-screen #role-screen .role-reveal{position:relative;display:grid;place-items:center;min-height:190px;border:1px solid #dedddc;border-radius:18px;background:#fff;touch-action:none;user-select:none;-webkit-user-select:none;cursor:pointer;padding:20px}
+body.light-screen #role-screen .role-reveal:focus-visible{outline:3px solid #596b82;outline-offset:3px}
+body.light-screen #role-screen .role-hint{margin:0;color:#5e6775;font-weight:700}
+body.light-screen #role-screen .role-secret{display:none}
+body.light-screen #role-screen .role-reveal.revealed .role-hint{display:none}
+body.light-screen #role-screen .role-reveal.revealed .role-secret{display:block}
+body.light-screen #role-screen .role-secret h2{margin:0 0 10px}
+body.light-screen #role-screen .role-secret p{margin:0}
