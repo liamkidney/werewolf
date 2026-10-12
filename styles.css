@@ -59,10 +59,11 @@ body.light-screen .lobby #host-tools{display:flex;flex-direction:column;gap:12px
 body.light-screen .join-heading{text-align:center;font-size:1.85rem;margin:0}
 body.light-screen .qr-wrap{display:grid;justify-items:center;align-self:center;position:relative;padding:12px;border-radius:14px;background:#fff;box-shadow:0 2px 24px #15243a0a}
 body.light-screen .qr-wrap canvas{width:min(54vw,225px)}
-body.light-screen .invite-row{position:absolute;top:4px;right:4px;margin:0;padding:0}
+body.light-screen .join-header{display:flex;align-items:center;justify-content:center;gap:8px}
+body.light-screen .invite-row{position:relative;margin:0;padding:0}
 body.light-screen .invite-row button{display:grid;place-items:center;flex:none;width:42px;min-height:42px;border-radius:10px;background:#eeedf0;color:#263344;padding:0}
 body.light-screen .invite-row button svg{display:block;width:20px;height:20px}
-body.light-screen .copy-feedback{position:absolute;right:0;top:46px;white-space:nowrap;font-size:.8rem;font-weight:700;color:#263344;background:#fff;border-radius:8px;box-shadow:0 2px 12px #15243a20;padding:5px 9px}
+body.light-screen .copy-feedback{position:absolute;right:0;top:46px;z-index:2;white-space:nowrap;font-size:.8rem;font-weight:700;color:#263344;background:#fff;border-radius:8px;box-shadow:0 2px 12px #15243a20;padding:5px 9px}
 body.light-screen .copy-feedback:empty{display:none}
 body.light-screen .players-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;border-top:1px solid #dedddc;padding-top:15px;font-size:.98rem}
 body.light-screen .players-heading span{color:#737984;font-size:.84rem}
