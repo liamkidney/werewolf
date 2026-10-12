@@ -10,7 +10,7 @@
 <script type="module">
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2';
 const db=createClient('https://guldhewlhxhsxchbattf.supabase.co','sb_publishable_6g3XdNkAJesxzGzFZ9ulYg_redoxZWj');
-const names=['games','players'];
+const names=['games','players','player_roles'];
 const $=id=>document.getElementById(id);
 const format=value=>value===null?'null':typeof value==='object'?JSON.stringify(value):String(value);
 async function loadTable(name){
@@ -45,5 +45,6 @@ refresh();
 <p id="updated" aria-live="polite">Loading…</p>
 <section class="section"><div class="section-heading"><h2>public.games</h2><span id="games-count" class="count"></span></div><div id="games" class="scroll"></div></section>
 <section class="section"><div class="section-heading"><h2>public.players</h2><span id="players-count" class="count"></span></div><div id="players" class="scroll"></div></section>
+<section class="section"><div class="section-heading"><h2>public.player_roles</h2><span id="player_roles-count" class="count"></span></div><div id="player_roles" class="scroll"></div></section>
 <p class="hint">Showing up to 1,000 rows per table. Data is fetched from Supabase on each refresh; no changes can be made here.</p>
 </main></body></html>
