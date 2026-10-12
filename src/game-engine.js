@@ -1,4 +1,4 @@
-import { PHASES } from './game-phases.js';
+import { StateEngine } from './state-engine.js';
 
 // Pure rules: no Supabase, DOM, localStorage or network calls.
 export class GameEngine {
@@ -8,14 +8,9 @@ export class GameEngine {
   }
 
   nextPhase(state) {
-    if (state.status !== 'playing') throw new Error('Game is not in progress.');
     if (state.phase === 'day') throw new Error('Voting begins automatically after the discussion timer.');
-    const phase = PHASES[state.phase]?.next;
-    if (!phase) throw new Error('Unknown game phase.');
-    return {
-      phase,
-      roundNumber: state.roundNumber + (state.phase === 'results' ? 1 : 0)
-    };
+    const command = state.phase === 'reveal' ? 'START_DAY' : state.phase === 'results' ? 'START_NIGHT' : null;
+    return new StateEngine().transition(state, { type: command });
   }
 
   nextWerewolfCount(state, delta) {
