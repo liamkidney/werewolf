@@ -25,6 +25,7 @@ export class GameController {
     this.advancing = false;
     this.casting = false;
     this.finishing = false;
+    this.endingDiscussion = false;
     this.dayTicker = null;
     this.dayVotingOpen = false;
     this.dayVoteSignature = '';
@@ -54,6 +55,7 @@ export class GameController {
       onStart: () => this.startGame(),
       onAdvance: () => this.advancePhase(),
       onVote: target => this.castVote(target),
+      onEndDiscussion: () => this.endDiscussion(),
       onFinishVoting: () => this.finishVoting(),
       onDismissBanishment: () => this.dismissBanishment()
     });
@@ -185,7 +187,7 @@ export class GameController {
     if (state.phase !== 'day') { this.stopDayTimer(); return; }
     const deadline = Date.parse(state.phaseStartedAt || '') + (state.dayDurationSeconds ?? 120) * 1000;
     const seconds = Number.isFinite(deadline) ? Math.max(0, Math.ceil((deadline - Date.now()) / 1000)) : (state.dayDurationSeconds ?? 120);
-    const voting = seconds === 0;
+    const voting = seconds === 0 || !!state.discussionEndedAt;
     const active = state.players.filter(player => !player.eliminated_at);
     const votes = state.votes.filter(vote => vote.round_number === state.roundNumber);
     const myVote = votes.find(vote => vote.voter_id === this.playerId);
@@ -198,7 +200,7 @@ export class GameController {
     // Avoid rebuilding the select list on every clock tick.
     const signature = state.roundNumber + ':' + votes.length + ':' + Boolean(myVote);
     if (this.dayVotingOpen !== voting || this.dayVoteSignature !== signature || document.getElementById('day-screen').hidden) {
-      this.screens.renderDay(state, { playerId: this.playerId, voting, myVote, casting: this.casting });
+      this.screens.renderDay(state, { playerId: this.playerId, isHost: this.isHost, voting, myVote, casting: this.casting, endingDiscussion: this.endingDiscussion });
       this.dayVotingOpen = voting;
       this.dayVoteSignature = signature;
     }
@@ -207,6 +209,20 @@ export class GameController {
       ? myVote ? 'Vote locked. Waiting for everyone… ' + votes.length + '/' + active.length
         : 'Votes cast: ' + votes.length + '/' + active.length
       : '';
+  }
+
+  async endDiscussion() {
+    if (!this.isHost || this.endingDiscussion || this.state.phase !== 'day' || this.state.discussionEndedAt) return;
+    this.endingDiscussion = true;
+    this.showActionError('');
+    try {
+      await this.repository.endDiscussion(this.state.id, this.playerId);
+      this.requestRefresh();
+    } catch (error) {
+      this.showActionError(error.message || 'Could not end discussion.');
+    } finally {
+      this.endingDiscussion = false;
+    }
   }
 
   async castVote(targetId) {
