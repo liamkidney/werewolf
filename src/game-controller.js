@@ -25,6 +25,9 @@ export class GameController {
     this.starting = false;
     this.advancing = false;
     this.casting = false;
+    this.nightCasting = false;
+    this.nightPack = null;
+    this.nightPoll = null;
     this.finishing = false;
     this.endingDiscussion = false;
     this.dayTicker = null;
@@ -56,6 +59,7 @@ export class GameController {
       onStart: () => this.startGame(),
       onAdvance: () => this.advancePhase(),
       onVote: target => this.castVote(target),
+      onNightVote: target => this.castNightVote(target),
       onEndDiscussion: () => this.endDiscussion(),
       onFinishVoting: () => this.finishVoting(),
       onDismissBanishment: () => this.dismissBanishment()
@@ -112,6 +116,7 @@ export class GameController {
     this.playerRole = null;
     this.eliminated = false;
     this.stopDayTimer();
+    this.stopNightPoll();
     this.isHost = host;
     this.state = new GameState({ id: gameId });
     const inviteUrl = new URL('?game=' + encodeURIComponent(gameId), location.href).href;
@@ -144,6 +149,7 @@ export class GameController {
           this.eliminated = true;
           this.refreshPending = false;
           this.stopDayTimer();
+          this.stopNightPoll();
           this.screens.showEliminated();
           void this.sync.stop();
           return;
@@ -153,6 +159,7 @@ export class GameController {
         }
         if (id !== this.state.id || this.eliminated) return;
         this.state = state;
+        if (state.phase === 'night' && this.playerRole === 'werewolf') this.nightPack = await this.repository.getNightPack(id, this.playerId);
         if (state.hostPlayerId) this.isHost = state.hostPlayerId === this.playerId;
         this.renderCurrentScreen();
       }
@@ -165,6 +172,26 @@ export class GameController {
     }
   }
 
+  stopNightPoll() {
+    if (this.nightPoll !== null) clearInterval(this.nightPoll);
+    this.nightPoll = null;
+  }
+
+  async castNightVote(targetId) {
+    if (this.eliminated || this.nightCasting || this.playerRole !== 'werewolf' || this.state.phase !== 'night' || !targetId) return;
+    this.nightCasting = true;
+    this.showActionError('');
+    try {
+      await this.repository.castNightVote(this.state.id, this.state.roundNumber, this.playerId, targetId);
+      this.requestRefresh();
+    } catch (error) {
+      this.showActionError(error.message || 'Could not nominate a villager.');
+    } finally {
+      this.nightCasting = false;
+      if (this.state.phase === 'night') this.requestRefresh();
+    }
+  }
+
   stopDayTimer() {
     if (this.dayTicker !== null) clearInterval(this.dayTicker);
     this.dayTicker = null;
@@ -174,8 +201,14 @@ export class GameController {
     const state = this.state;
     if (this.eliminated) return;
     this.stopDayTimer();
+    if (state.phase !== 'night') this.stopNightPoll();
     if (state.status !== 'playing') {
       this.renderLobby();
+      return;
+    }
+    if (state.phase === 'night') {
+      this.screens.renderNight(state, { playerId: this.playerId, role: this.playerRole, pack: this.nightPack, casting: this.nightCasting });
+      if (this.nightPoll === null) this.nightPoll = setInterval(() => this.requestRefresh(), 1500);
       return;
     }
     if (state.phase === 'day') {
