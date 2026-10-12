@@ -184,3 +184,26 @@ body.light-screen #night-screen .night-choice .night-bar{background:#58414a}
 body.light-screen #night-screen .night-percent,
 body.light-screen #night-screen .muted{color:#aeb9c9}
 body.light-screen:has(#night-screen:not([hidden])) .site-footer{color:#9eacbc}
+
+/* Phase reveal artwork and colour treatments. */
+body.light-screen .screen:has(#suspense-screen:not([hidden])),
+body.light-screen .screen:has(#dawn-screen:not([hidden])),
+body.light-screen .screen:has(#banishment-screen.murdered-screen:not([hidden])){padding-top:0}
+body.light-screen #suspense-screen:not([hidden]) .phase-art,
+body.light-screen #dawn-screen:not([hidden]) .phase-art,
+body.light-screen #banishment-screen.murdered-screen:not([hidden]) .phase-art{width:calc(100% + 48px);max-width:none;margin-left:-24px;margin-right:-24px;flex:none}
+body.light-screen #suspense-screen:not([hidden]),
+body.light-screen #dawn-screen:not([hidden]),
+body.light-screen #banishment-screen.murdered-screen:not([hidden]){margin-top:0}
+body.light-screen:has(#suspense-screen:not([hidden])),
+body.light-screen:has(#suspense-screen:not([hidden])) .screen,
+body.light-screen:has(#banishment-screen.murdered-screen:not([hidden])),
+body.light-screen:has(#banishment-screen.murdered-screen:not([hidden])) .screen{background:#0b1723;color:#e8edf5}
+body.light-screen #suspense-screen:not([hidden]),
+body.light-screen #banishment-screen.murdered-screen:not([hidden]){color:#e8edf5}
+body.light-screen #suspense-screen .phase-art-night,
+body.light-screen #banishment-screen .phase-art-night{--art-base:#0b1723}
+body.light-screen #suspense-screen .lobby-eyebrow,
+body.light-screen #banishment-screen.murdered-screen .lobby-eyebrow{color:#aeb9c9}
+body.light-screen:has(#suspense-screen:not([hidden])) .site-footer,
+body.light-screen:has(#banishment-screen.murdered-screen:not([hidden])) .site-footer{color:#9eacbc}
