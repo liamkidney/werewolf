@@ -1,4 +1,4 @@
-import { GameController } from './src/game-controller.js?v=20261012b';
+import { GameController } from './src/game-controller.js';
 
 const game = new GameController();
 const params = new URLSearchParams(location.search);
