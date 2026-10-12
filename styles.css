@@ -269,3 +269,6 @@ body.light-screen #endgame-screen .endgame-credit-fate{font-size:.63rem;letter-s
 body.light-screen #endgame-screen .endgame-credits:hover .endgame-credits-roll,
 body.light-screen #endgame-screen .endgame-credits:active .endgame-credits-roll{animation-play-state:paused}
 @media(prefers-reduced-motion:reduce){body.light-screen #endgame-screen .endgame-credits-roll{animation:none}}
+
+/* A dramatic pause before the supporting cast. */
+body.light-screen #endgame-screen .endgame-credits-supporting-gap{height:38px;flex:none}
