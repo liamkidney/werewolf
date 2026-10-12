@@ -8,7 +8,7 @@ const isDev = location.pathname.includes('/dev/') || location.hostname === 'loca
 
 if (testPlayer && isDev && params.get('game')) {
   // Test-console frames use their explicit identities, never shared localStorage.
-  void game.enterGame(params.get('game'), testPlayer, testHost)
+  void game.init().then(() => game.enterGame(params.get('game'), testPlayer, testHost))
     .catch(error => game.screens.showError(error.message || 'Could not join test game.'));
 } else {
   void game.init().catch(error => game.screens.showError(error.message || 'Could not initialise the game.'));
