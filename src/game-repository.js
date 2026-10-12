@@ -49,15 +49,16 @@ export class GameRepository {
   }
 
   async setWerewolfCount(gameId, count) {
-    unwrap(await this.db.from('games').update({ werewolf_count: count }).eq('id', gameId).eq('status', 'lobby'));
+    const updated = unwrap(await this.db.from('games')
+      .update({ werewolf_count: count }).eq('id', gameId).eq('status', 'lobby').select('id'));
+    if (!updated.length) throw new Error('The lobby is no longer available.');
   }
 
   async startGame(state, assignments) {
-    // MVP uses client-side assignment; a future server transaction should make this atomic.
-    unwrap(await this.db.from('player_roles').insert(assignments));
-    const updated = unwrap(await this.db.from('games').update({ status: 'playing' })
-      .eq('id', state.id).eq('status', 'lobby').select('id'));
-    if (!updated.length) throw new Error('Game was already started.');
+    unwrap(await this.db.rpc('start_werewolf_game', {
+      p_game_id: state.id,
+      p_assignments: assignments.map(({ player_id, role }) => ({ player_id, role }))
+    }));
   }
 
   async advancePhase(state, next) {
