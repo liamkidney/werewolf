@@ -19,7 +19,7 @@ export class GameRepository {
   }
 
   async getGame(gameId) {
-    return unwrap(await this.db.from('games').select('id,status,werewolf_count,phase,step,round_number,phase_started_at,day_duration_seconds,discussion_ended_at,last_banished_id,last_banished_round,last_murdered_id,last_murdered_round,host_player_id').eq('id', gameId).maybeSingle());
+    return unwrap(await this.db.from('games').select('id,status,werewolf_count,phase,step,round_number,phase_started_at,day_duration_seconds,discussion_ended_at,last_banished_id,last_banished_round,last_murdered_id,last_murdered_round,host_player_id,decoy_question,winner').eq('id', gameId).maybeSingle());
   }
 
   async hasPlayer(gameId, playerId) {
@@ -46,7 +46,7 @@ export class GameRepository {
     return new GameState({
       id: game.id, status: game.status, phase: game.phase, step: game.step, roundNumber: game.round_number, werewolfCount: game.werewolf_count, players, votes,
       phaseStartedAt: game.phase_started_at, dayDurationSeconds: game.day_duration_seconds, discussionEndedAt: game.discussion_ended_at, lastBanishedId: game.last_banished_id, lastBanishedRound: game.last_banished_round,
-      lastMurderedId: game.last_murdered_id, lastMurderedRound: game.last_murdered_round, hostPlayerId: game.host_player_id
+      lastMurderedId: game.last_murdered_id, lastMurderedRound: game.last_murdered_round, hostPlayerId: game.host_player_id, decoyQuestion: game.decoy_question, winner: game.winner
     });
   }
 
@@ -93,6 +93,18 @@ export class GameRepository {
 
   async finishDay(gameId, round) {
     return unwrap(await this.db.rpc('finish_day_vote', { p_game_id: gameId, p_round: round }));
+  }
+
+  async castDecoyVote(gameId, round, voterId, targetId) {
+    return unwrap(await this.db.rpc('cast_decoy_vote', { p_game_id: gameId, p_round: round, p_voter: voterId, p_target: targetId }));
+  }
+
+  async getDecoyPack(gameId, playerId) {
+    return unwrap(await this.db.rpc('get_decoy_pack', { p_game_id: gameId, p_player_id: playerId }));
+  }
+
+  async getFinalRoles(gameId) {
+    return unwrap(await this.db.rpc('get_final_roles', { p_game_id: gameId }));
   }
 
   async getNightPack(gameId, playerId) {
