@@ -7,7 +7,7 @@
   <meta name="description" content="Werewolf — a party game of deception and deduction.">
   <title>Werewolf</title>
   <link rel="stylesheet" href="./styles.css">
-  <script src="./app.js" defer></script>
+  <script type="module" src="./app.js"></script>
 </head>
 <body>
   <main class="screen">
@@ -45,6 +45,19 @@
       <p>Game creation and the QR-code lobby are coming in the next increment.</p>
       <button id="back-button" type="button">Back</button>
     </section>
+    <section id="lobby" class="lobby" hidden aria-live="polite">
+      <h2 id="lobby-title">Game lobby</h2>
+      <p id="lobby-code" class="muted"></p>
+      <p id="lobby-message" class="muted">Waiting for players…</p>
+      <ul id="player-list" class="player-list"></ul>
+      <div id="host-tools" hidden>
+        <label for="invite-link">Invite link</label>
+        <div class="invite-row"><input id="invite-link" readonly aria-label="Invite link"><button id="copy-link" type="button">Copy</button></div>
+        <p class="muted">Share this link with other players. QR codes arrive in Increment 3.</p>
+      </div>
+      <button id="leave-lobby" type="button" class="secondary">Back to home</button>
+    </section>
+    <p id="app-error" class="error" role="alert" hidden></p>
   </main>
 </body>
 </html>
