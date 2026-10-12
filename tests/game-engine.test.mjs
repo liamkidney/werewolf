@@ -29,3 +29,10 @@ test('role assignment preserves player count and werewolf count', () => {
   assert.equal(roles.filter(role => role.role === 'werewolf').length, 2);
   assert.deepEqual(state.players.map(player => player.id), ['a', 'b', 'c', 'd']);
 });
+
+
+test('six-player game supports one werewolf', () => {
+  const state = { id: 'game', status: 'lobby', werewolfCount: 1, players: Array.from({ length: 6 }, (_, i) => ({ id: String(i) })) };
+  assert.equal(engine.canStart(state), true);
+  assert.equal(engine.assignRoles(state, () => 0).filter(role => role.role === 'werewolf').length, 1);
+});
