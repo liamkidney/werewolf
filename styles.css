@@ -50,3 +50,10 @@ body.light-screen .guest-waiting span:first-child{font-size:1.5rem}
 body.light-screen .role-screen{color:#131d2c}
 body.light-screen .role-reminder{border-color:#dedddc;color:#5e6775}
 @media(max-height:740px){body.light-screen .screen{padding-top:calc(env(safe-area-inset-top) + 12px);gap:10px}body.light-screen .lobby{gap:10px}body.light-screen .qr-wrap canvas{width:min(44vw,170px)}body.light-screen .guest-art{width:190px}body.light-screen .guest-art svg{max-height:120px}body.light-screen .player-list li{padding:9px 13px;min-height:44px}body.light-screen .guest-intro{gap:6px}body.light-screen .guest-intro h2{font-size:2rem}}
+
+/* Game phase progression */
+.phase-panel{margin:26px auto 0;padding:24px 18px;max-width:440px;border:1px solid #ddd8d0;border-radius:18px;background:#fff;text-align:center}
+.phase-panel h3{margin:8px 0 12px;font-size:1.65rem;color:#1c2a3b}
+.phase-panel .muted{line-height:1.5}
+.phase-panel button{margin-top:20px;width:100%;min-height:48px;border:0;border-radius:12px;background:#b82d39;color:#fff;font:inherit;font-weight:700;cursor:pointer}
+.phase-panel button:disabled{opacity:.5;cursor:wait}
