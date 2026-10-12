@@ -229,7 +229,6 @@ export class Screens {
       label.append(radio, name);
       choices.append(label);
     }
-    $('cast-vote').disabled = casting || !choices.querySelector('input:checked');
     $('vote-progress').textContent = !voting ? '' : myVote
       ? 'Vote locked. Waiting for everyone… ' + voted + '/' + active.length
       : 'Votes cast: ' + voted + '/' + active.length;
@@ -275,8 +274,9 @@ export class Screens {
     $('start-game').addEventListener('click', () => { void handlers.onStart(); });
     $('advance-phase').addEventListener('click', () => { void handlers.onAdvance(); });
     $('end-discussion').addEventListener('click', () => { void handlers.onEndDiscussion(); });
-    $('vote-targets').addEventListener('change', () => { $('cast-vote').disabled = !$('vote-targets').querySelector('input:checked'); });
-    $('cast-vote').addEventListener('click', () => { const target = $('vote-targets').querySelector('input:checked')?.value; if (target) void handlers.onVote(target); });
+    $('vote-targets').addEventListener('change', event => {
+      if (event.target.matches('input[name="vote-target"]')) void handlers.onVote(event.target.value);
+    });
     $('decoy-targets').addEventListener('change', event => {
       if (event.target.matches('input[name="decoy-target"]')) void handlers.onDecoyVote(event.target.value);
     });
