@@ -28,6 +28,15 @@ export class GameController {
     this.requestedGame = new URLSearchParams(location.search).get('game');
   }
 
+  renderLobby() {
+    this.screens.renderLobby(this.state, {
+      isHost: this.isHost,
+      playerId: this.playerId,
+      starting: this.starting,
+      canStart: this.engine.canStart(this.state)
+    });
+  }
+
   showActionError(message) {
     this.screens.showError(message);
   }
@@ -117,7 +126,7 @@ export class GameController {
         const state = await this.repository.getState(id);
         if (id !== this.state.id) return;
         this.state = state;
-        this.screens.renderLobby(state, this);
+        this.renderLobby();
         if (state.status === 'playing') {
           const role = await this.repository.getMyRole(id, this.playerId);
           if (id === this.state.id) {
@@ -168,7 +177,7 @@ export class GameController {
   async startGame() {
     if (!this.isHost || this.starting || !this.engine.canStart(this.state)) return;
     this.starting = true;
-    this.screens.renderLobby(this.state, this);
+    this.renderLobby();
     this.showActionError('');
     try {
       // Re-read just before assigning to avoid using a stale Realtime snapshot.
@@ -181,7 +190,7 @@ export class GameController {
       this.showActionError(error.message || 'Could not start the game.');
     } finally {
       this.starting = false;
-      this.screens.renderLobby(this.state, this);
+      this.renderLobby();
     }
   }
 }
