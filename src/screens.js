@@ -78,6 +78,14 @@ export class Screens {
       : 'Please wait a moment.';
   }
 
+  showEliminated() {
+    this.showScreen('banishment-screen');
+    $('banished-name').textContent = 'You have been banished';
+    $('banishment-description').textContent = 'You are out of the game.';
+    $('dismiss-banishment').hidden = true;
+    $('banishment-waiting').hidden = true;
+  }
+
   showSpectator() {
     $('role-name').textContent = 'Eliminated';
     $('role-description').textContent = 'You are watching the rest of the game.';
