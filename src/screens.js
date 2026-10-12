@@ -105,8 +105,8 @@ export class Screens {
     const select = $('vote-target');
     const selected = select.value;
     select.replaceChildren(new Option('Choose a player', ''));
-    for (const player of active) select.add(new Option(player.name, player.id));
-    if (active.some(player => player.id === selected)) select.value = selected;
+    for (const player of active.filter(player => player.id !== playerId)) select.add(new Option(player.name, player.id));
+    if (active.some(player => player.id === selected && player.id !== playerId)) select.value = selected;
     $('cast-vote').disabled = casting || !select.value;
     $('vote-progress').textContent = !voting ? '' : myVote
       ? 'Vote locked. Waiting for everyone… ' + voted + '/' + active.length
@@ -122,12 +122,17 @@ export class Screens {
     $('marquee-vote').textContent = name;
     $('finish-voting').hidden = !isHost;
     $('finish-voting').disabled = finishing;
-    $('finish-voting').textContent = finishing ? 'Finishing…' : 'Done';
+    $('finish-voting').textContent = finishing ? 'Finishing…' : 'All Done';
   }
 
-  renderBanishment(name) {
+  renderBanishment(name, eliminated, isHost) {
     this.showScreen('banishment-screen');
-    $('banished-name').textContent = name;
+    $('banished-name').textContent = eliminated ? 'You have been banished' : name;
+    $('banishment-description').textContent = eliminated
+      ? 'You are out of the game. You can watch, but cannot vote again.'
+      : name + ' has been eliminated from the game.';
+    $('dismiss-banishment').hidden = !isHost;
+    $('banishment-waiting').hidden = isHost;
   }
 
   async renderQr(inviteUrl) {
