@@ -27,6 +27,7 @@ export class GameController {
     this.finishing = false;
     this.dayTicker = null;
     this.dayVotingOpen = false;
+    this.dayVoteSignature = '';
     this.refreshPending = false;
     this.refreshRunning = false;
     this.requestedGame = new URLSearchParams(location.search).get('game');
@@ -193,9 +194,11 @@ export class GameController {
       return;
     }
     // Avoid rebuilding the select list on every clock tick.
-    if (this.dayVotingOpen !== voting || document.getElementById('day-screen').hidden) {
+    const signature = state.roundNumber + ':' + votes.length + ':' + Boolean(myVote);
+    if (this.dayVotingOpen !== voting || this.dayVoteSignature !== signature || document.getElementById('day-screen').hidden) {
       this.screens.renderDay(state, { playerId: this.playerId, voting, myVote, casting: this.casting });
       this.dayVotingOpen = voting;
+      this.dayVoteSignature = signature;
     }
     if (!voting) this.screens.updateClock(seconds);
     document.getElementById('vote-progress').textContent = voting
