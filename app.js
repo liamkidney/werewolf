@@ -8,6 +8,7 @@ const params = new URLSearchParams(location.search);
 const requestedGame = params.get('game');
 let playerCount = 0, werewolfCount = 2;
 let currentGame = null, channel = null, isHost = false, gameStatus = 'lobby', starting = false;
+let lobbyRefresh = null;
 function showError(message) { $('app-error').textContent = message; $('app-error').hidden = !message; }
 function showLobby() { hero.hidden = true; form.hidden = true; lobby.hidden = false; $('role-screen').hidden = true; }
 function showRole() { hero.hidden = true; form.hidden = true; lobby.hidden = true; $('role-screen').hidden = false; }
@@ -33,6 +34,8 @@ async function enterLobby(gameId, host) {
   $('lobby-title').textContent = host ? 'Your game lobby' : 'Game lobby';
   $('lobby-code').textContent = 'Game ' + gameId.slice(0,8).toUpperCase();
   $('host-tools').hidden = !host;
+  if (lobbyRefresh) clearInterval(lobbyRefresh);
+  lobbyRefresh = setInterval(() => { if (currentGame && gameStatus === 'lobby') { loadPlayers(); loadGameConfig(); } }, 5000);
   $('invite-link').value = new URL('?game=' + encodeURIComponent(gameId), location.href).href;
   if (host) {
     try { await QRCode.toCanvas($('join-qr'), $('invite-link').value, {width:220, margin:2, color:{dark:'#111d2c',light:'#ffffff'}}); }
@@ -79,6 +82,7 @@ function updateCounts() {
   $('wolf-plus').disabled = werewolfCount >= 50;
   const valid = playerCount > werewolfCount;
   $('start-game').disabled = !isHost || !valid || starting || gameStatus !== 'lobby';
+  $('start-status').textContent = starting ? 'Assigning roles…' : gameStatus !== 'lobby' ? 'Game already started.' : !isHost ? 'Only the host can start the game.' : !valid ? 'Waiting for more players.' : 'Ready to start.';
   $('role-warning').hidden = valid;
   $('role-warning').textContent = valid ? '' : 'Add more players than werewolves before starting.';
 }
