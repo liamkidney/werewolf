@@ -10,6 +10,7 @@ export class StateEngine {
     if (state.step) return state.step;
     if (state.phase === 'reveal') return 'roles';
     if (state.phase === 'results') return 'announcement';
+    if (state.phase === 'dawn') return 'murder_reveal';
     if (state.phase === 'night') return 'actions';
     if (state.phase === 'day') {
       const deadline = Date.parse(state.phaseStartedAt || '') + (state.dayDurationSeconds ?? this.rules.discussionSeconds) * 1000;
@@ -37,7 +38,7 @@ export class StateEngine {
 
   transition(state, command) {
     if (state.status !== 'playing') throw new Error('Game is not in progress.');
-    if (command.type === 'START_DAY' && state.phase === 'reveal') {
+    if (command.type === 'START_DAY' && (state.phase === 'reveal' || state.phase === 'dawn')) {
       return { phase: 'day', roundNumber: state.roundNumber };
     }
     if (command.type === 'START_NIGHT' && state.phase === 'results') {
