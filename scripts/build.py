@@ -75,7 +75,7 @@ def build(source: Path, output: Path):
     for module in output.rglob('*.js'):
         content = module.read_text(encoding='utf-8')
         for reference in re.findall(r"""(?:from\s*|import\s*\()\s*['"]([.][^'"]+)['"]""", content):
-            asset = (module.parent / reference).resolve()
+            asset = (module.parent / reference.split('?', 1)[0].split('#', 1)[0]).resolve()
             if not asset.is_relative_to(output.resolve()) or not asset.is_file():
                 raise ValueError(f'{module.relative_to(output)} imports missing module: {reference}')
     print(f'Built and validated {source} -> {output} ({len(html_files)} HTML pages)')
