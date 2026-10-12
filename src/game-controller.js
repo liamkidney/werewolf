@@ -19,17 +19,16 @@ export class GameController {
     this.sync = new GameSync(repository);
     this.state = new GameState();
     this.playerId = null;
+    this.playerRole = null;
     this.isHost = false;
     this.starting = false;
     this.advancing = false;
     this.refreshPending = false;
     this.refreshRunning = false;
-    this.actionError = '';
     this.requestedGame = new URLSearchParams(location.search).get('game');
   }
 
   showActionError(message) {
-    this.actionError = message;
     this.screens.showError(message);
   }
 
@@ -89,13 +88,14 @@ export class GameController {
 
   async enterGame(gameId, playerId, host) {
     this.playerId = playerId;
+    this.playerRole = null;
     this.isHost = host;
     this.state = new GameState({ id: gameId });
     const inviteUrl = new URL('?game=' + encodeURIComponent(gameId), location.href).href;
     this.screens.showLobby(gameId, host, inviteUrl);
     if (host) {
       try { await this.screens.renderQr(inviteUrl); }
-      catch { this.screens.showError('Could not generate QR code. Use the invite link instead.'); }
+      catch { this.showActionError('Could not generate QR code. Use the invite link instead.'); }
     }
     // Listen before initial read, then resync on reconnect and when returning to the tab.
     await this.sync.subscribe(gameId, () => this.requestRefresh());
@@ -121,8 +121,8 @@ export class GameController {
         if (state.status === 'playing') {
           const role = await this.repository.getMyRole(id, this.playerId);
           if (id === this.state.id) {
-            this.state = this.state.with({ myRole: role });
-            this.screens.showRole(this.state.myRole);
+            this.playerRole = role;
+            this.screens.showRole(role);
             this.screens.renderPhase(this.state, this);
           }
         }
