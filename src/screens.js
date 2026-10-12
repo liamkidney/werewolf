@@ -68,6 +68,29 @@ export class Screens {
       : 'Please wait a moment.';
   }
 
+  renderPhase(state, { isHost, advancing }) {
+    const labels = {
+      reveal: ['Roles assigned', 'Check your secret role. The host will begin the first night.'],
+      night: ['Night falls', 'Everyone closes their eyes. Night actions will be added in a future iteration.'],
+      day: ['Day breaks', 'Discuss what happened and who you suspect.'],
+      voting: ['Time to vote', 'Discuss your choice. In-app voting will be added in a future iteration.'],
+      results: ['Results', 'This round is complete. Vote resolution and eliminations are coming later.']
+    };
+    const next = {
+      reveal: 'Begin night', night: 'Begin day', day: 'Begin voting',
+      voting: 'Show results', results: 'Next night'
+    };
+    const [title, description] = labels[state.phase] || ['Game in progress', 'Waiting for the host.'];
+    $('phase-panel').hidden = false;
+    $('phase-round').textContent = 'ROUND ' + state.roundNumber;
+    $('phase-title').textContent = title;
+    $('phase-description').textContent = description;
+    $('phase-host-controls').hidden = !isHost;
+    $('phase-waiting').hidden = isHost;
+    $('advance-phase').textContent = advancing ? 'Updating…' : next[state.phase] || 'Continue';
+    $('advance-phase').disabled = advancing;
+  }
+
   async renderQr(inviteUrl) {
     const { default: QRCode } = await import('https://esm.sh/qrcode@1.5.4');
     await QRCode.toCanvas($('join-qr'), inviteUrl, {
@@ -84,6 +107,7 @@ export class Screens {
     $('wolf-minus').addEventListener('click', () => { void handlers.onWerewolves(-1); });
     $('wolf-plus').addEventListener('click', () => { void handlers.onWerewolves(1); });
     $('start-game').addEventListener('click', () => { void handlers.onStart(); });
+    $('advance-phase').addEventListener('click', () => { void handlers.onAdvance(); });
     $('copy-link').addEventListener('click', async () => {
       try {
         await navigator.clipboard.writeText($('invite-link').value);
