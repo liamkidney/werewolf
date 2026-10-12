@@ -1,3 +1,5 @@
+import { PHASES } from './game-phases.js';
+
 // Pure rules: no Supabase, DOM, localStorage or network calls.
 export class GameEngine {
   canStart(state) {
@@ -7,11 +9,7 @@ export class GameEngine {
 
   nextPhase(state) {
     if (state.status !== 'playing') throw new Error('Game is not in progress.');
-    const transitions = {
-      reveal: 'night', night: 'day', day: 'voting',
-      voting: 'results', results: 'night'
-    };
-    const phase = transitions[state.phase];
+    const phase = PHASES[state.phase]?.next;
     if (!phase) throw new Error('Unknown game phase.');
     return {
       phase,
