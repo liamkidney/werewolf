@@ -25,7 +25,7 @@ export class Screens {
     document.body.classList.toggle('marquee-mode', id === 'marquee-screen');
     document.querySelector('.hero').hidden = true;
     this.form.hidden = true;
-    for (const screen of ['lobby', 'role-screen', 'day-screen', 'marquee-screen', 'banishment-screen']) $(screen).hidden = screen !== id;
+    for (const screen of ['lobby', 'role-screen', 'day-screen', 'night-screen', 'marquee-screen', 'banishment-screen']) $(screen).hidden = screen !== id;
   }
 
   showLobby(gameId, isHost, inviteUrl) {
@@ -106,6 +106,36 @@ export class Screens {
     $('advance-phase').disabled = advancing;
   }
 
+  renderNight(state, { playerId, role, pack, casting }) {
+    this.showScreen('night-screen');
+    $('night-round').textContent = state.roundNumber;
+    $('night-heading').textContent = 'Night has fallen';
+    const wolf = role === 'werewolf';
+    $('night-instruction').textContent = wolf ? 'Agree on one villager to eliminate.' : 'Close your eyes. Waiting for dawn…';
+    $('night-wolf-controls').hidden = !wolf;
+    if (!wolf) return;
+    const wolves = pack?.wolves || [];
+    const votes = pack?.votes || [];
+    const names = new Map(state.players.map(player => [player.id, player.name]));
+    const list = $('night-wolves');
+    list.replaceChildren();
+    for (const member of wolves) {
+      const vote = votes.find(item => item.voter_id === member.id);
+      const item = document.createElement('li');
+      item.textContent = member.name + (member.id === playerId ? ' (you)' : '') + ' — ' + (vote ? names.get(vote.target_id) || 'Unknown' : 'Not nominated');
+      list.append(item);
+    }
+    const select = $('night-target');
+    const previous = select.value || votes.find(item => item.voter_id === playerId)?.target_id;
+    select.replaceChildren(new Option('Choose a villager', ''));
+    for (const player of state.players.filter(p => !p.eliminated_at && !wolves.some(w => w.id === p.id))) {
+      select.add(new Option(player.name, player.id));
+    }
+    if ([...select.options].some(option => option.value === previous)) select.value = previous;
+    $('cast-night-vote').disabled = casting || !select.value;
+    $('night-progress').textContent = votes.length + '/' + wolves.length + ' nominations. Unanimous agreement ends the night.';
+  }
+
   renderDay(state, { playerId, isHost, voting, myVote, casting, endingDiscussion }) {
     this.showScreen('day-screen');
     $('day-round').textContent = state.roundNumber;
@@ -172,6 +202,8 @@ export class Screens {
     $('end-discussion').addEventListener('click', () => { void handlers.onEndDiscussion(); });
     $('vote-target').addEventListener('change', () => { $('cast-vote').disabled = !$('vote-target').value; });
     $('cast-vote').addEventListener('click', () => { void handlers.onVote($('vote-target').value); });
+    $('night-target').addEventListener('change', () => { $('cast-night-vote').disabled = !$('night-target').value; });
+    $('cast-night-vote').addEventListener('click', () => { void handlers.onNightVote($('night-target').value); });
     $('finish-voting').addEventListener('click', () => { void handlers.onFinishVoting(); });
     $('dismiss-banishment').addEventListener('click', () => { void handlers.onDismissBanishment(); });
     $('copy-link').addEventListener('click', async () => {
