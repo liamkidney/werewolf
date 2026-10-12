@@ -14,6 +14,12 @@ test('day discussion and voting are distinct derived steps', () => {
   assert.equal(engine.step(day, Date.parse('2026-01-01T00:02:00Z')), 'voting');
   assert.equal(engine.step({ ...day, discussionEndedAt: '2026-01-01T00:00:10Z' }), 'voting');
 });
+test('persisted step is authoritative even when the clock has expired', () => {
+  const state = { status: 'playing', phase: 'day', step: 'discussion', phaseStartedAt: '2026-01-01T00:00:00Z', dayDurationSeconds: 120 };
+  assert.equal(engine.step(state, Date.parse('2026-01-01T00:05:00Z')), 'discussion');
+  assert.equal(engine.step({ ...state, step: 'voting' }, Date.parse('2026-01-01T00:00:01Z')), 'voting');
+  assert.equal(engine.step({ ...state, phase: 'night', step: 'actions' }), 'actions');
+});
 test('independent actions require all active actors and unanimous werewolf consensus', () => {
   const action = engine.requiredNightActions([{ role: 'werewolf' }, { role: 'villager' }])[0];
   assert.equal(action.type, 'kill');
