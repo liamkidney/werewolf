@@ -7,6 +7,7 @@ export class Screens {
   constructor() {
     this.form = $('new-game');
     this.nameInput = $('player-name');
+    this.marqueeFont = null;
   }
 
   showError(message) {
@@ -24,6 +25,7 @@ export class Screens {
   showScreen(id) {
     document.body.classList.add('light-screen');
     document.body.classList.toggle('marquee-mode', id === 'marquee-screen');
+    if (id !== 'marquee-screen') this.marqueeFont = null;
     document.querySelector('.hero').hidden = true;
     this.form.hidden = true;
     $('resume-game').hidden = true;
@@ -240,6 +242,11 @@ export class Screens {
   renderMarquee(name, isHost, finishing) {
     this.showScreen('marquee-screen');
     $('marquee-vote').textContent = name;
+    if (!this.marqueeFont) {
+      const fonts = ['Fredericka the Great', 'Rock Salt', 'Gloria Hallelujah', 'Permanent Marker'];
+      this.marqueeFont = fonts[Math.floor(Math.random() * fonts.length)];
+    }
+    $('marquee-vote').style.fontFamily = `'${this.marqueeFont}', cursive`;
     $('finish-voting').hidden = !isHost;
     $('finish-voting').disabled = finishing;
     $('finish-voting').textContent = finishing ? 'Finishing…' : 'All Done';
