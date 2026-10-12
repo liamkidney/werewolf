@@ -211,12 +211,25 @@ export class Screens {
     const active = state.players.filter(player => !player.eliminated_at);
     const voted = state.votes.filter(vote => vote.round_number === state.roundNumber).length;
     $('vote-controls').hidden = !voting || !!myVote || !active.some(player => player.id === playerId);
-    const select = $('vote-target');
-    const selected = select.value;
-    select.replaceChildren(new Option('Choose a player', ''));
-    for (const player of active.filter(player => player.id !== playerId)) select.add(new Option(player.name, player.id));
-    if (active.some(player => player.id === selected && player.id !== playerId)) select.value = selected;
-    $('cast-vote').disabled = casting || !select.value;
+    const choices = $('vote-targets');
+    const selected = choices.querySelector('input[name="vote-target"]:checked')?.value;
+    choices.replaceChildren();
+    for (const player of active.filter(player => player.id !== playerId)) {
+      const label = document.createElement('label');
+      label.className = 'night-choice';
+      const radio = document.createElement('input');
+      radio.type = 'radio';
+      radio.name = 'vote-target';
+      radio.value = player.id;
+      radio.checked = selected === player.id;
+      radio.disabled = casting;
+      const name = document.createElement('span');
+      name.className = 'night-name';
+      name.textContent = player.name;
+      label.append(radio, name);
+      choices.append(label);
+    }
+    $('cast-vote').disabled = casting || !choices.querySelector('input:checked');
     $('vote-progress').textContent = !voting ? '' : myVote
       ? 'Vote locked. Waiting for everyone… ' + voted + '/' + active.length
       : 'Votes cast: ' + voted + '/' + active.length;
@@ -262,8 +275,8 @@ export class Screens {
     $('start-game').addEventListener('click', () => { void handlers.onStart(); });
     $('advance-phase').addEventListener('click', () => { void handlers.onAdvance(); });
     $('end-discussion').addEventListener('click', () => { void handlers.onEndDiscussion(); });
-    $('vote-target').addEventListener('change', () => { $('cast-vote').disabled = !$('vote-target').value; });
-    $('cast-vote').addEventListener('click', () => { void handlers.onVote($('vote-target').value); });
+    $('vote-targets').addEventListener('change', () => { $('cast-vote').disabled = !$('vote-targets').querySelector('input:checked'); });
+    $('cast-vote').addEventListener('click', () => { const target = $('vote-targets').querySelector('input:checked')?.value; if (target) void handlers.onVote(target); });
     $('decoy-targets').addEventListener('change', event => {
       if (event.target.matches('input[name="decoy-target"]')) void handlers.onDecoyVote(event.target.value);
     });
