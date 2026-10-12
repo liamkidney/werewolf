@@ -6,10 +6,8 @@ const engine = new GameEngine();
 
 test('phases advance in order and increment round after results', () => {
   let state = { status: 'playing', phase: 'reveal', roundNumber: 1 };
-  for (const phase of ['night', 'day']) {
-    state = { ...state, ...engine.nextPhase(state) };
-    assert.equal(state.phase, phase);
-  }
+  state = { ...state, ...engine.nextPhase(state) };
+  assert.equal(state.phase, 'day');
   assert.equal(state.roundNumber, 1);
   assert.throws(() => engine.nextPhase(state), /automatically/);
   state = { ...state, phase: 'results' };
