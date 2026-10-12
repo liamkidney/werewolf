@@ -11,6 +11,8 @@ export class Screens {
   showError(message) {
     $('app-error').textContent = message;
     $('app-error').hidden = !message;
+    $('marquee-error').textContent = message;
+    $('marquee-error').hidden = !message;
   }
 
   showConnectionError(message) {
