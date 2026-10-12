@@ -15,11 +15,11 @@ export class GameRepository {
   constructor(client = db) { this.db = client; }
 
   async createGame() {
-    return unwrap(await this.db.from('games').insert({ day_duration_seconds: 15 }).select('id').single()).id;
+    return unwrap(await this.db.from('games').insert({}).select('id').single()).id;
   }
 
   async getGame(gameId) {
-    return unwrap(await this.db.from('games').select('id,status,werewolf_count,phase,round_number,phase_started_at,day_duration_seconds,last_banished_id,last_banished_round,host_player_id').eq('id', gameId).maybeSingle());
+    return unwrap(await this.db.from('games').select('id,status,werewolf_count,phase,round_number,phase_started_at,day_duration_seconds,discussion_ended_at,last_banished_id,last_banished_round,host_player_id').eq('id', gameId).maybeSingle());
   }
 
   async hasPlayer(gameId, playerId) {
@@ -45,7 +45,7 @@ export class GameRepository {
     if (!game) throw new Error('Game not found.');
     return new GameState({
       id: game.id, status: game.status, phase: game.phase, roundNumber: game.round_number, werewolfCount: game.werewolf_count, players, votes,
-      phaseStartedAt: game.phase_started_at, dayDurationSeconds: game.day_duration_seconds, lastBanishedId: game.last_banished_id, lastBanishedRound: game.last_banished_round, hostPlayerId: game.host_player_id
+      phaseStartedAt: game.phase_started_at, dayDurationSeconds: game.day_duration_seconds, discussionEndedAt: game.discussion_ended_at, lastBanishedId: game.last_banished_id, lastBanishedRound: game.last_banished_round, hostPlayerId: game.host_player_id
     });
   }
 
@@ -74,6 +74,10 @@ export class GameRepository {
       .eq('phase', state.phase).eq('round_number', state.roundNumber)
       .select('id'));
     if (!updated.length) throw new Error('The phase changed on another device. Refresh and try again.');
+  }
+
+  async endDiscussion(gameId, playerId) {
+    unwrap(await this.db.rpc('end_day_discussion', { p_game_id: gameId, p_host: playerId }));
   }
 
   async castVote(gameId, round, voterId, targetId) {
