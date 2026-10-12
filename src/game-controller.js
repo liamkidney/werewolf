@@ -343,7 +343,7 @@ export class GameController {
     try {
       const fresh = await this.repository.getState(this.state.id);
       const next = this.stateEngine.transition(fresh, { type: fresh.phase === 'reveal' ? 'START_DAY' : 'START_NIGHT' });
-      await this.repository.advancePhase(fresh, next);
+      await this.repository.advancePhase(fresh, next, this.playerId);
       this.requestRefresh();
     } catch (error) {
       this.showActionError(error.message || 'Could not advance the game.');
