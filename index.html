@@ -54,10 +54,15 @@
           <div class="role-row"><span>Villagers</span><output id="villager-count" aria-live="polite">0</output></div>
           <p id="role-warning" class="muted" hidden></p>
         </div>
-        <button id="start-game" type="button" disabled title="Role assignment arrives in Increment 4">Start Game</button>
-        <p class="muted">Game start and secret roles arrive in the next increment.</p>
+        <button id="start-game" type="button" disabled>Start Game</button>
       </div>
       <button id="leave-lobby" type="button" class="secondary">Back to home</button>
+    </section>
+    <section id="role-screen" class="role-screen" hidden aria-live="polite">
+      <p class="muted">Your secret role</p>
+      <h2 id="role-name">Waiting for role…</h2>
+      <p id="role-description" class="muted"></p>
+      <p class="role-reminder">Keep your role secret. The discussion phase is coming next.</p>
     </section>
     <p id="app-error" class="error" role="alert" hidden></p>
   </main>
