@@ -70,6 +70,19 @@ export class GameRepository {
     if (!updated.length) throw new Error('The phase changed on another device. Refresh and try again.');
   }
 
+  subscribeToGame(gameId, onChange) {
+    return this.db.channel('lobby-' + gameId)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'players', filter: 'game_id=eq.' + gameId
+      }, onChange)
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'games', filter: 'id=eq.' + gameId
+      }, onChange)
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'player_roles', filter: 'game_id=eq.' + gameId
+      }, onChange);
+  }
+
   async disposeChannel(channel) {
     if (channel) await this.db.removeChannel(channel);
   }
