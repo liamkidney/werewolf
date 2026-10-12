@@ -25,12 +25,12 @@ button:hover{background:#ed3a47}
    unpredictably between the tagline and form. */
 .screen:has(> .entry:not([hidden])){
   padding-top:0;
-  grid-template-rows:auto auto minmax(0,1fr) auto;
+  grid-template-rows:auto minmax(0,1fr) auto auto;
   display:grid;
   row-gap:0;
 }
 .screen:has(> .entry:not([hidden])) > .hero{grid-row:1;margin-inline:-28px}
-.screen:has(> .entry:not([hidden])) > .entry{grid-row:2;margin-top:clamp(40px,6vh,76px)}
+.screen:has(> .entry:not([hidden])) > .entry{grid-row:3;margin-top:24px}
 .screen:has(> .entry:not([hidden])) > .site-footer{grid-row:4;margin-top:0}
 @media(min-width:650px){.screen{border-left:1px solid #ffffff15;border-right:1px solid #ffffff15}}
 @media(max-height:700px){
@@ -40,7 +40,7 @@ button:hover{background:#ed3a47}
   .tagline{margin-top:10px}
   .entry{gap:10px}
   input,button{min-height:52px}
-  .screen:has(> .entry:not([hidden])) > .entry{margin-top:24px}
+  .screen:has(> .entry:not([hidden])) > .entry{margin-top:16px}
 }
 
 [hidden]{display:none!important}
@@ -92,7 +92,7 @@ body.light-screen .guest-waiting{display:flex;gap:14px;align-items:center;justif
 body.light-screen .guest-waiting span:first-child{font-size:1.5rem}
 body.light-screen .role-screen{color:#131d2c}
 body.light-screen .role-reminder{border-color:#dedddc;color:#5e6775}
-@media(max-height:740px){body.light-screen .screen{padding-top:calc(env(safe-area-inset-top) + 12px);gap:10px}body.light-screen .lobby{gap:10px}body.light-screen .qr-wrap canvas{width:min(44vw,170px)}body.light-screen .guest-art{width:190px}body.light-screen .guest-art img{object-fit:cover;object-position:center 40%}body.light-screen .player-list li{padding:9px 13px;min-height:44px}body.light-screen .guest-intro{gap:6px}body.light-screen .guest-intro h2{font-size:2rem}}
+@media(max-height:740px){body.light-screen .screen{padding-top:calc(env(safe-area-inset-top) + 12px);gap:10px}body.light-screen .lobby{gap:10px}body.light-screen .qr-wrap canvas{width:min(44vw,170px)}body.light-screen .guest-art{width:calc(100% + 48px)}body.light-screen .guest-art img{object-fit:cover;object-position:center 40%}body.light-screen .player-list li{padding:9px 13px;min-height:44px}body.light-screen .guest-intro{gap:6px}body.light-screen .guest-intro h2{font-size:2rem}}
 
 /* Game phase progression */
 .phase-panel{margin:26px auto 0;padding:24px 18px;max-width:440px;border:1px solid #ddd8d0;border-radius:18px;background:#fff;text-align:center}
@@ -149,3 +149,21 @@ body.marquee-mode .site-footer{position:fixed;bottom:calc(env(safe-area-inset-bo
 /* Full-bleed landing art, with the heading and form on the normal content grid. */
 .screen:has(> .entry:not([hidden])) .hero h1,
 .screen:has(> .entry:not([hidden])) .hero .tagline{margin-left:28px;margin-right:28px}
+
+/* Artwork is full-bleed on mobile across landing, guest, day and night screens. */
+body.light-screen .screen:has(.guest-intro:not([hidden])),
+body.light-screen .screen:has(#day-screen:not([hidden])),
+body.light-screen .screen:has(#night-screen:not([hidden])){padding-top:0}
+body.light-screen .guest-intro:not([hidden]) .guest-art,
+body.light-screen #day-screen:not([hidden]) .phase-art,
+body.light-screen #night-screen:not([hidden]) .phase-art{
+  width:calc(100% + 48px);
+  max-width:none;
+  margin-left:-24px;
+  margin-right:-24px;
+  flex:none;
+}
+body.light-screen .guest-intro:not([hidden]){padding-top:0}
+body.light-screen #day-screen:not([hidden]),
+body.light-screen #night-screen:not([hidden]){margin-top:0}
+.art img,.guest-art img,.phase-art img{object-position:center center}
