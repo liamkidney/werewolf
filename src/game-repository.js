@@ -19,7 +19,7 @@ export class GameRepository {
   }
 
   async getGame(gameId) {
-    return unwrap(await this.db.from('games').select('id,status,werewolf_count').eq('id', gameId).maybeSingle());
+    return unwrap(await this.db.from('games').select('id,status,werewolf_count,phase,round_number').eq('id', gameId).maybeSingle());
   }
 
   async hasPlayer(gameId, playerId) {
@@ -39,7 +39,7 @@ export class GameRepository {
     ]);
     if (!game) throw new Error('Game not found.');
     return new GameState({
-      id: game.id, status: game.status, werewolfCount: game.werewolf_count, players
+      id: game.id, status: game.status, phase: game.phase, roundNumber: game.round_number, werewolfCount: game.werewolf_count, players
     });
   }
 
@@ -58,6 +58,15 @@ export class GameRepository {
     const updated = unwrap(await this.db.from('games').update({ status: 'playing' })
       .eq('id', state.id).eq('status', 'lobby').select('id'));
     if (!updated.length) throw new Error('Game was already started.');
+  }
+
+  async advancePhase(state, next) {
+    const updated = unwrap(await this.db.from('games')
+      .update({ phase: next.phase, round_number: next.roundNumber })
+      .eq('id', state.id).eq('status', 'playing')
+      .eq('phase', state.phase).eq('round_number', state.roundNumber)
+      .select('id'));
+    if (!updated.length) throw new Error('The phase changed on another device. Refresh and try again.');
   }
 
   async disposeChannel(channel) {
