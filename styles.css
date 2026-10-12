@@ -254,3 +254,18 @@ body.light-screen #endgame-screen.wolves-won .endgame-table-wrap{background:#192
 body.light-screen #endgame-screen.wolves-won .endgame-table{color:#edf2f9}
 body.light-screen #endgame-screen.wolves-won .endgame-table th{background:#273a4d;color:#b5c4d3}
 body.light-screen #endgame-screen.wolves-won .endgame-table tr+tr td{border-color:#35475b}
+
+/* End credits: compact two-column cinema typography, no table chrome. */
+body.light-screen #endgame-screen .endgame-credits{width:100%;overflow:hidden;position:relative;text-align:left;padding:20px 0 36px;mask-image:linear-gradient(to bottom,transparent,#000 8%,#000 90%,transparent)}
+body.light-screen #endgame-screen .endgame-credits-roll{display:flex;flex-direction:column;gap:22px;animation:endgame-credits-rise 32s linear 1 both}
+body.light-screen #endgame-screen .endgame-credits-intro,body.light-screen #endgame-screen .endgame-credits-outro{text-align:center;letter-spacing:.22em;font-size:.75rem;font-weight:700;margin:12px 0}
+body.light-screen #endgame-screen .endgame-credits-list{display:flex;flex-direction:column;gap:15px}
+body.light-screen #endgame-screen .endgame-credit{display:grid;grid-template-columns:43% 57%;align-items:start;gap:0;font-family:Arial,Helvetica,sans-serif}
+body.light-screen #endgame-screen .endgame-credit-role{text-align:right;padding:4px 12px 0 0;font-size:.69rem;letter-spacing:.08em;opacity:.76}
+body.light-screen #endgame-screen .endgame-credit-details{display:flex;flex-direction:column;gap:4px;min-width:0;padding-right:8px}
+body.light-screen #endgame-screen .endgame-credit-name{font-size:.91rem;font-weight:700;letter-spacing:.025em;overflow-wrap:anywhere}
+body.light-screen #endgame-screen .endgame-credit-fate{font-size:.63rem;letter-spacing:.12em;opacity:.65}
+@keyframes endgame-credits-rise{from{transform:translateY(28px)}to{transform:translateY(-28px)}}
+body.light-screen #endgame-screen .endgame-credits:hover .endgame-credits-roll,
+body.light-screen #endgame-screen .endgame-credits:active .endgame-credits-roll{animation-play-state:paused}
+@media(prefers-reduced-motion:reduce){body.light-screen #endgame-screen .endgame-credits-roll{animation:none}}
