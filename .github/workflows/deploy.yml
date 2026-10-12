@@ -33,20 +33,21 @@ jobs:
           ref: dev
           path: development
 
-      - name: Assemble site
-        run: |
-          mkdir -p _site/dev
-          rsync -a --exclude='.git' --exclude='.github' production/ _site/
-          rsync -a --exclude='.git' --exclude='.github' development/ _site/dev/
-          touch _site/.nojekyll
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: development/requirements-build.txt
 
-      - name: Generate browser and iOS icons
+      - name: Install build dependencies
+        run: python3 -m pip install -r development/requirements-build.txt
+
+      - name: Build and validate both sites
         run: |
-          python3 -m pip install --quiet cairosvg Pillow
-          if [ -f _site/favicon.svg ]; then
-            python3 development/scripts/build_icons.py _site/favicon.svg _site
-          fi
-          python3 development/scripts/build_icons.py _site/dev/favicon.svg _site/dev
+          python3 development/scripts/build.py production _site
+          python3 development/scripts/build.py development _site/dev
+          touch _site/.nojekyll
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
