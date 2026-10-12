@@ -25,7 +25,7 @@ export class Screens {
     document.body.classList.toggle('marquee-mode', id === 'marquee-screen');
     document.querySelector('.hero').hidden = true;
     this.form.hidden = true;
-    for (const screen of ['lobby', 'role-screen', 'day-screen', 'night-screen', 'marquee-screen', 'banishment-screen']) $(screen).hidden = screen !== id;
+    for (const screen of ['lobby', 'role-screen', 'day-screen', 'night-screen', 'dawn-screen', 'marquee-screen', 'banishment-screen']) $(screen).hidden = screen !== id;
   }
 
   showLobby(gameId, isHost, inviteUrl) {
@@ -78,9 +78,9 @@ export class Screens {
       : 'Please wait a moment.';
   }
 
-  showEliminated() {
+  showEliminated(murdered = false) {
     this.showScreen('banishment-screen');
-    $('banished-name').textContent = 'You have been banished';
+    $('banished-name').textContent = murdered ? 'You were murdered' : 'You have been banished';
     $('banishment-description').textContent = 'You are out of the game.';
     $('dismiss-banishment').hidden = true;
     $('banishment-waiting').hidden = true;
@@ -107,6 +107,13 @@ export class Screens {
     $('advance-phase').disabled = advancing;
   }
 
+  renderMurderReveal(name, isHost) {
+    this.showScreen('dawn-screen');
+    $('dawn-victim').textContent = name;
+    $('dismiss-dawn').hidden = !isHost;
+    $('dawn-waiting').hidden = isHost;
+  }
+
   renderNight(state, { playerId, role, pack, casting }) {
     this.showScreen('night-screen');
     $('night-round').textContent = state.roundNumber;
@@ -126,15 +133,33 @@ export class Screens {
       item.textContent = member.name + (member.id === playerId ? ' (you)' : '') + ' — ' + (vote ? names.get(vote.target_id) || 'Unknown' : 'Not nominated');
       list.append(item);
     }
-    const select = $('night-target');
-    const previous = select.value || votes.find(item => item.voter_id === playerId)?.target_id;
-    select.replaceChildren(new Option('Choose a villager', ''));
+    const choices = $('night-targets');
+    const selected = votes.find(item => item.voter_id === playerId)?.target_id;
+    choices.replaceChildren();
     for (const player of state.players.filter(p => !p.eliminated_at && !wolves.some(w => w.id === p.id))) {
-      select.add(new Option(player.name, player.id));
+      const count = votes.filter(v => v.target_id === player.id).length;
+      const percent = wolves.length ? Math.round(count * 100 / wolves.length) : 0;
+      const label = document.createElement('label');
+      label.className = 'night-choice';
+      const bar = document.createElement('span');
+      bar.className = 'night-bar';
+      bar.style.width = percent + '%';
+      const radio = document.createElement('input');
+      radio.type = 'radio';
+      radio.name = 'night-target';
+      radio.value = player.id;
+      radio.checked = selected === player.id;
+      radio.disabled = casting;
+      const name = document.createElement('span');
+      name.className = 'night-name';
+      name.textContent = player.name;
+      const share = document.createElement('span');
+      share.className = 'night-percent';
+      share.textContent = percent + '%';
+      label.append(bar, radio, name, share);
+      choices.append(label);
     }
-    if ([...select.options].some(option => option.value === previous)) select.value = previous;
-    $('cast-night-vote').disabled = casting || !select.value;
-    $('night-progress').textContent = votes.length + '/' + wolves.length + ' nominations. Unanimous agreement ends the night.';
+    $('night-progress').textContent = votes.length + '/' + wolves.length + ' votes. Unanimous agreement ends the night.';
   }
 
   renderDay(state, { playerId, isHost, voting, myVote, casting, endingDiscussion }) {
@@ -203,8 +228,10 @@ export class Screens {
     $('end-discussion').addEventListener('click', () => { void handlers.onEndDiscussion(); });
     $('vote-target').addEventListener('change', () => { $('cast-vote').disabled = !$('vote-target').value; });
     $('cast-vote').addEventListener('click', () => { void handlers.onVote($('vote-target').value); });
-    $('night-target').addEventListener('change', () => { $('cast-night-vote').disabled = !$('night-target').value; });
-    $('cast-night-vote').addEventListener('click', () => { void handlers.onNightVote($('night-target').value); });
+    $('night-targets').addEventListener('change', event => {
+      if (event.target.matches('input[name="night-target"]')) void handlers.onNightVote(event.target.value);
+    });
+    $('dismiss-dawn').addEventListener('click', () => { void handlers.onAdvance(); });
     $('finish-voting').addEventListener('click', () => { void handlers.onFinishVoting(); });
     $('dismiss-banishment').addEventListener('click', () => { void handlers.onDismissBanishment(); });
     $('copy-link').addEventListener('click', async () => {
