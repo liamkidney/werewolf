@@ -93,6 +93,7 @@ export class GameController {
       }
       const playerId = localStorage.getItem(identityKey(gameId)) || crypto.randomUUID();
       await this.repository.joinGame(gameId, playerId, name);
+      if (host) await this.repository.claimHost(gameId, playerId);
       localStorage.setItem(identityKey(gameId), playerId);
       localStorage.setItem('werewolf:name', name);
       if (host) localStorage.setItem(hostKey(gameId), 'true');
@@ -139,6 +140,7 @@ export class GameController {
         }
         if (id !== this.state.id) return;
         this.state = state;
+        if (state.hostPlayerId) this.isHost = state.hostPlayerId === this.playerId;
         this.renderCurrentScreen();
       }
       this.screens.showConnectionError('');
@@ -168,10 +170,8 @@ export class GameController {
       return;
     }
     const banished = state.players.find(player => player.id === state.lastBanishedId);
-    const dismissedKey = 'werewolf:banishment:' + state.id + ':' + state.lastBanishedRound;
-    if (state.phase === 'night' && banished && state.lastBanishedRound === state.roundNumber - 1
-      && localStorage.getItem(dismissedKey) !== 'true') {
-      this.screens.renderBanishment(banished.name);
+    if (state.phase === 'results' && banished && state.lastBanishedRound === state.roundNumber) {
+      this.screens.renderBanishment(banished.name, banished.id === this.playerId, this.isHost);
       return;
     }
     this.screens.showRole(this.playerRole);
@@ -208,7 +208,7 @@ export class GameController {
   }
 
   async castVote(targetId) {
-    if (this.casting || !targetId || this.state.phase !== 'day') return;
+    if (this.casting || !targetId || targetId === this.playerId || this.state.phase !== 'day') return;
     this.casting = true;
     this.showActionError('');
     try {
@@ -239,9 +239,9 @@ export class GameController {
     }
   }
 
-  dismissBanishment() {
-    localStorage.setItem('werewolf:banishment:' + this.state.id + ':' + this.state.lastBanishedRound, 'true');
-    this.renderCurrentScreen();
+  async dismissBanishment() {
+    if (!this.isHost || this.advancing || this.state.phase !== 'results') return;
+    await this.advancePhase();
   }
 
   async changeWerewolves(delta) {
