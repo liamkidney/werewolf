@@ -19,7 +19,7 @@ export class GameRepository {
   }
 
   async getGame(gameId) {
-    return unwrap(await this.db.from('games').select('id,status,werewolf_count,phase,round_number,phase_started_at,last_banished_id,last_banished_round').eq('id', gameId).maybeSingle());
+    return unwrap(await this.db.from('games').select('id,status,werewolf_count,phase,round_number,phase_started_at,last_banished_id,last_banished_round,host_player_id').eq('id', gameId).maybeSingle());
   }
 
   async hasPlayer(gameId, playerId) {
@@ -32,6 +32,10 @@ export class GameRepository {
     ));
   }
 
+  async claimHost(gameId, playerId) {
+    return unwrap(await this.db.rpc('claim_game_host', { p_game_id: gameId, p_player_id: playerId }));
+  }
+
   async getState(gameId) {
     const [game, players, votes] = await Promise.all([
       this.getGame(gameId),
@@ -41,7 +45,7 @@ export class GameRepository {
     if (!game) throw new Error('Game not found.');
     return new GameState({
       id: game.id, status: game.status, phase: game.phase, roundNumber: game.round_number, werewolfCount: game.werewolf_count, players, votes,
-      phaseStartedAt: game.phase_started_at, lastBanishedId: game.last_banished_id, lastBanishedRound: game.last_banished_round
+      phaseStartedAt: game.phase_started_at, lastBanishedId: game.last_banished_id, lastBanishedRound: game.last_banished_round, hostPlayerId: game.host_player_id
     });
   }
 
