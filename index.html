@@ -49,9 +49,15 @@
       </div>
     </section>
     <section id="role-screen" class="role-screen" hidden aria-live="polite">
+      <div class="phase-art phase-art-role" aria-hidden="true"><img src="./images/werewolf-night-light.png" alt=""></div>
       <p class="muted">Your secret role</p>
-      <h2 id="role-name">Waiting for role…</h2>
-      <p id="role-description" class="muted"></p>
+      <div id="role-reveal" class="role-reveal" role="button" tabindex="0" aria-label="Hold to reveal your secret role">
+        <p class="role-hint">Press and hold to reveal</p>
+        <div class="role-secret" aria-hidden="true">
+          <h2 id="role-name">Waiting for role…</h2>
+          <p id="role-description" class="muted"></p>
+        </div>
+      </div>
       <p class="role-reminder">Keep your role secret from other players.</p>
       <div id="phase-host-controls" hidden>
         <button id="advance-phase" type="button">Continue</button>
