@@ -4,7 +4,7 @@ html{min-height:100%}
 body{margin:0;min-height:100vh;min-height:100dvh;background:radial-gradient(ellipse at 50% 12%,#1d354b 0%,#0d1b29 53%,#09131e 100%)}
 .screen{width:min(100%,460px);min-height:100vh;min-height:100dvh;margin:0 auto;padding:calc(env(safe-area-inset-top) + 26px) 28px calc(env(safe-area-inset-bottom) + 40px);display:flex;flex-direction:column;gap:36px}
 .hero{text-align:center}
-.art{width:100%;max-width:390px;margin:0 auto -5px}
+.art{width:100%;max-width:none;margin:0 auto -5px}
 .art img{display:block;width:100%;height:auto}
 h1{font-family:Impact,'Arial Black',sans-serif;font-size:clamp(3.5rem,14vw,5.3rem);font-style:italic;letter-spacing:.035em;line-height:1;margin:0;transform:rotate(-2deg);text-shadow:2px 3px 0 #1b2632}
 .tagline{font-size:clamp(1.1rem,4.5vw,1.35rem);line-height:1.5;margin:30px 0 0}
@@ -24,17 +24,18 @@ button:hover{background:#ed3a47}
    Spare height is shared above and below the main content, not inserted
    unpredictably between the tagline and form. */
 .screen:has(> .entry:not([hidden])){
+  padding-top:0;
+  grid-template-rows:auto auto minmax(0,1fr) auto;
   display:grid;
-  grid-template-rows:minmax(0,1fr) auto auto minmax(0,1fr) auto;
   row-gap:0;
 }
-.screen:has(> .entry:not([hidden])) > .hero{grid-row:2}
-.screen:has(> .entry:not([hidden])) > .entry{grid-row:3;margin-top:clamp(40px,6vh,76px)}
-.screen:has(> .entry:not([hidden])) > .site-footer{grid-row:5;margin-top:0}
+.screen:has(> .entry:not([hidden])) > .hero{grid-row:1;margin-inline:-28px}
+.screen:has(> .entry:not([hidden])) > .entry{grid-row:2;margin-top:clamp(40px,6vh,76px)}
+.screen:has(> .entry:not([hidden])) > .site-footer{grid-row:4;margin-top:0}
 @media(min-width:650px){.screen{border-left:1px solid #ffffff15;border-right:1px solid #ffffff15}}
 @media(max-height:700px){
   .screen{gap:14px;padding-top:calc(env(safe-area-inset-top) + 10px);padding-bottom:calc(env(safe-area-inset-bottom) + 18px)}
-  .art{max-width:250px}
+  .art{max-width:none}
   h1{font-size:3.6rem}
   .tagline{margin-top:10px}
   .entry{gap:10px}
@@ -144,3 +145,7 @@ body.marquee-mode .site-footer{position:fixed;bottom:calc(env(safe-area-inset-bo
 .guest-art,.phase-art{--art-base:#f6f5f2}
 .phase-art{width:min(100%,340px);margin:0 auto -10px}
 .phase-art-day{display:block}
+
+/* Full-bleed landing art, with the heading and form on the normal content grid. */
+.screen:has(> .entry:not([hidden])) .hero h1,
+.screen:has(> .entry:not([hidden])) .hero .tagline{margin-left:28px;margin-right:28px}
