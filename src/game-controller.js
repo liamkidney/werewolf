@@ -21,6 +21,7 @@ export class GameController {
     this.playerId = null;
     this.isHost = false;
     this.starting = false;
+    this.advancing = false;
     this.refreshPending = false;
     this.refreshRunning = false;
     this.requestedGame = new URLSearchParams(location.search).get('game');
@@ -31,7 +32,8 @@ export class GameController {
     this.screens.bind({
       onJoin: () => this.joinFromForm(),
       onWerewolves: delta => this.changeWerewolves(delta),
-      onStart: () => this.startGame()
+      onStart: () => this.startGame(),
+      onAdvance: () => this.advancePhase()
     });
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden && this.state.id) this.requestRefresh();
@@ -116,6 +118,7 @@ export class GameController {
           if (id === this.state.id) {
             this.state = this.state.with({ myRole: role });
             this.screens.showRole(this.state.myRole);
+            this.screens.renderPhase(this.state, this);
           }
         }
       }
@@ -136,6 +139,25 @@ export class GameController {
       await this.repository.setWerewolfCount(this.state.id, next);
       this.requestRefresh();
     } catch (error) { this.screens.showError(error.message); }
+  }
+
+  async advancePhase() {
+    if (!this.isHost || this.advancing || this.state.status !== 'playing') return;
+    this.advancing = true;
+    this.screens.renderPhase(this.state, this);
+    this.screens.showError('');
+    try {
+      const fresh = await this.repository.getState(this.state.id);
+      const next = this.engine.nextPhase(fresh);
+      await this.repository.advancePhase(fresh, next);
+      this.requestRefresh();
+    } catch (error) {
+      this.screens.showError(error.message || 'Could not advance the game.');
+      this.requestRefresh();
+    } finally {
+      this.advancing = false;
+      this.screens.renderPhase(this.state, this);
+    }
   }
 
   async startGame() {
