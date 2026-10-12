@@ -1,11 +1,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import QRCode from 'https://esm.sh/qrcode@1.5.4';
 const db = createClient('https://guldhewlhxhsxchbattf.supabase.co', 'sb_publishable_6g3XdNkAJesxzGzFZ9ulYg_redoxZWj');
 const $ = (id) => document.getElementById(id);
 const form = $('new-game'), input = $('player-name'), error = $('name-error');
 const lobby = $('lobby'), hero = document.querySelector('.hero'), list = $('player-list');
 const params = new URLSearchParams(location.search);
 const requestedGame = params.get('game');
-const storageKey = 'werewolf:identity:' + (requestedGame || 'host');
+let playerCount = 0, werewolfCount = 2;
 let currentGame = null, channel = null, isHost = false;
 function showError(message) { $('app-error').textContent = message; $('app-error').hidden = !message; }
 function showLobby() { hero.hidden = true; form.hidden = true; lobby.hidden = false; }
@@ -21,6 +22,8 @@ async function loadPlayers() {
     li.textContent = player.name;
     list.append(li);
   }
+  playerCount = data.length;
+  updateCounts();
   $('lobby-message').textContent = data.length + (data.length === 1 ? ' player joined' : ' players joined');
 }
 async function enterLobby(gameId, host) {
@@ -30,10 +33,16 @@ async function enterLobby(gameId, host) {
   $('lobby-code').textContent = 'Game ' + gameId.slice(0,8).toUpperCase();
   $('host-tools').hidden = !host;
   $('invite-link').value = new URL('?game=' + encodeURIComponent(gameId), location.href).href;
+  if (host) {
+    try { await QRCode.toCanvas($('join-qr'), $('invite-link').value, {width:220, margin:2, color:{dark:'#111d2c',light:'#ffffff'}}); }
+    catch (e) { showError('Could not generate QR code. Use the invite link instead.'); }
+  }
+  await loadGameConfig();
   await loadPlayers();
   if (channel) await db.removeChannel(channel);
   channel = db.channel('lobby-' + gameId)
     .on('postgres_changes', {event:'*',schema:'public',table:'players',filter:'game_id=eq.'+gameId}, loadPlayers)
+    .on('postgres_changes', {event:'UPDATE',schema:'public',table:'games',filter:'id=eq.'+gameId}, loadGameConfig)
     .subscribe();
 }
 async function join(gameId, name, host) {
@@ -60,6 +69,35 @@ async function start(name) {
     history.replaceState(null,'',location.pathname+'?game='+data.id);
   }
 }
+
+function updateCounts() {
+  $('werewolf-count').textContent = werewolfCount;
+  $('villager-count').textContent = Math.max(0, playerCount - werewolfCount);
+  $('wolf-minus').disabled = werewolfCount <= 1;
+  $('wolf-plus').disabled = werewolfCount >= 50;
+  const valid = playerCount > werewolfCount;
+  $('role-warning').hidden = valid;
+  $('role-warning').textContent = valid ? '' : 'Add more players than werewolves before starting.';
+}
+async function loadGameConfig() {
+  if (!currentGame) return;
+  const {data,error} = await db.from('games').select('werewolf_count').eq('id',currentGame).single();
+  if (error) {showError(error.message);return;}
+  werewolfCount = data.werewolf_count;
+  updateCounts();
+}
+async function changeWerewolves(delta) {
+  if (!isHost || !currentGame) return;
+  const next = Math.min(50,Math.max(1,werewolfCount+delta));
+  if (next === werewolfCount) return;
+  $('wolf-minus').disabled = $('wolf-plus').disabled = true;
+  const {error} = await db.from('games').update({werewolf_count:next}).eq('id',currentGame);
+  if (error) showError(error.message);
+  await loadGameConfig();
+}
+$('wolf-minus').addEventListener('click',()=>changeWerewolves(-1));
+$('wolf-plus').addEventListener('click',()=>changeWerewolves(1));
+
 form.addEventListener('submit',async event=>{
   event.preventDefault();
   const name=input.value.trim();
