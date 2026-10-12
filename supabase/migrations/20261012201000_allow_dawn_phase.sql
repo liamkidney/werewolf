@@ -1,0 +1,1 @@
+alter table public.games drop constraint games_phase_check; alter table public.games add constraint games_phase_check check (phase in ('reveal','night','day','voting','results','dawn'));
