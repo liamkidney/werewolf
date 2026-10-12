@@ -174,7 +174,9 @@ export class GameController {
       this.screens.renderBanishment(banished.name, banished.id === this.playerId, this.isHost);
       return;
     }
-    this.screens.showRole(this.playerRole);
+    const eliminated = state.players.some(player => player.id === this.playerId && !!player.eliminated_at);
+    this.screens.showRole(eliminated ? null : this.playerRole);
+    if (eliminated) this.screens.showSpectator();
     this.screens.renderPhase(state, this);
   }
 
@@ -189,7 +191,7 @@ export class GameController {
     const myVote = votes.find(vote => vote.voter_id === this.playerId);
     if (voting && votes.length === active.length) {
       this.stopDayTimer();
-      const target = state.players.find(player => player.id === myVote.target_id);
+      const target = state.players.find(player => player.id === myVote?.target_id);
       this.screens.renderMarquee(target?.name || (this.isHost ? 'Votes in' : 'Spectating'), this.isHost, this.finishing);
       return;
     }
