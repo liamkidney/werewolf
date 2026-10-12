@@ -143,4 +143,4 @@ body.marquee-mode .site-footer{position:fixed;bottom:calc(env(safe-area-inset-bo
 .art{--art-base:#0b1723}
 .guest-art,.phase-art{--art-base:#f6f5f2}
 .phase-art{width:min(100%,340px);margin:0 auto -10px}
-.phase-art-day{display:none} /* Day illustration not yet uploaded. */
+.phase-art-day{display:block}
