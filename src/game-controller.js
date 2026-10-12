@@ -28,6 +28,7 @@ export class GameController {
     this.playerId = null;
     this.playerRole = null;
     this.isHost = false;
+    this.wasHost = false;
     this.eliminated = false;
     this.starting = false;
     this.advancing = false;
@@ -131,6 +132,7 @@ export class GameController {
     this.stopDayTimer();
     this.stopNightPoll();
     this.isHost = host;
+    this.wasHost = host;
     this.state = new GameState({ id: gameId });
     const inviteUrl = new URL('?game=' + encodeURIComponent(gameId), location.href).href;
     this.screens.showLobby(gameId, host, inviteUrl);
@@ -167,7 +169,9 @@ export class GameController {
         }
         if (state.players.some(player => player.id === this.playerId && player.eliminated_at)) {
           const murdered = state.lastMurderedId === this.playerId && state.lastMurderedRound === state.roundNumber;
-          this.screens.showEliminated(murdered);
+          const successor = this.wasHost && state.hostPlayerId !== this.playerId
+            ? state.players.find(player => player.id === state.hostPlayerId)?.name : null;
+          this.screens.showEliminated(murdered, successor);
           this.eliminated = true;
           this.refreshPending = false;
           this.stopDayTimer();
@@ -182,6 +186,7 @@ export class GameController {
         this.state = state;
         if (state.phase === 'night' && this.playerRole === 'werewolf') this.nightPack = await this.repository.getNightPack(id, this.playerId);
         if (state.hostPlayerId) this.isHost = state.hostPlayerId === this.playerId;
+        if (this.isHost) this.wasHost = true;
         this.renderCurrentScreen();
       }
       this.screens.showConnectionError('');
