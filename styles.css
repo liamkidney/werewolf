@@ -256,13 +256,13 @@ body.light-screen #endgame-screen.wolves-won .endgame-table th{background:#273a4
 body.light-screen #endgame-screen.wolves-won .endgame-table tr+tr td{border-color:#35475b}
 
 /* End credits: compact two-column cinema typography, no table chrome. */
-body.light-screen #endgame-screen .endgame-credits{width:100%;overflow:hidden;position:relative;text-align:left;padding:20px 0 36px;mask-image:linear-gradient(to bottom,transparent,#000 8%,#000 90%,transparent)}
+body.light-screen #endgame-screen .endgame-credits{width:100%;overflow:hidden;position:relative;text-align:left;padding:20px 0 36px;mask-image:none}
 body.light-screen #endgame-screen .endgame-credits-roll{display:flex;flex-direction:column;gap:22px;animation:endgame-credits-rise 32s linear 1 both}
 body.light-screen #endgame-screen .endgame-credits-intro,body.light-screen #endgame-screen .endgame-credits-outro{text-align:center;letter-spacing:.22em;font-size:.75rem;font-weight:700;margin:12px 0}
 body.light-screen #endgame-screen .endgame-credits-list{display:flex;flex-direction:column;gap:15px}
 body.light-screen #endgame-screen .endgame-credit{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:baseline;column-gap:0;font-family:Arial,Helvetica,sans-serif;font-size:clamp(.68rem,2.7vw,.85rem);font-weight:400;line-height:1.45}
 body.light-screen #endgame-screen .endgame-credit-role,body.light-screen #endgame-screen .endgame-credit-name{font:inherit;letter-spacing:0;line-height:inherit}
-body.light-screen #endgame-screen .endgame-credit-role{text-align:right;padding:0 12px 0 0;white-space:nowrap;opacity:.8}
+body.light-screen #endgame-screen .endgame-credit-role{text-align:right;padding:0 12px 0 0;white-space:nowrap;opacity:1}
 body.light-screen #endgame-screen .endgame-credit-details{display:block;min-width:0;padding:0 0 0 12px;text-align:left}
 body.light-screen #endgame-screen .endgame-credit-name{display:block;overflow-wrap:anywhere}
 @keyframes endgame-credits-rise{from{transform:translateY(28px)}to{transform:translateY(-28px)}}
