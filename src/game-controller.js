@@ -518,12 +518,6 @@ export class GameController {
       this.dayTicker = setInterval(() => this.renderDay(), 250);
       return;
     }
-    const banished = state.players.find(player => player.id === state.lastBanishedId);
-    if (state.phase === 'results' && banished && state.lastBanishedRound === state.roundNumber) {
-      this.screens.renderBanishment(banished.name);
-      this.screens.renderWorkflow(state, { isHost: this.isHost });
-      return;
-    }
     const eliminated = state.players.some(player => player.id === this.playerId && !!player.eliminated_at);
     this.screens.showRole(eliminated ? null : this.playerRole);
     if (eliminated) this.screens.showSpectator();
