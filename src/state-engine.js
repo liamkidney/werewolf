@@ -77,7 +77,7 @@ export class StateEngine {
       return { phase: 'day', roundNumber: state.roundNumber };
     }
     if (command.type === 'START_NIGHT' && state.phase === 'results') {
-      return { phase: 'night', roundNumber: state.roundNumber + 1 };
+      return { phase: 'night', roundNumber: state.roundNumber };
     }
     throw new Error('Transition is not permitted from this state.');
   }
