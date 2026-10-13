@@ -73,9 +73,9 @@ export class GameRepository {
   }
 
   async advancePhase(state, next, hostId) {
-    if (next.phase !== (state.phase === 'reveal' ? 'day' : 'night') || state.phase === 'dawn') {
-      throw new Error('Invalid requested phase transition.');
-    }
+    const permitted = (state.phase === 'reveal' && next.phase === 'day')
+      || (state.phase === 'results' && next.phase === 'night');
+    if (!permitted) throw new Error('Invalid requested phase transition.');
     unwrap(await this.db.rpc('advance_game_phase', {
       p_game_id: state.id, p_host: hostId, p_phase: state.phase, p_round: state.roundNumber
     }));
