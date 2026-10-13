@@ -1,12 +1,14 @@
 import { DEFAULT_RULES } from './game-rules.js';
 import { PresentationFlow } from './presentation-flow.js';
+import { RoleRegistry } from './role-registry.js';
 
 // Pure state/command evaluation. No database, browser, or side effects.
 // The repository must still enforce these invariants inside transactions.
 export class StateEngine {
-  constructor(rules = DEFAULT_RULES, presentationFlow = new PresentationFlow()) {
+  constructor(rules = DEFAULT_RULES, presentationFlow = new PresentationFlow(), roleRegistry = new RoleRegistry(rules.roles)) {
     this.rules = rules;
     this.presentationFlow = presentationFlow;
+    this.roles = roleRegistry;
   }
 
   presentation(state, options = {}) {
@@ -64,9 +66,9 @@ export class StateEngine {
       }
       case 'CAST_DAY_VOTE': return stage === 'day.voting';
       case 'FINISH_DAY': return isHost && stage === 'day.voting';
-      case 'CAST_NIGHT_VOTE': return stage === 'night' && role === 'werewolf';
-      case 'CAST_DECOY_VOTE': return stage === 'night' && role === 'villager';
-      case 'CAST_SEER_INVESTIGATION': return stage === 'night' && role === 'seer';
+      case 'CAST_NIGHT_VOTE': return stage === 'night' && this.roles.hasAction(role, 'kill');
+      case 'CAST_DECOY_VOTE': return stage === 'night' && this.roles.hasAction(role, 'decoy');
+      case 'CAST_SEER_INVESTIGATION': return stage === 'night' && this.roles.hasAction(role, 'inspect');
       default: return false;
     }
   }
