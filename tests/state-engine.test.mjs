@@ -5,7 +5,8 @@ import { StateEngine } from '../src/state-engine.js';
 const engine = new StateEngine();
 test('reveal requires host start day and results starts next night', () => {
   assert.deepEqual(engine.transition({ status: 'playing', phase: 'reveal', roundNumber: 1 }, { type: 'START_DAY' }), { phase: 'day', roundNumber: 1 });
-  assert.deepEqual(engine.transition({ status: 'playing', phase: 'results', roundNumber: 1 }, { type: 'START_NIGHT' }), { phase: 'night', roundNumber: 1 });
+  assert.deepEqual(engine.transition({ status: 'playing', phase: 'results', roundNumber: 1 }, { type: 'AUTO_START_NIGHT' }), { phase: 'night', roundNumber: 1 });
+  assert.throws(() => engine.transition({ status: 'playing', phase: 'results', roundNumber: 1 }, { type: 'START_NIGHT' }));
   assert.deepEqual(engine.transition({ status: 'playing', phase: 'dawn', roundNumber: 2 }, { type: 'AUTO_START_DAY' }), { phase: 'day', roundNumber: 2 });
   assert.throws(() => engine.transition({ status: 'playing', phase: 'dawn', roundNumber: 2 }, { type: 'START_DAY' }));
   assert.throws(() => engine.transition({ status: 'playing', phase: 'day', roundNumber: 1 }, { type: 'START_NIGHT' }));
@@ -40,7 +41,7 @@ test('complete two-round lifecycle preserves discussion before voting', () => {
   assert.equal(engine.step(state), 'voting');
   state = { ...state, phase: 'results', step: 'announcement' };
   assert.equal(engine.step(state), 'announcement');
-  state = { ...state, ...engine.transition(state, { type: 'START_NIGHT' }), step: 'actions' };
+  state = { ...state, ...engine.transition(state, { type: 'AUTO_START_NIGHT' }), step: 'actions' };
   assert.equal(state.roundNumber, 1);
   assert.equal(engine.step(state), 'actions');
   state = { ...state, phase: 'dawn', roundNumber: state.roundNumber + 1, step: 'murder_reveal' };
