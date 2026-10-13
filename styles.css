@@ -274,9 +274,9 @@ body.light-screen #endgame-screen .endgame-credits:active .endgame-credits-roll{
 body.light-screen #endgame-screen .endgame-credits-supporting-heading{padding-top:30px;padding-bottom:8px}
 
 
-/* Consistent player-facing phase guidance */
-.workflow-status { box-sizing:border-box; width:100%; margin:0 auto 1.25rem; padding:1rem 1.15rem; border:1px solid rgba(95,72,57,.24); border-radius:12px; background:rgba(255,255,255,.7); color:#302721; text-align:left; }
-.workflow-label { font-size:.72rem; font-weight:700; letter-spacing:.13em; text-transform:uppercase; opacity:.7; }
-.workflow-title { font-size:1.2rem; line-height:1.25; margin:.4rem 0; }
-.workflow-message, .workflow-progress { font-size:.92rem; line-height:1.45; margin:.35rem 0; }
-.workflow-next { margin:.8rem 0 0; padding-top:.65rem; border-top:1px solid rgba(95,72,57,.2); font-size:.82rem; opacity:.8; }
+/* Discreet two-line workflow header; no card or explanatory copy. */
+.workflow-status{box-sizing:border-box;width:100%;margin:0 0 .8rem;padding:0 0 .65rem;background:transparent;border:0;border-radius:0;color:inherit;text-align:left;display:block}
+.workflow-label{font-size:.78rem;font-weight:700;letter-spacing:.12em;line-height:1.4;text-transform:uppercase;opacity:.85}
+.workflow-next{display:flex;align-items:center;gap:.55rem;min-width:0;margin:.55rem 0 0;padding:.55rem 0 0;border-top:1px solid currentColor;font-size:.83rem;line-height:1.4;opacity:.8}
+.workflow-next-label{font-size:.7rem;font-weight:700;letter-spacing:.09em;opacity:.7;flex:none}
+.workflow-arrow{margin-left:auto;flex:none;font-size:1rem}
