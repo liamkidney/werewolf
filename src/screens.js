@@ -137,8 +137,7 @@ export class Screens {
     $('elimination-heading').textContent = murdered ? 'MURDERED' : 'BANISHED';
     $('banished-name').textContent = murdered ? 'You were murdered' : 'You have been banished';
     $('banishment-description').textContent = 'You are out of the game.' + (newHostName ? ' ' + newHostName + ' is now the host.' : '');
-    $('dismiss-banishment').hidden = true;
-    $('banishment-waiting').hidden = true;
+    $('banishment-screen').querySelector('.presentation-progress').hidden = true;
   }
 
   showSpectator() {
@@ -409,15 +408,19 @@ export class Screens {
     $('finish-voting').textContent = finishing ? 'Finishing…' : 'All Done';
   }
 
-  renderBanishment(name, eliminated, isHost) {
+  renderBanishment(name, step = null) {
     this.showScreen('banishment-screen');
+    const screen = $('banishment-screen');
+    screen.classList.remove('murdered-screen');
+    screen.querySelector('.murder-art').hidden = true;
+    screen.querySelector('.banished-art').hidden = false;
+    screen.querySelector('.presentation-progress').hidden = false;
     $('elimination-heading').textContent = 'BANISHED';
-    $('banished-name').textContent = eliminated ? 'You have been banished' : name;
-    $('banishment-description').textContent = eliminated
-      ? 'You are out of the game. You can watch, but cannot vote again.'
-      : name + ' has been eliminated from the game.';
-    $('dismiss-banishment').hidden = !isHost;
-    $('banishment-waiting').hidden = isHost;
+    $('banished-name').textContent = name;
+    $('banishment-description').textContent = name + ' has been eliminated from the game.';
+    this.updateTimedProgress('banishment-screen', step || {
+      durationMs: 1, elapsedMs: 1, progress: 1
+    });
   }
 
   async renderQr(inviteUrl) {
@@ -477,7 +480,6 @@ export class Screens {
     });
 
     $('finish-voting').addEventListener('click', () => { void handlers.onFinishVoting(); });
-    $('dismiss-banishment').addEventListener('click', () => { void handlers.onDismissBanishment(); });
     let feedbackTimeout;
     $('copy-link').addEventListener('click', async () => {
       const feedback = $('copy-feedback');
