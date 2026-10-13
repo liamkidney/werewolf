@@ -474,7 +474,7 @@ export class GameController {
       return;
     }
     this.screens.showRole(this.playerRole, this.werewolfPackmates);
-    this.screens.renderPhase(state, this);
+    this.screens.renderRoleStartControls(this);
     this.screens.renderWorkflow(state, { isHost: this.isHost, playerId: this.playerId });
   }
 
@@ -594,7 +594,7 @@ export class GameController {
   async advancePhase() {
     if (this.advancing || !this.can('START_DAY')) return;
     this.advancing = true;
-    this.screens.renderPhase(this.state, this);
+    this.screens.renderRoleStartControls(this);
     this.showActionError('');
     try {
       const fresh = await this.repository.getState(this.state.id);
@@ -606,7 +606,7 @@ export class GameController {
       this.requestRefresh();
     } finally {
       this.advancing = false;
-      if (this.state.status === 'playing' && this.state.phase === 'reveal') this.screens.renderPhase(this.state, this);
+      if (this.state.status === 'playing' && this.state.phase === 'reveal') this.screens.renderRoleStartControls(this);
     }
   }
 
