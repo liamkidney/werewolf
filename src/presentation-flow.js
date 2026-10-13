@@ -3,7 +3,8 @@
 // screens without database changes or new controller timer branches.
 export const PRESENTATION_SEQUENCES = Object.freeze({
   dawn: Object.freeze([
-    Object.freeze({ id: 'suspense', screen: 'suspense-screen', durationMs: 6000 })
+    Object.freeze({ id: 'suspense', screen: 'suspense-screen', durationMs: 6000 }),
+    Object.freeze({ id: 'reveal', screen: 'dawn-screen', durationMs: 6000 })
   ]),
   'seer-investigation': Object.freeze([
     Object.freeze({ id: 'result', screen: 'seer-result-screen', durationMs: 6000 })
@@ -25,7 +26,7 @@ export class PresentationFlow {
 
     const start = startedAt ?? Date.parse(state.phaseStartedAt || '');
     // A missing timestamp must never trap the player on a suspense screen.
-    if (!Number.isFinite(start)) return { stage: state.phase + '.reveal', screen: null };
+    if (!Number.isFinite(start)) return { stage: state.phase + '.complete', screen: null };
 
     let elapsed = Math.max(0, now - start);
     for (const step of steps) {
@@ -41,6 +42,6 @@ export class PresentationFlow {
       }
       elapsed -= step.durationMs;
     }
-    return { stage: state.phase + '.reveal', screen: null };
+    return { stage: state.phase + '.complete', screen: null };
   }
 }
