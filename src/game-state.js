@@ -27,5 +27,4 @@ export class GameState {
     return new GameState({ ...this, ...changes });
   }
 
-  get villagerCount() { return Math.max(0, this.players.length - this.werewolfCount); }
 }
