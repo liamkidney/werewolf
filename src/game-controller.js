@@ -489,44 +489,42 @@ export class GameController {
     if (state.phase !== 'night') this.stopNightPoll();
     // Any phase can configure timed presentation pages. Render those before
     // the ordinary phase screen, without adding another controller branch.
-    const presentation = state.status === 'playing' ? this.stateEngine.presentation(state) : null;
-    if (presentation?.screen) {
-      this.renderTimedPresentation(presentation);
+    const view = this.stateEngine.view(state, { playerId: this.playerId });
+    if (view.presentation) {
+      this.renderTimedPresentation(view.presentation);
       return;
     }
     this.stopPresentationTimer();
     if (state.phase !== 'dawn' && state.phase !== 'results') this.stopAutoPhaseRetry();
-    if (this.stateEngine.stage(state, this.playerId) === 'lobby') {
+    if (view.stage === 'lobby') {
       this.renderLobby();
       return;
     }
-    if (this.stateEngine.stage(state, this.playerId) === 'night') {
+    if (view.stage === 'night') {
       this.screens.renderNight(state, { playerId: this.playerId, role: this.playerRole, pack: this.nightPack, casting: this.nightCasting || this.decoyCasting || this.seerCasting, decoyPack: this.decoyPack, seerPack: this.seerPack });
       this.screens.renderWorkflow(state, { playerId: this.playerId, role: this.playerRole, isHost: this.isHost, pack: this.nightPack, decoyPack: this.decoyPack, seerPack: this.seerPack });
       if (this.nightPoll === null) this.nightPoll = setInterval(() => this.requestRefresh(), 1500);
       return;
     }
-    if (this.stateEngine.stage(state, this.playerId) === 'dawn.complete') {
+    if (view.stage === 'dawn.complete') {
       const victim = state.players.find(player => player.id === state.lastMurderedId);
       this.screens.renderMurderReveal(victim?.name || 'A villager',
         state.decoyQuestion, this.decoyPack?.results || [], state.players);
       void this.autoAdvancePhase();
       return;
     }
-    if (this.stateEngine.stage(state, this.playerId) === 'results.complete') {
+    if (view.stage === 'results.complete') {
       const banished = state.players.find(player => player.id === state.lastBanishedId);
       this.screens.renderBanishment(banished?.name || 'A player');
       void this.autoAdvancePhase();
       return;
     }
-    if (this.stateEngine.stage(state, this.playerId).startsWith('day.')) {
+    if (view.stage.startsWith('day.')) {
       this.renderDay();
       this.dayTicker = setInterval(() => this.renderDay(), 250);
       return;
     }
-    const eliminated = state.players.some(player => player.id === this.playerId && !!player.eliminated_at);
-    this.screens.showRole(eliminated ? null : this.playerRole, this.werewolfPackmates);
-    if (eliminated) this.screens.showSpectator();
+    this.screens.showRole(this.playerRole, this.werewolfPackmates);
     this.screens.renderPhase(state, this);
     this.screens.renderWorkflow(state, { isHost: this.isHost, playerId: this.playerId });
   }
@@ -538,7 +536,7 @@ export class GameController {
     const deadline = Date.parse(state.phaseStartedAt || '') + (state.dayDurationSeconds ?? 120) * 1000;
     const seconds = Number.isFinite(deadline) ? Math.max(0, Math.ceil((deadline - Date.now()) / 1000)) : (state.dayDurationSeconds ?? 120);
     if (seconds === 0 && state.step === 'discussion' && !this.openingVoting) void this.openDayVoting();
-    const voting = this.stateEngine.stage(state, this.playerId) === 'day.voting';
+    const voting = view.stage === 'day.voting';
     const active = state.players.filter(player => !player.eliminated_at);
     const votes = state.votes.filter(vote => vote.round_number === state.roundNumber);
     const myVote = votes.find(vote => vote.voter_id === this.playerId);
