@@ -361,6 +361,7 @@ export class GameController {
     // The victim gets the common suspense screen, then their private
     // elimination message; they must not enter the public timed reveal.
     if (step?.stage !== 'dawn.suspense') return false;
+    this.stopNightPoll();
     this.renderTimedPresentation(step);
     return true;
   }
@@ -382,6 +383,7 @@ export class GameController {
   renderFinished(state) {
     this.stopNightPoll();
     this.stopDayTimer();
+    this.stopAutoDayRetry();
     if (this.endgameTimer !== null) clearTimeout(this.endgameTimer);
     this.endgameTimer = null;
     const started = Date.parse(state.phaseStartedAt || '');
