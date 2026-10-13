@@ -9,6 +9,7 @@ export class Screens {
     this.form = $('new-game');
     this.nameInput = $('player-name');
     this.marqueeFont = null;
+    this.dayVoteRound = null;
   }
 
   showError(message) {
@@ -285,7 +286,12 @@ export class Screens {
     const voted = state.votes.filter(vote => vote.round_number === state.roundNumber).length;
     $('vote-controls').hidden = !voting || !!myVote || !active.some(player => player.id === playerId);
     const choices = $('vote-targets');
-    const selected = choices.querySelector('input[name="vote-target"]:checked')?.value;
+    // Preserve a pending selection only within the same round. The DOM is
+    // reused between rounds, so a previous round's checked radio is stale.
+    const selected = this.dayVoteRound === state.roundNumber
+      ? choices.querySelector('input[name="vote-target"]:checked')?.value
+      : null;
+    this.dayVoteRound = state.roundNumber;
     choices.replaceChildren();
     for (const player of active.filter(player => player.id !== playerId)) {
       const label = document.createElement('label');
