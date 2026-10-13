@@ -86,12 +86,12 @@ export class Screens {
     state.players.forEach((player, index) => {
       const item = document.createElement('li');
       const dot = document.createElement('span');
-      dot.className = 'player-dot dot-' + (index % 6);
+      dot.remove();
       const name = document.createElement('span');
       const mine = player.id === playerId;
       name.textContent = player.name + (mine ? ' (you)' : '');
       if (mine) name.className = 'my-name';
-      item.append(dot, name);
+      item.append(name);
       list.append(item);
     });
     const count = state.players.length;
