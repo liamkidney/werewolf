@@ -3,7 +3,7 @@ import { StateEngine } from './state-engine.js';
 const stateEngine = new StateEngine();
 
 // Player-facing workflow guidance, derived only from visible game state.
-export function workflowStatus(state, { role, playerId, isHost = false, pack = null, decoyPack = null } = {}) {
+export function workflowStatus(state, { role, playerId, isHost = false, pack = null, decoyPack = null, seerPack = null } = {}) {
   const round = state.roundNumber;
   const stage = stateEngine.stage(state, playerId);
   const waiting = (message, next) => ({ message, next });
@@ -18,6 +18,11 @@ export function workflowStatus(state, { role, playerId, isHost = false, pack = n
     return { label: 'DAY ' + round + ' · VOTING', title: mine ? 'Your vote is locked' : 'Choose a player to banish', ...waiting(mine ? 'Waiting for the remaining players.' : 'Cast your final vote.', 'Banishment result'), progress: votes.length + ' of ' + active.length + ' votes cast' };
   }
   if (stage === 'night') {
+    if (role === 'seer') return {
+      label: 'NIGHT ' + round + ' · SEER INVESTIGATION',
+      title: seerPack?.myInvestigation ? 'Your investigation is complete' : 'Investigate a player',
+      ...waiting(seerPack?.myInvestigation ? 'Waiting for the remaining night actions.' : 'Choose one living player. Your choice is final.', 'Dawn · Murder reveal')
+    };
     if (role === 'werewolf') {
       const wolves = pack?.wolves || [];
       const votes = pack?.votes || [];
