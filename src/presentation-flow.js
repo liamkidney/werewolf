@@ -4,6 +4,9 @@
 export const PRESENTATION_SEQUENCES = Object.freeze({
   dawn: Object.freeze([
     Object.freeze({ id: 'suspense', screen: 'suspense-screen', durationMs: 6000 })
+  ]),
+  'seer-investigation': Object.freeze([
+    Object.freeze({ id: 'result', screen: 'seer-result-screen', durationMs: 6000 })
   ])
 });
 
