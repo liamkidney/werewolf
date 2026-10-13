@@ -21,6 +21,7 @@ export class GameController {
     this.state = new GameState();
     this.playerId = null;
     this.playerRole = null;
+    this.werewolfPackmates = null;
     this.isHost = false;
     this.wasHost = false;
     this.eliminated = false;
@@ -172,6 +173,7 @@ export class GameController {
   async enterGame(gameId, playerId) {
     this.playerId = playerId;
     this.playerRole = null;
+    this.werewolfPackmates = null;
     this.eliminated = false;
     this.finalCreditsGameId = null;
     this.stopDayTimer();
@@ -251,6 +253,10 @@ export class GameController {
         }
         if (state.status === 'playing' && !this.playerRole) {
           this.playerRole = await this.repository.getMyRole(id, this.playerId);
+        }
+        if (state.status === 'playing' && state.phase === 'reveal'
+            && this.playerRole === 'werewolf' && this.werewolfPackmates === null) {
+          this.werewolfPackmates = await this.repository.getWerewolfPackmates(id, this.playerId);
         }
         if (id !== this.state.id || this.eliminated) return;
         this.state = state;
@@ -519,7 +525,7 @@ export class GameController {
       return;
     }
     const eliminated = state.players.some(player => player.id === this.playerId && !!player.eliminated_at);
-    this.screens.showRole(eliminated ? null : this.playerRole);
+    this.screens.showRole(eliminated ? null : this.playerRole, this.werewolfPackmates);
     if (eliminated) this.screens.showSpectator();
     this.screens.renderPhase(state, this);
     this.screens.renderWorkflow(state, { isHost: this.isHost, playerId: this.playerId });
