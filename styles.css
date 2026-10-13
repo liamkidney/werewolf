@@ -231,6 +231,9 @@ body.light-screen #role-screen .role-reveal.revealed .role-hint{display:none}
 body.light-screen #role-screen .role-reveal.revealed .role-secret{display:block}
 body.light-screen #role-screen .role-secret h2{margin:0 0 10px;font-family:'Cormorant Garamond',Georgia,serif;font-size:clamp(2.5rem,11vw,4rem);font-weight:600;letter-spacing:.02em;text-transform:none;color:#e8e5dd}
 body.light-screen #role-screen .role-secret p{margin:0;color:#c0c5c8;font-size:1rem}
+body.light-screen #role-screen .role-pack{margin-top:20px;padding-top:16px;border-top:1px solid #56616a}
+body.light-screen #role-screen .role-secret .role-pack-heading{color:#c0c5c8;font-size:.78rem;letter-spacing:.1em}
+body.light-screen #role-screen .role-secret .role-pack-names{margin-top:8px;font-family:'Cormorant Garamond',Georgia,serif;font-size:clamp(1.45rem,6vw,1.9rem);line-height:1.2;color:#e8e5dd;overflow-wrap:anywhere}
 body.light-screen #role-screen .role-reminder{border:0;padding:6px 0 0;margin:0;color:#a5a8a5;font-size:.95rem;line-height:1.5}
 body.light-screen #role-screen #phase-host-controls{margin-top:4px}
 body.light-screen #role-screen #phase-host-controls button{background:#8d303b;border-radius:8px}
