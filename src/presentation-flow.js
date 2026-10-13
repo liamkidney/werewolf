@@ -12,6 +12,10 @@ export class PresentationFlow {
     this.sequences = sequences;
   }
 
+  duration(phase) {
+    return (this.sequences[phase] || []).reduce((total, step) => total + step.durationMs, 0);
+  }
+
   resolve(state, { now = Date.now(), startedAt = null } = {}) {
     const steps = this.sequences[state.phase];
     if (!steps) return null;
