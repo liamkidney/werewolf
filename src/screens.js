@@ -1,4 +1,3 @@
-import { PHASES } from './game-phases.js';
 import { ROLES } from './role-registry.js';
 import { workflowStatus } from './workflow-status.js';
 import QRCode from 'qrcode';
@@ -145,16 +144,9 @@ export class Screens {
     $('banishment-screen').querySelector('.presentation-progress').hidden = true;
   }
 
-  showSpectator() {
-    $('role-name').textContent = 'Eliminated';
-    $('role-description').textContent = 'You are watching the rest of the game.';
-    document.querySelector('.role-reminder').hidden = true;
-  }
-
-  renderPhase(state, { isHost, advancing }) {
-    const phase = PHASES[state.phase];
+  renderRoleStartControls({ isHost, advancing }) {
     $('phase-host-controls').hidden = !isHost;
-    $('advance-phase').textContent = advancing ? 'Updating…' : phase?.action || 'Continue';
+    $('advance-phase').textContent = advancing ? 'Updating…' : 'Start Day';
     $('advance-phase').disabled = advancing;
   }
 
