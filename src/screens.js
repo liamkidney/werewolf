@@ -251,8 +251,10 @@ export class Screens {
     $('night-heading').textContent = 'Night has fallen';
     const wolf = role === 'werewolf';
     const seer = role === 'seer';
+    const loneWolf = wolf && pack?.wolves?.length === 1;
     $('night-instruction').textContent = wolf
-      ? 'Agree on one villager to eliminate.'
+      ? loneWolf ? 'You are the only werewolf! Pick a villager to eliminate.'
+        : 'Agree on one villager to eliminate.'
       : seer ? 'Investigate one player. Your choice is final.'
       : 'Cast your vote. The results will be revealed at dawn.';
     $('night-villager-controls').hidden = role !== 'villager';
@@ -312,26 +314,25 @@ export class Screens {
     if (!wolf) return;
     const wolves = pack?.wolves || [];
     const votes = pack?.votes || [];
-    const names = new Map(state.players.map(player => [player.id, player.name]));
+    $('night-wolf-roster').hidden = loneWolf;
+    $('night-wolf-choose-heading').hidden = loneWolf;
     const list = $('night-wolves');
     list.replaceChildren();
-    for (const member of wolves) {
-      const vote = votes.find(item => item.voter_id === member.id);
-      const item = document.createElement('li');
-      item.textContent = member.name + (member.id === playerId ? ' (you)' : '') + ' — ' + (vote ? names.get(vote.target_id) || 'Unknown' : 'Not nominated');
-      list.append(item);
+    if (!loneWolf) {
+      const names = new Map(state.players.map(player => [player.id, player.name]));
+      for (const member of wolves) {
+        const vote = votes.find(item => item.voter_id === member.id);
+        const item = document.createElement('li');
+        item.textContent = member.name + (member.id === playerId ? ' (you)' : '') + ' — ' + (vote ? names.get(vote.target_id) || 'Unknown' : 'Not nominated');
+        list.append(item);
+      }
     }
     const choices = $('night-targets');
     const selected = votes.find(item => item.voter_id === playerId)?.target_id;
     choices.replaceChildren();
     for (const player of state.players.filter(p => !p.eliminated_at && !wolves.some(w => w.id === p.id))) {
-      const count = votes.filter(v => v.target_id === player.id).length;
-      const percent = wolves.length ? Math.round(count * 100 / wolves.length) : 0;
       const label = document.createElement('label');
       label.className = 'night-choice';
-      const bar = document.createElement('span');
-      bar.className = 'night-bar';
-      bar.style.width = percent + '%';
       const radio = document.createElement('input');
       radio.type = 'radio';
       radio.name = 'night-target';
@@ -341,13 +342,25 @@ export class Screens {
       const name = document.createElement('span');
       name.className = 'night-name';
       name.textContent = player.name;
-      const share = document.createElement('span');
-      share.className = 'night-percent';
-      share.textContent = percent + '%';
-      label.append(bar, radio, name, share);
+      if (loneWolf) {
+        // Direct selection: no consensus meter or pack percentage.
+        label.append(radio, name);
+      } else {
+        const count = votes.filter(v => v.target_id === player.id).length;
+        const percent = wolves.length ? Math.round(count * 100 / wolves.length) : 0;
+        const bar = document.createElement('span');
+        bar.className = 'night-bar';
+        bar.style.width = percent + '%';
+        const share = document.createElement('span');
+        share.className = 'night-percent';
+        share.textContent = percent + '%';
+        label.append(bar, radio, name, share);
+      }
       choices.append(label);
     }
-    $('night-progress').textContent = votes.length + '/' + wolves.length + ' votes. Unanimous agreement ends the night.';
+    $('night-progress').textContent = loneWolf
+      ? selected ? 'Choice recorded. Waiting for the remaining night actions.' : ''
+      : votes.length + '/' + wolves.length + ' votes. Unanimous agreement ends the night.';
   }
 
   renderDay(state, { playerId, isHost, voting, myVote, casting, endingDiscussion }) {
