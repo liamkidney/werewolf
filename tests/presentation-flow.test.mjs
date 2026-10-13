@@ -12,74 +12,87 @@ const dawn = (overrides = {}) => ({
   players: [victim, survivor], ...overrides
 });
 
-test('dawn has explicit suspense and reveal substates with timed progress', () => {
+test('dawn runs two consecutive six-second presentation substates', () => {
   const flow = new PresentationFlow();
-  assert.equal(PRESENTATION_SEQUENCES.dawn.length, 1);
-  assert.equal(flow.duration('dawn'), 6000);
-  const first = flow.resolve(dawn(), { now: startedAt });
-  assert.equal(first.stage, 'dawn.suspense');
-  assert.equal(first.screen, 'suspense-screen');
-  assert.equal(first.remainingMs, 6000);
-  assert.equal(first.progress, 0);
-  const midway = flow.resolve(dawn(), { now: startedAt + 3000 });
-  assert.equal(midway.progress, .5);
-  assert.equal(midway.remainingMs, 3000);
+  assert.equal(PRESENTATION_SEQUENCES.dawn.length, 2);
+  assert.equal(flow.duration('dawn'), 12000);
+  const suspense = flow.resolve(dawn(), { now: startedAt });
+  assert.equal(suspense.stage, 'dawn.suspense');
+  assert.equal(suspense.screen, 'suspense-screen');
+  assert.equal(suspense.remainingMs, 6000);
+  assert.equal(suspense.progress, 0);
   assert.equal(flow.resolve(dawn(), { now: startedAt + 5999 }).stage, 'dawn.suspense');
-  assert.equal(flow.resolve(dawn(), { now: startedAt + 6000 }).stage, 'dawn.reveal');
+
+  const reveal = flow.resolve(dawn(), { now: startedAt + 6000 });
+  assert.equal(reveal.stage, 'dawn.reveal');
+  assert.equal(reveal.screen, 'dawn-screen');
+  assert.equal(reveal.durationMs, 6000);
+  assert.equal(reveal.progress, 0);
+  assert.equal(flow.resolve(dawn(), { now: startedAt + 9000 }).progress, .5);
+  assert.equal(flow.resolve(dawn(), { now: startedAt + 11999 }).stage, 'dawn.reveal');
+  const complete = flow.resolve(dawn(), { now: startedAt + 12000 });
+  assert.equal(complete.stage, 'dawn.complete');
+  assert.equal(complete.screen, null);
 });
 
-test('state engine uses presentation substate to gate the host starting the day', () => {
+test('automatic day start is available to living players only after both screens', () => {
   const engine = new StateEngine();
   const state = dawn();
-  assert.equal(engine.stage(state, survivor.id, startedAt + 1000), 'dawn.suspense');
-  assert.equal(engine.can(state, 'START_DAY', { playerId: survivor.id, isHost: true, now: startedAt + 1000 }), false);
-  assert.equal(engine.stage(state, survivor.id, startedAt + 6000), 'dawn.reveal');
-  assert.equal(engine.can(state, 'START_DAY', { playerId: survivor.id, isHost: true, now: startedAt + 6000 }), true);
-  assert.equal(engine.can(state, 'START_DAY', { playerId: survivor.id, isHost: false, now: startedAt + 6000 }), false);
-  assert.equal(engine.stage(state, victim.id, startedAt + 1000), 'eliminated');
+  for (const seconds of [0, 5, 6, 11]) {
+    assert.equal(engine.can(state, 'AUTO_START_DAY',
+      { playerId: survivor.id, now: startedAt + seconds * 1000 }), false);
+  }
+  assert.equal(engine.can(state, 'AUTO_START_DAY',
+    { playerId: survivor.id, now: startedAt + 12000 }), true);
+  assert.equal(engine.can(state, 'AUTO_START_DAY',
+    { playerId: victim.id, now: startedAt + 12000 }), false);
+  assert.equal(engine.can(state, 'START_DAY',
+    { playerId: survivor.id, isHost: true, now: startedAt + 12000 }), false);
+  assert.equal(engine.can(dawn({ status: 'finished' }), 'AUTO_START_DAY',
+    { playerId: survivor.id, now: startedAt + 12000 }), false);
 });
 
-test('a murdered player can receive the full suspense duration despite late state delivery', () => {
-  const engine = new StateEngine();
+test('a player receiving a late murder update can still run a local suspense window', () => {
+  const flow = new PresentationFlow();
   const late = startedAt + 9000;
-  const step = engine.presentation(dawn(), { now: late + 1500, startedAt: late });
-  assert.equal(step.stage, 'dawn.suspense');
-  assert.equal(step.remainingMs, 4500);
-  assert.equal(engine.presentation(dawn(), { now: late + 6000, startedAt: late }).stage, 'dawn.reveal');
+  assert.equal(flow.resolve(dawn(), { now: late + 1500, startedAt: late }).stage, 'dawn.suspense');
+  assert.equal(flow.resolve(dawn(), { now: late + 6000, startedAt: late }).stage, 'dawn.reveal');
+  assert.equal(flow.resolve(dawn(), { now: late + 12000, startedAt: late }).stage, 'dawn.complete');
 });
 
-test('a finished game can still resolve dawn suspense before final credits', () => {
+test('a murder that finishes the game still has suspense and a full reveal', () => {
   const engine = new StateEngine();
-  const finished = dawn({ status: 'finished', winner: 'werewolves' });
-  assert.equal(engine.stage(finished, survivor.id, startedAt + 1000), 'finished');
-  assert.equal(engine.presentation(finished, { now: startedAt + 1000 }).stage, 'dawn.suspense');
-  assert.equal(engine.presentation(finished, { now: startedAt + 6000 }).stage, 'dawn.reveal');
+  const state = dawn({ status: 'finished', winner: 'werewolves' });
+  assert.equal(engine.stage(state, survivor.id, startedAt + 1000), 'finished');
+  assert.equal(engine.presentation(state, { now: startedAt + 1000 }).stage, 'dawn.suspense');
+  assert.equal(engine.presentation(state, { now: startedAt + 9000 }).stage, 'dawn.reveal');
+  assert.equal(engine.presentation(state, { now: startedAt + 12000 }).stage, 'dawn.complete');
 });
 
-test('adding a second suspense screen requires configuration only', () => {
+test('more suspense screens are added by configuration, not new controller timers', () => {
   const flow = new PresentationFlow({
     dawn: [
       { id: 'suspense', screen: 'suspense-screen', durationMs: 2000 },
-      { id: 'second-suspense', screen: 'second-suspense-screen', durationMs: 3000 }
+      { id: 'second-suspense', screen: 'second-suspense-screen', durationMs: 3000 },
+      { id: 'reveal', screen: 'dawn-screen', durationMs: 6000 }
     ]
   });
+  assert.equal(flow.duration('dawn'), 11000);
   assert.equal(flow.resolve(dawn(), { now: startedAt + 1000 }).stage, 'dawn.suspense');
-  const second = flow.resolve(dawn(), { now: startedAt + 2500 });
-  assert.equal(second.stage, 'dawn.second-suspense');
-  assert.equal(second.screen, 'second-suspense-screen');
-  assert.equal(second.progress, 1 / 6);
-  assert.equal(flow.duration('dawn'), 5000);
+  const extra = flow.resolve(dawn(), { now: startedAt + 2500 });
+  assert.equal(extra.stage, 'dawn.second-suspense');
+  assert.equal(extra.progress, 1 / 6);
   assert.equal(flow.resolve(dawn(), { now: startedAt + 5000 }).stage, 'dawn.reveal');
+  assert.equal(flow.resolve(dawn(), { now: startedAt + 11000 }).stage, 'dawn.complete');
 });
 
-test('bad or missing timestamps do not trap players on suspense', () => {
+test('missing timestamps do not trap the presentation state machine', () => {
   const flow = new PresentationFlow();
-  assert.equal(flow.resolve(dawn({ phaseStartedAt: null })).stage, 'dawn.reveal');
+  assert.equal(flow.resolve(dawn({ phaseStartedAt: null })).stage, 'dawn.complete');
   assert.equal(flow.resolve({ phase: 'night' }), null);
 });
 
-
-test('future suspense pages work for other reveal-style phases without controller-specific timers', () => {
+test('timed sequences can be configured for other phases', () => {
   const flow = new PresentationFlow({
     results: [{ id: 'suspense', screen: 'results-suspense-screen', durationMs: 2500 }],
     reveal: [{ id: 'suspense', screen: 'roles-suspense-screen', durationMs: 1200 }]
@@ -87,11 +100,16 @@ test('future suspense pages work for other reveal-style phases without controlle
   const engine = new StateEngine(undefined, flow);
   const results = dawn({ phase: 'results', players: [survivor] });
   assert.equal(engine.stage(results, survivor.id, startedAt + 1000), 'results.suspense');
-  assert.equal(engine.can(results, 'START_NIGHT', { playerId: survivor.id, isHost: true, now: startedAt + 1000 }), false);
-  assert.equal(engine.stage(results, survivor.id, startedAt + 2500), 'results.reveal');
-  assert.equal(engine.can(results, 'START_NIGHT', { playerId: survivor.id, isHost: true, now: startedAt + 2500 }), true);
+  assert.equal(engine.can(results, 'START_NIGHT',
+    { playerId: survivor.id, isHost: true, now: startedAt + 1000 }), false);
+  assert.equal(engine.stage(results, survivor.id, startedAt + 2500), 'results.complete');
+  assert.equal(engine.can(results, 'START_NIGHT',
+    { playerId: survivor.id, isHost: true, now: startedAt + 2500 }), true);
+
   const roles = { ...results, phase: 'reveal' };
   assert.equal(engine.stage(roles, survivor.id, startedAt + 1000), 'reveal.suspense');
-  assert.equal(engine.can(roles, 'START_DAY', { playerId: survivor.id, isHost: true, now: startedAt + 1000 }), false);
-  assert.equal(engine.can(roles, 'START_DAY', { playerId: survivor.id, isHost: true, now: startedAt + 1200 }), true);
+  assert.equal(engine.can(roles, 'START_DAY',
+    { playerId: survivor.id, isHost: true, now: startedAt + 1000 }), false);
+  assert.equal(engine.can(roles, 'START_DAY',
+    { playerId: survivor.id, isHost: true, now: startedAt + 1200 }), true);
 });
