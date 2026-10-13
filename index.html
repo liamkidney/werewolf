@@ -98,7 +98,6 @@
       <div class="presentation-progress" role="progressbar" aria-label="Time until next screen" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
         <div class="presentation-progress-fill"></div>
       </div>
-      <p class="presentation-progress-caption">Continuing automatically…</p>
     </section>
     <section id="seer-result-screen" class="banishment-screen timed-presentation-screen" hidden aria-live="polite">
       <div class="phase-art phase-art-night" aria-hidden="true"><img src="./images/werewolf-night-dark.png" alt=""></div>
@@ -108,7 +107,6 @@
       <div class="presentation-progress" role="progressbar" aria-label="Time until next screen" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
         <div class="presentation-progress-fill"></div>
       </div>
-      <p class="presentation-progress-caption">Continuing automatically…</p>
     </section>
     <section id="dawn-screen" class="banishment-screen" hidden>
       <div class="phase-art phase-art-day" aria-hidden="true"><img src="./images/werewolf-day.png" alt=""></div>
@@ -120,8 +118,9 @@
         <h3 id="dawn-decoy-question"></h3>
         <p id="dawn-decoy-result"></p>
       </div>
-      <button id="dismiss-dawn" type="button">Start Day</button>
-      <p id="dawn-waiting" class="muted" hidden>Waiting for the host to start the day…</p>
+      <div class="presentation-progress" role="progressbar" aria-label="Time until discussion begins" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="presentation-progress-fill"></div>
+      </div>
     </section>
     <section id="endgame-screen" class="banishment-screen" hidden>
       <div class="phase-art phase-art-day endgame-day-art" aria-hidden="true"><img src="./images/werewolf-day-victory.png" alt=""></div>
