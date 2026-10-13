@@ -46,6 +46,12 @@ export class GameController {
     this.requestedGame = this.session.requestedGame;
   }
 
+  can(command) {
+    return this.stateEngine.can(this.state, command, {
+      playerId: this.playerId, isHost: this.isHost, role: this.playerRole
+    });
+  }
+
   renderLobby() {
     this.screens.renderWorkflow(this.state, { playerId: this.playerId, isHost: this.isHost });
     this.screens.renderLobby(this.state, {
@@ -339,7 +345,7 @@ export class GameController {
   }
 
   async castNightVote(targetId) {
-    if (this.eliminated || this.nightCasting || this.playerRole !== 'werewolf' || this.state.phase !== 'night' || !targetId) return;
+    if (this.nightCasting || !targetId || !this.can('CAST_NIGHT_VOTE')) return;
     this.nightCasting = true;
     this.showActionError('');
     try {
@@ -364,17 +370,17 @@ export class GameController {
     this.stopDayTimer();
     if (state.phase !== 'night') this.stopNightPoll();
     if (state.phase !== 'dawn') this.stopSuspenseTimer();
-    if (state.status !== 'playing') {
+    if (this.stateEngine.stage(state, this.playerId) === 'lobby') {
       this.renderLobby();
       return;
     }
-    if (state.phase === 'night') {
+    if (this.stateEngine.stage(state, this.playerId) === 'night') {
       this.screens.renderNight(state, { playerId: this.playerId, role: this.playerRole, pack: this.nightPack, casting: this.nightCasting || this.decoyCasting, decoyPack: this.decoyPack });
       this.screens.renderWorkflow(state, { playerId: this.playerId, role: this.playerRole, isHost: this.isHost, pack: this.nightPack, decoyPack: this.decoyPack });
       if (this.nightPoll === null) this.nightPoll = setInterval(() => this.requestRefresh(), 1500);
       return;
     }
-    if (state.phase === 'dawn') {
+    if (this.stateEngine.stage(state, this.playerId) === 'dawn') {
       if (this.suspenseRemaining(state) > 0) {
         this.showSuspense(state);
         return;
@@ -385,7 +391,7 @@ export class GameController {
       this.screens.renderWorkflow(state, { isHost: this.isHost });
       return;
     }
-    if (state.phase === 'day') {
+    if (this.stateEngine.stage(state, this.playerId).startsWith('day.')) {
       this.renderDay();
       this.dayTicker = setInterval(() => this.renderDay(), 250);
       return;
@@ -410,7 +416,7 @@ export class GameController {
     const deadline = Date.parse(state.phaseStartedAt || '') + (state.dayDurationSeconds ?? 120) * 1000;
     const seconds = Number.isFinite(deadline) ? Math.max(0, Math.ceil((deadline - Date.now()) / 1000)) : (state.dayDurationSeconds ?? 120);
     if (seconds === 0 && state.step === 'discussion' && !this.openingVoting) void this.openDayVoting();
-    const voting = this.stateEngine.step(state) === 'voting';
+    const voting = this.stateEngine.stage(state, this.playerId) === 'day.voting';
     const active = state.players.filter(player => !player.eliminated_at);
     const votes = state.votes.filter(vote => vote.round_number === state.roundNumber);
     const myVote = votes.find(vote => vote.voter_id === this.playerId);
@@ -436,7 +442,7 @@ export class GameController {
   }
 
   async openDayVoting() {
-    if (this.openingVoting || this.eliminated || this.state.phase !== 'day') return;
+    if (this.openingVoting || !this.can('OPEN_VOTING')) return;
     this.openingVoting = true;
     try {
       await this.repository.openDayVoting(this.state.id, this.state.roundNumber);
@@ -449,7 +455,7 @@ export class GameController {
   }
 
   async endDiscussion() {
-    if (this.eliminated || !this.isHost || this.endingDiscussion || this.state.phase !== 'day' || this.state.discussionEndedAt) return;
+    if (this.endingDiscussion || !this.can('END_DISCUSSION')) return;
     this.endingDiscussion = true;
     this.showActionError('');
     try {
@@ -463,7 +469,7 @@ export class GameController {
   }
 
   async castVote(targetId) {
-    if (this.eliminated || this.casting || !targetId || targetId === this.playerId || this.state.phase !== 'day') return;
+    if (this.casting || !targetId || targetId === this.playerId || !this.can('CAST_DAY_VOTE')) return;
     this.casting = true;
     this.showActionError('');
     try {
@@ -477,7 +483,7 @@ export class GameController {
   }
 
   async finishVoting() {
-    if (this.eliminated || !this.isHost || this.finishing || this.state.phase !== 'day') return;
+    if (this.finishing || !this.can('FINISH_DAY')) return;
     this.finishing = true;
     this.screens.renderMarquee(
       this.state.players.find(player => player.id === this.state.votes.find(vote =>
@@ -510,7 +516,7 @@ export class GameController {
   }
 
   async advancePhase() {
-    if (this.eliminated || !this.isHost || this.advancing || this.state.status !== 'playing' || this.state.phase === 'night' || this.suspenseRemaining(this.state) > 0) return;
+    if (this.advancing || (!this.can('START_DAY') && !this.can('START_NIGHT')) || this.suspenseRemaining(this.state) > 0) return;
     this.advancing = true;
     this.screens.renderPhase(this.state, this);
     this.showActionError('');
