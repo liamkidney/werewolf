@@ -415,3 +415,49 @@ body.light-screen .lobby .stepper button{width:40px;min-height:40px}
 body.light-screen .lobby .stepper output{min-width:34px;padding:8px 4px}
 body.light-screen .lobby #start-game{min-height:48px}
 @media(max-width:360px){body.light-screen .lobby .player-list{gap:6px 10px}}
+
+
+/* Artwork blend system: the active page theme owns the fade colour.
+   Day = bone, lighter night = slate, dark night = charcoal.
+   Keep the image files unchanged so palette updates never require new assets. */
+body.light-screen{
+  --art-day:#e8e5dd;
+  --art-light-night:#19232e;
+  --art-dark-night:#101820;
+  --art-base:var(--phase-bg);
+}
+body.light-screen .guest-art,
+body.light-screen .phase-art,
+body.light-screen .art{--art-base:var(--phase-bg)}
+body.light-screen .guest-art::after,
+body.light-screen .phase-art::after{
+  height:55%;
+  background:linear-gradient(to bottom,
+    transparent 0%,
+    color-mix(in srgb,var(--art-base) 12%,transparent) 24%,
+    color-mix(in srgb,var(--art-base) 65%,transparent) 68%,
+    var(--art-base) 100%);
+}
+body.light-screen:has(#night-screen:not([hidden])),
+body.light-screen:has(#suspense-screen:not([hidden])),
+body.light-screen:has(#banishment-screen.murdered-screen:not([hidden])),
+body.light-screen:has(#endgame-screen.wolves-won:not([hidden])){
+  --phase-bg:var(--art-dark-night);
+  --phase-panel:#202e3b;
+}
+body.light-screen:has(#role-screen:not([hidden])){
+  --phase-bg:var(--art-light-night);
+}
+body.light-screen #night-screen .phase-art-night,
+body.light-screen #suspense-screen .phase-art-night,
+body.light-screen #banishment-screen.murdered-screen .phase-art-night,
+body.light-screen #endgame-screen.wolves-won .endgame-night-art{
+  --art-base:var(--art-dark-night);
+}
+body.light-screen #role-screen .phase-art-role{--art-base:var(--art-light-night)}
+body.light-screen #day-screen .phase-art-day,
+body.light-screen #dawn-screen .phase-art-day,
+body.light-screen #banishment-screen:not(.murdered-screen) .phase-art-day,
+body.light-screen #endgame-screen:not(.wolves-won) .endgame-day-art,
+body.light-screen .guest-art{--art-base:var(--art-day)}
+/* Artwork can remain full width without exposing a mismatched lower edge. */
