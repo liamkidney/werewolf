@@ -461,3 +461,39 @@ body.light-screen #banishment-screen:not(.murdered-screen) .phase-art-day,
 body.light-screen #endgame-screen:not(.wolves-won) .endgame-day-art,
 body.light-screen .guest-art{--art-base:var(--art-day)}
 /* Artwork can remain full width without exposing a mismatched lower edge. */
+
+
+/* Lobby roster panel — a single visual group, not individual player cards. */
+body.light-screen .lobby .players-heading{
+  border-top:1px solid var(--phase-line);
+  padding-top:12px;
+  margin:0;
+  font-size:.83rem;
+  letter-spacing:.075em;
+  text-transform:uppercase;
+}
+body.light-screen .lobby .players-heading strong{font-weight:700}
+body.light-screen .lobby .players-heading span{
+  font-size:.76rem;letter-spacing:0;text-transform:none;font-weight:400;
+}
+body.light-screen .lobby .player-list{
+  padding:15px 16px;
+  gap:9px 20px;
+  border:1px solid var(--phase-line);
+  border-radius:9px;
+  background:var(--phase-panel);
+}
+body.light-screen .lobby .player-list li,
+body.light-screen .lobby .player-list li+li{
+  font-size:.92rem;line-height:1.3;padding:1px 0;
+}
+body.light-screen .lobby .player-list .my-name{font-weight:500}
+body.light-screen .lobby .player-list .player-you{
+  color:var(--phase-muted);font-weight:400;font-size:.85em;
+}
+body.light-screen .lobby #host-controls{gap:13px}
+body.light-screen .lobby .role-config{padding-top:12px}
+body.light-screen .lobby .role-row{align-items:center}
+@media(max-width:360px){
+  body.light-screen .lobby .player-list{padding:12px;gap:8px 10px}
+}
