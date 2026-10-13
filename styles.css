@@ -530,3 +530,53 @@ body.light-screen .banishment-screen .presentation-progress-caption{
   letter-spacing:.07em;
   color:#aeb9c9;
 }
+
+
+/* Seer screens reuse the ordinary night choices and timed-presentation chrome. */
+body.light-screen #night-seer-controls{
+  width:100%;
+  display:grid;
+  gap:12px;
+  text-align:left;
+}
+body.light-screen #night-seer-controls h3{
+  margin:0;
+  font-family:'Cormorant Garamond',Georgia,serif;
+  font-size:1.65rem;
+  font-weight:600;
+  color:var(--phase-ink);
+}
+body.light-screen #night-seer-controls .muted{
+  margin:2px 0 0;
+  font-size:.91rem;
+  line-height:1.5;
+}
+body.light-screen #night-seer-controls .seer-history{
+  padding-top:12px;
+  border-top:1px solid var(--phase-line);
+}
+body.light-screen #night-seer-controls .seer-history h3{
+  font-family:inherit;
+  font-size:.84rem;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+body.light-screen #seer-history-list{
+  list-style:none;
+  margin:10px 0 0;
+  padding:0;
+  display:grid;
+  gap:8px;
+  color:var(--phase-muted);
+  font-size:.9rem;
+}
+body.light-screen #seer-result-screen #seer-result-verdict{
+  font-family:'Cormorant Garamond',Georgia,serif;
+  font-size:clamp(1.65rem,7vw,2.3rem);
+  font-weight:600;
+  margin:0;
+  color:#e3c19b;
+}
+body.light-screen #seer-result-screen #seer-result-verdict.not-werewolf{
+  color:#d7e1de;
+}
