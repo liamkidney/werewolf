@@ -15,6 +15,7 @@ const dawn = (overrides = {}) => ({
 test('dawn has explicit suspense and reveal substates with timed progress', () => {
   const flow = new PresentationFlow();
   assert.equal(PRESENTATION_SEQUENCES.dawn.length, 1);
+  assert.equal(flow.duration('dawn'), 6000);
   const first = flow.resolve(dawn(), { now: startedAt });
   assert.equal(first.stage, 'dawn.suspense');
   assert.equal(first.screen, 'suspense-screen');
@@ -67,6 +68,7 @@ test('adding a second suspense screen requires configuration only', () => {
   assert.equal(second.stage, 'dawn.second-suspense');
   assert.equal(second.screen, 'second-suspense-screen');
   assert.equal(second.progress, 1 / 6);
+  assert.equal(flow.duration('dawn'), 5000);
   assert.equal(flow.resolve(dawn(), { now: startedAt + 5000 }).stage, 'dawn.reveal');
 });
 
