@@ -55,10 +55,19 @@ export class Screens {
       panel.append(el);
     };
     add('div', 'workflow-label', info.label);
-    add('h2', 'workflow-title', info.title);
-    add('p', 'workflow-message', info.message);
-    if (info.progress) add('p', 'workflow-progress', info.progress);
-    add('p', 'workflow-next', 'NEXT · ' + info.next);
+    const next = document.createElement('div');
+    next.className = 'workflow-next';
+    const prefix = document.createElement('span');
+    prefix.className = 'workflow-next-label';
+    prefix.textContent = 'NEXT';
+    const detail = document.createElement('span');
+    detail.textContent = info.next;
+    const arrow = document.createElement('span');
+    arrow.className = 'workflow-arrow';
+    arrow.setAttribute('aria-hidden', 'true');
+    arrow.textContent = '→';
+    next.append(prefix, detail, arrow);
+    panel.append(next);
     visible.prepend(panel);
   }
 
