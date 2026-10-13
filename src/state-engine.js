@@ -40,7 +40,8 @@ export class StateEngine {
     if (state.status === 'lobby') return 'lobby';
     if (state.status !== 'playing') throw new Error('Unknown game status: ' + state.status);
     if (state.phase === 'day') return this.step(state, now) === 'voting' ? 'day.voting' : 'day.discussion';
-    if (state.phase === 'dawn') return this.presentation(state, { now }).stage;
+    const presentation = this.presentation(state, { now });
+    if (presentation) return presentation.stage;
     if (['reveal', 'night', 'results'].includes(state.phase)) return state.phase;
     throw new Error('Unknown game phase: ' + state.phase);
   }
@@ -51,8 +52,8 @@ export class StateEngine {
     const stage = this.stage(state, playerId, now);
     if (stage === 'finished' || stage === 'eliminated') return false;
     switch (command) {
-      case 'START_DAY': return isHost && (stage === 'reveal' || stage === 'dawn.reveal');
-      case 'START_NIGHT': return isHost && stage === 'results';
+      case 'START_DAY': return isHost && ['reveal', 'reveal.reveal', 'dawn.reveal'].includes(stage);
+      case 'START_NIGHT': return isHost && (stage === 'results' || stage === 'results.reveal');
       case 'END_DISCUSSION': return isHost && stage === 'day.discussion';
       case 'OPEN_VOTING': {
         if (stage === 'day.voting') return true;
