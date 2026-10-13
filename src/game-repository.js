@@ -122,6 +122,12 @@ export class GameRepository {
     return unwrap(await this.db.rpc('get_final_roles', { p_game_id: gameId }));
   }
 
+  async getWerewolfPackmates(gameId, playerId) {
+    return unwrap(await this.db.rpc('get_werewolf_packmates', {
+      p_game_id: gameId, p_player_id: playerId
+    }));
+  }
+
   async getNightPack(gameId, playerId) {
     return unwrap(await this.db.rpc('get_night_pack', { p_game_id: gameId, p_player_id: playerId }));
   }
