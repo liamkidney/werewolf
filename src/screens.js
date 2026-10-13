@@ -10,6 +10,13 @@ export class Screens {
     this.nameInput = $('player-name');
     this.marqueeFont = null;
     this.dayVoteRound = null;
+    // Retain the standard day illustration until the new victory asset is deployed.
+    const victoryArt = $('endgame-screen').querySelector('.endgame-day-art img');
+    victoryArt.addEventListener('error', () => {
+      if (victoryArt.getAttribute('src') !== './images/werewolf-day.png') {
+        victoryArt.src = './images/werewolf-day.png';
+      }
+    });
   }
 
   showError(message) {
