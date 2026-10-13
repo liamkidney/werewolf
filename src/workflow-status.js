@@ -8,7 +8,7 @@ export function workflowStatus(state, { role, playerId, isHost = false, pack = n
   const stage = stateEngine.stage(state, playerId);
   const waiting = (message, next) => ({ message, next });
   if (stage === 'lobby') return { label: 'LOBBY', title: 'Waiting for players', ...waiting(isHost ? 'Invite players, then start the game.' : 'Waiting for the host to start the game.', 'Secret roles are assigned') };
-  if (stage === 'reveal') return { label: 'ROLE REVEAL', title: 'Discover your secret role', ...waiting(isHost ? 'Reveal your role, then start the first day.' : 'Reveal your role. Waiting for the host to begin.', 'Day 1 · Discussion') };
+  if (stage === 'reveal' || stage === 'reveal.reveal') return { label: 'ROLE REVEAL', title: 'Discover your secret role', ...waiting(isHost ? 'Reveal your role, then start the first day.' : 'Reveal your role. Waiting for the host to begin.', 'Day 1 · Discussion') };
   if (stage.startsWith('day.')) {
     const active = state.players.filter(p => !p.eliminated_at);
     const votes = state.votes.filter(v => v.round_number === round);
@@ -27,6 +27,6 @@ export function workflowStatus(state, { role, playerId, isHost = false, pack = n
     return { label: 'NIGHT ' + round + ' · VILLAGE QUESTION', title: decoyPack?.myVote ? 'Your answer is recorded' : 'Answer the night question', ...waiting(decoyPack?.myVote ? 'You can change your answer until dawn.' : 'Choose a player to answer the question.', 'Dawn · Murder reveal') };
   }
   if (stage === 'dawn.suspense' || stage === 'dawn.reveal') return { label: 'DAY ' + round + ' · DAWN', title: 'The night is over', ...waiting('Discover what happened overnight.', 'Discussion') };
-  if (stage === 'results') return { label: 'DAY ' + round + ' · RESULT', title: 'A player has been banished', ...waiting(isHost ? 'Continue when everyone has seen the result.' : 'Waiting for the host to continue.', 'Night ' + round) };
+  if (stage === 'results' || stage === 'results.reveal') return { label: 'DAY ' + round + ' · RESULT', title: 'A player has been banished', ...waiting(isHost ? 'Continue when everyone has seen the result.' : 'Waiting for the host to continue.', 'Night ' + round) };
   return null;
 }
