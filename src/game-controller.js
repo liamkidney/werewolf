@@ -35,6 +35,8 @@ export class GameController {
     this.finalCreditsGameId = null;
     this.nightPoll = null;
     this.suspenseTimer = null;
+    this.murderSuspenseKey = null;
+    this.murderSuspenseUntil = 0;
     this.finishing = false;
     this.endingDiscussion = false;
     this.dayTicker = null;
@@ -168,6 +170,8 @@ export class GameController {
     this.stopDayTimer();
     this.stopNightPoll();
     this.stopSuspenseTimer();
+    this.murderSuspenseKey = null;
+    this.murderSuspenseUntil = 0;
     if (this.endgameTimer !== null) clearTimeout(this.endgameTimer);
     this.endgameTimer = null;
     this.decoyPack = null;
@@ -207,6 +211,10 @@ export class GameController {
         // Elimination is a permanent player state, independent of the current
         // round's last victim or the current phase.
         if (me.eliminated_at) {
+          // The murder is persisted at the night-to-dawn transition, before
+          // the six-second announcement. Let the victim see that announcement
+          // before switching permanently to their eliminated screen.
+          if (!this.eliminated && this.showMurderedPlayerSuspense(state)) return;
           this.enterEliminatedState(me, state);
           if (state.status !== 'finished') return;
         }
@@ -287,13 +295,32 @@ export class GameController {
     this.suspenseTimer = null;
   }
 
-  showSuspense(state) {
+  showSuspense(state, remaining = this.suspenseRemaining(state)) {
     this.screens.renderSuspense();
     if (this.suspenseTimer !== null) return;
     this.suspenseTimer = setTimeout(() => {
       this.suspenseTimer = null;
       this.requestRefresh();
-    }, this.suspenseRemaining(state) + 30);
+    }, remaining + 30);
+  }
+
+  showMurderedPlayerSuspense(state) {
+    const murderedThisRound = state.phase === 'dawn'
+      && state.lastMurderedId === this.playerId
+      && state.lastMurderedRound === state.roundNumber;
+    if (murderedThisRound) {
+      const key = state.id + ':' + state.roundNumber;
+      if (this.murderSuspenseKey !== key) {
+        this.murderSuspenseKey = key;
+        // Start when this client learns of the murder: a delayed realtime
+        // message must not deprive the victim of the announcement.
+        this.murderSuspenseUntil = Date.now() + 6000;
+      }
+    }
+    const remaining = this.murderSuspenseUntil - Date.now();
+    if (!this.murderSuspenseKey || remaining <= 0) return false;
+    this.showSuspense(state, remaining);
+    return true;
   }
 
   renderFinished(state) {
