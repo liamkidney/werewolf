@@ -158,7 +158,11 @@ export class Screens {
   // Changing the screen within the sequence requires no controller changes.
   renderTimedPresentation(step) {
     this.showScreen(step.screen);
-    const progress = $(step.screen).querySelector('.presentation-progress');
+    this.updateTimedProgress(step.screen, step);
+  }
+
+  updateTimedProgress(screenId, step) {
+    const progress = $(screenId).querySelector('.presentation-progress');
     if (!progress) return;
     const fill = progress.querySelector('.presentation-progress-fill');
     progress.setAttribute('aria-valuenow', String(Math.round(step.progress * 100)));
@@ -175,7 +179,7 @@ export class Screens {
     $('seer-result-verdict').classList.toggle('not-werewolf', !investigation.isWerewolf);
   }
 
-  renderMurderReveal(name, isHost, question = null, results = [], players = []) {
+  renderMurderReveal(name, question = null, results = [], players = [], timedStep = null) {
     this.showScreen('dawn-screen');
     $('dawn-victim').textContent = name;
     $('dawn-decoy').hidden = !question;
@@ -186,8 +190,9 @@ export class Screens {
     const total = results.reduce((sum, item) => sum + item.votes, 0);
     $('dawn-decoy-result').textContent = !total ? 'No votes were cast.'
       : names.join(', ') + ' — ' + max + (max === 1 ? ' vote' : ' votes') + ' (' + total + ' total).';
-    $('dismiss-dawn').hidden = !isHost;
-    $('dawn-waiting').hidden = isHost;
+    // A timed dawn reveal always progresses to the day without host input.
+    const step = timedStep || { durationMs: 1, elapsedMs: 1, progress: 1 };
+    this.updateTimedProgress('dawn-screen', step);
   }
 
   renderEndgame(winner, roles) {
@@ -470,7 +475,7 @@ export class Screens {
     $('seer-targets').addEventListener('change', event => {
       if (event.target.matches('input[name="seer-target"]')) void handlers.onSeerInvestigation(event.target.value);
     });
-    $('dismiss-dawn').addEventListener('click', () => { void handlers.onAdvance(); });
+
     $('finish-voting').addEventListener('click', () => { void handlers.onFinishVoting(); });
     $('dismiss-banishment').addEventListener('click', () => { void handlers.onDismissBanishment(); });
     let feedbackTimeout;
