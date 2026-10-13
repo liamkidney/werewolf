@@ -298,3 +298,91 @@ body:has(> .workflow-status) .site-footer{margin-bottom:0}
 .workflow-next{display:flex;align-items:center;gap:.55rem;min-width:0;margin-top:6px;padding-top:6px;border-top:1px solid #d9dce0;font-size:.81rem;line-height:1.35}
 .workflow-next-label{font-size:.7rem;font-weight:700;letter-spacing:.09em;color:#68717e;flex:none}
 .workflow-arrow{margin-left:auto;flex:none;font-size:1rem;color:#68717e}
+
+
+/* Unified phase design: light by day, dark by night. Shared tokens and
+   components prevent the lobby, voting and footer from drifting apart. */
+body.light-screen{
+  --phase-bg:#e8e5dd;--phase-panel:#f6f4ee;--phase-ink:#19232e;
+  --phase-muted:#626b73;--phase-line:#c8c7c2;--phase-accent:#8d303b;
+}
+body.light-screen:has(#night-screen:not([hidden])),
+body.light-screen:has(#suspense-screen:not([hidden])),
+body.light-screen:has(#banishment-screen.murdered-screen:not([hidden])),
+body.light-screen:has(#endgame-screen.wolves-won:not([hidden])),
+body.light-screen:has(#role-screen:not([hidden])){
+  --phase-bg:#19232e;--phase-panel:#283747;--phase-ink:#e8e5dd;
+  --phase-muted:#a5a8a5;--phase-line:#49525b;--phase-accent:#a45a63;
+}
+body.light-screen,body.light-screen .screen{background:var(--phase-bg);color:var(--phase-ink)}
+body.light-screen .lobby-eyebrow{color:var(--phase-muted);font-size:.76rem;letter-spacing:.2em}
+body.light-screen .day-screen h2,
+body.light-screen .banishment-screen h2,
+body.light-screen .guest-intro h2,
+body.light-screen .join-heading{
+  font-family:'Cormorant Garamond',Georgia,serif;
+  font-weight:600;letter-spacing:.005em;line-height:1.06;color:var(--phase-ink);
+}
+body.light-screen .day-screen h2,body.light-screen .banishment-screen h2{font-size:clamp(2.7rem,10vw,4rem)}
+body.light-screen .join-heading{font-size:clamp(2.2rem,9vw,3.1rem)}
+body.light-screen .day-screen,body.light-screen .banishment-screen{color:var(--phase-ink);gap:20px}
+body.light-screen .day-screen p,body.light-screen .banishment-screen p{line-height:1.5}
+body.light-screen .day-clock{font-family:Georgia,serif;font-size:clamp(5rem,19vw,7rem);font-weight:400;letter-spacing:-.045em;line-height:1.1;color:var(--phase-ink)}
+body.light-screen .day-screen .vote-label{font-family:'Cormorant Garamond',Georgia,serif;font-size:1.7rem;font-weight:600;color:var(--phase-ink)}
+body.light-screen .vote-targets{gap:10px}
+body.light-screen .vote-targets button,
+body.light-screen .vote-targets label,
+body.light-screen .night-choice{
+  border-radius:8px;border:1px solid var(--phase-line);
+  background:var(--phase-panel);color:var(--phase-ink);
+}
+body.light-screen .vote-targets button:focus-visible,
+body.light-screen .night-choice:focus-within{outline:2px solid var(--phase-accent);outline-offset:2px}
+body.light-screen .vote-targets input{accent-color:var(--phase-accent)}
+body.light-screen .day-screen button:not(.night-choice),
+body.light-screen .banishment-screen button,
+body.light-screen #start-game{
+  border-radius:8px;background:#8d303b;color:#f8f4ee;font-size:1.1rem;
+  font-weight:600;min-height:54px;
+}
+body.light-screen .day-screen button:disabled{opacity:.55}
+body.light-screen .guest-intro p,body.light-screen .muted{color:var(--phase-muted)}
+/* Lobby: QR stays high contrast for reliable scanning; surrounding chrome is quiet. */
+body.light-screen .lobby{gap:18px}
+body.light-screen .join-header{gap:12px}
+body.light-screen .qr-wrap{border-radius:8px;box-shadow:none;border:1px solid var(--phase-line);padding:14px}
+body.light-screen .invite-row button{border-radius:8px;background:#dadbd8;color:#283747}
+body.light-screen .players-heading{border-color:var(--phase-line);color:var(--phase-ink);font-weight:500}
+body.light-screen .players-heading span{color:var(--phase-muted)}
+body.light-screen .player-list{border-radius:8px;background:var(--phase-panel);box-shadow:none;border:1px solid var(--phase-line)}
+body.light-screen .player-list li{color:var(--phase-ink);min-height:52px}
+body.light-screen .player-list li+li{border-color:var(--phase-line)}
+body.light-screen .role-config{color:var(--phase-ink)}
+body.light-screen .stepper{border-radius:8px}
+body.light-screen .stepper output{background:var(--phase-panel);color:var(--phase-ink)}
+/* Same navigation component on every phase, using the active palette. */
+body.light-screen .workflow-status{
+  background:var(--phase-bg);color:var(--phase-ink);
+  border-top:1px solid var(--phase-line);box-shadow:none;
+}
+body.light-screen .workflow-next{border-top:1px solid var(--phase-line)}
+body.light-screen .workflow-next-label,body.light-screen .workflow-arrow{color:var(--phase-muted)}
+body.light-screen .workflow-label{letter-spacing:.16em;font-size:.7rem}
+body.light-screen .workflow-next{font-size:.79rem}
+body.light-screen .site-footer{color:var(--phase-muted)}
+body.light-screen .phase-art{--art-base:var(--phase-bg)}
+body.light-screen #role-screen .phase-art-role,
+body.light-screen #night-screen .phase-art-night,
+body.light-screen #suspense-screen .phase-art-night,
+body.light-screen #banishment-screen.murdered-screen .phase-art-night,
+body.light-screen #endgame-screen.wolves-won .endgame-night-art{--art-base:#19232e}
+/* Keep the illustration prominent while avoiding giant empty gaps. */
+body.light-screen #day-screen:not([hidden]){gap:18px}
+body.light-screen #day-screen .phase-art{margin-bottom:4px}
+body.light-screen #day-screen #day-instruction{margin:6px 0 12px}
+body.light-screen #day-screen #vote-controls{gap:12px}
+@media(max-height:740px){
+  body.light-screen .day-screen,body.light-screen .banishment-screen{gap:12px}
+  body.light-screen .day-clock{font-size:clamp(4rem,16vw,6rem)}
+  body.light-screen .lobby{gap:12px}
+}
