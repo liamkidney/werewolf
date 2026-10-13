@@ -1,9 +1,17 @@
 import { DEFAULT_RULES } from './game-rules.js';
+import { PresentationFlow } from './presentation-flow.js';
 
 // Pure state/command evaluation. No database, browser, or side effects.
 // The repository must still enforce these invariants inside transactions.
 export class StateEngine {
-  constructor(rules = DEFAULT_RULES) { this.rules = rules; }
+  constructor(rules = DEFAULT_RULES, presentationFlow = new PresentationFlow()) {
+    this.rules = rules;
+    this.presentationFlow = presentationFlow;
+  }
+
+  presentation(state, options = {}) {
+    return this.presentationFlow.resolve(state, options);
+  }
 
   step(state, now = Date.now()) {
     if (state.status !== 'playing') return state.status === 'lobby' ? 'waiting' : 'finished';
@@ -19,15 +27,17 @@ export class StateEngine {
     throw new Error('Unknown game phase: ' + state.phase);
   }
 
-  // Canonical player-visible state. Elimination takes precedence over every
-  // active phase; finished games are the only subsequent screen for spectators.
+  // Canonical player-visible state. Timed presentation screens are derived
+  // substates, not additional persisted game phases. Eliminated players remain
+  // locked out of gameplay; their farewell sequence is managed separately.
   stage(state, playerId = null, now = Date.now()) {
     if (state.status === 'finished') return 'finished';
     if (playerId && state.players.some(p => p.id === playerId && p.eliminated_at)) return 'eliminated';
     if (state.status === 'lobby') return 'lobby';
     if (state.status !== 'playing') throw new Error('Unknown game status: ' + state.status);
     if (state.phase === 'day') return this.step(state, now) === 'voting' ? 'day.voting' : 'day.discussion';
-    if (['reveal', 'night', 'dawn', 'results'].includes(state.phase)) return state.phase;
+    if (state.phase === 'dawn') return this.presentation(state, { now }).stage;
+    if (['reveal', 'night', 'results'].includes(state.phase)) return state.phase;
     throw new Error('Unknown game phase: ' + state.phase);
   }
 
@@ -37,7 +47,7 @@ export class StateEngine {
     const stage = this.stage(state, playerId, now);
     if (stage === 'finished' || stage === 'eliminated') return false;
     switch (command) {
-      case 'START_DAY': return isHost && (stage === 'reveal' || stage === 'dawn');
+      case 'START_DAY': return isHost && (stage === 'reveal' || stage === 'dawn.reveal');
       case 'START_NIGHT': return isHost && stage === 'results';
       case 'END_DISCUSSION': return isHost && stage === 'day.discussion';
       case 'OPEN_VOTING': {
