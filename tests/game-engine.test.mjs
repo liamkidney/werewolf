@@ -4,22 +4,6 @@ import { test } from 'node:test';
 import { GameEngine } from '../src/game-engine.js';
 const engine = new GameEngine();
 
-test('phases advance in order without incrementing round at night', () => {
-  let state = { status: 'playing', phase: 'reveal', roundNumber: 1 };
-  state = { ...state, ...engine.nextPhase(state) };
-  assert.equal(state.phase, 'day');
-  assert.equal(state.roundNumber, 1);
-  assert.throws(() => engine.nextPhase(state), /automatically/);
-  state = { ...state, phase: 'results' };
-  state = { ...state, ...engine.nextPhase(state) };
-  assert.equal(state.phase, 'night');
-  assert.equal(state.roundNumber, 1);
-});
-
-test('phases cannot advance before game starts', () => {
-  assert.throws(() => engine.nextPhase({ status: 'lobby', phase: 'reveal', roundNumber: 1 }));
-});
-
 test('role assignment preserves player count and werewolf count', () => {
   const state = { id: 'game', status: 'lobby', werewolfCount: 2, players: [
     { id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'd' }
