@@ -140,8 +140,16 @@ export class Screens {
     $('advance-phase').disabled = advancing;
   }
 
-  renderSuspense() {
-    this.showScreen('suspense-screen');
+  // Any timed presentation substate uses this same progress indicator.
+  // Changing the screen within the sequence requires no controller changes.
+  renderTimedPresentation(step) {
+    this.showScreen(step.screen);
+    const progress = $(step.screen).querySelector('.presentation-progress');
+    if (!progress) return;
+    const fill = progress.querySelector('.presentation-progress-fill');
+    progress.setAttribute('aria-valuenow', String(Math.round(step.progress * 100)));
+    fill.style.animationDuration = step.durationMs + 'ms';
+    fill.style.animationDelay = '-' + step.elapsedMs + 'ms';
   }
 
   renderMurderReveal(name, isHost, question = null, results = [], players = []) {
