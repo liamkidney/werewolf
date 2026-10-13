@@ -273,3 +273,10 @@ body.light-screen #endgame-screen .endgame-credits:active .endgame-credits-roll{
 /* A dramatic pause before the supporting cast. */
 body.light-screen #endgame-screen .endgame-credits-supporting-heading{padding-top:30px;padding-bottom:8px}
 
+
+/* Consistent player-facing phase guidance */
+.workflow-status { box-sizing:border-box; width:100%; margin:0 auto 1.25rem; padding:1rem 1.15rem; border:1px solid rgba(95,72,57,.24); border-radius:12px; background:rgba(255,255,255,.7); color:#302721; text-align:left; }
+.workflow-label { font-size:.72rem; font-weight:700; letter-spacing:.13em; text-transform:uppercase; opacity:.7; }
+.workflow-title { font-size:1.2rem; line-height:1.25; margin:.4rem 0; }
+.workflow-message, .workflow-progress { font-size:.92rem; line-height:1.45; margin:.35rem 0; }
+.workflow-next { margin:.8rem 0 0; padding-top:.65rem; border-top:1px solid rgba(95,72,57,.2); font-size:.82rem; opacity:.8; }
