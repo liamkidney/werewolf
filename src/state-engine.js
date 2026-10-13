@@ -52,8 +52,9 @@ export class StateEngine {
     const stage = this.stage(state, playerId, now);
     if (stage === 'finished' || stage === 'eliminated') return false;
     switch (command) {
-      case 'START_DAY': return isHost && ['reveal', 'reveal.reveal', 'dawn.reveal'].includes(stage);
-      case 'START_NIGHT': return isHost && (stage === 'results' || stage === 'results.reveal');
+      case 'START_DAY': return isHost && (stage === 'reveal' || stage === 'reveal.complete');
+      case 'AUTO_START_DAY': return stage === 'dawn.complete';
+      case 'START_NIGHT': return isHost && (stage === 'results' || stage === 'results.complete');
       case 'END_DISCUSSION': return isHost && stage === 'day.discussion';
       case 'OPEN_VOTING': {
         if (stage === 'day.voting') return true;
@@ -89,7 +90,8 @@ export class StateEngine {
 
   transition(state, command) {
     if (state.status !== 'playing') throw new Error('Game is not in progress.');
-    if (command.type === 'START_DAY' && (state.phase === 'reveal' || state.phase === 'dawn')) {
+    if ((command.type === 'START_DAY' && state.phase === 'reveal')
+      || (command.type === 'AUTO_START_DAY' && state.phase === 'dawn')) {
       return { phase: 'day', roundNumber: state.roundNumber };
     }
     if (command.type === 'START_NIGHT' && state.phase === 'results') {
