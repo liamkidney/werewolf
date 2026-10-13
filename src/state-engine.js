@@ -33,19 +33,38 @@ export class StateEngine {
     throw new Error('Unknown game phase: ' + state.phase);
   }
 
-  // Canonical player-visible state. Timed presentation screens are derived
-  // substates, not additional persisted game phases. Eliminated players remain
-  // locked out of gameplay; their farewell sequence is managed separately.
+  // A single projection of persisted gameplay and the viewer's public
+  // elimination status into UI state. Secret role data is not embedded here.
+  // Personal reveals (Seer result, victim farewell) can temporarily override
+  // this view in PresentationController without altering persisted phase.
+  view(state, { playerId = null, now = Date.now() } = {}) {
+    const player = playerId ? state.players?.find(p => p.id === playerId) : null;
+    const playerStatus = player?.eliminated_at ? 'eliminated' : 'active';
+    let stage;
+    if (state.status === 'finished') stage = 'finished';
+    else if (playerStatus === 'eliminated') stage = 'eliminated';
+    else if (state.status === 'lobby') stage = 'lobby';
+    else if (state.status !== 'playing') throw new Error('Unknown game status: ' + state.status);
+    else if (state.phase === 'day') stage = this.step(state, now) === 'voting' ? 'day.voting' : 'day.discussion';
+    else {
+      const presentation = this.presentation(state, { now });
+      stage = presentation ? presentation.stage : state.phase;
+      if (!['reveal', 'night', 'results', 'dawn'].includes(state.phase)) {
+        throw new Error('Unknown game phase: ' + state.phase);
+      }
+    }
+    const presentation = state.status === 'playing' && playerStatus === 'active'
+      ? this.presentation(state, { now })
+      : null;
+    return {
+      stage,
+      playerStatus,
+      presentation: presentation?.screen ? presentation : null
+    };
+  }
+
   stage(state, playerId = null, now = Date.now()) {
-    if (state.status === 'finished') return 'finished';
-    if (playerId && state.players.some(p => p.id === playerId && p.eliminated_at)) return 'eliminated';
-    if (state.status === 'lobby') return 'lobby';
-    if (state.status !== 'playing') throw new Error('Unknown game status: ' + state.status);
-    if (state.phase === 'day') return this.step(state, now) === 'voting' ? 'day.voting' : 'day.discussion';
-    const presentation = this.presentation(state, { now });
-    if (presentation) return presentation.stage;
-    if (['reveal', 'night', 'results'].includes(state.phase)) return state.phase;
-    throw new Error('Unknown game phase: ' + state.phase);
+    return this.view(state, { playerId, now }).stage;
   }
 
   // Command eligibility is evaluated in one place; the repository remains
