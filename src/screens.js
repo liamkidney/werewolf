@@ -1,4 +1,5 @@
 import { PHASES } from './game-phases.js';
+import { workflowStatus } from './workflow-status.js';
 import QRCode from 'qrcode';
 
 const $ = id => document.getElementById(id);
@@ -23,6 +24,8 @@ export class Screens {
   }
 
   showScreen(id) {
+    const oldStatus = document.getElementById('workflow-status');
+    if (oldStatus) oldStatus.remove();
     document.body.classList.add('light-screen');
     document.body.classList.toggle('marquee-mode', id === 'marquee-screen');
     if (id !== 'marquee-screen') this.marqueeFont = null;
@@ -33,6 +36,30 @@ export class Screens {
     $('role-reveal').classList.remove('revealed');
     $('role-reveal').querySelector('.role-secret').setAttribute('aria-hidden', 'true');
     for (const screen of ['lobby', 'role-screen', 'day-screen', 'night-screen', 'dawn-screen', 'endgame-screen', 'suspense-screen', 'marquee-screen', 'banishment-screen']) $(screen).hidden = screen !== id;
+  }
+
+  renderWorkflow(state, context = {}) {
+    const info = workflowStatus(state, context);
+    if (!info) return;
+    const visible = [...document.querySelectorAll('#lobby, #role-screen, #day-screen, #night-screen, #dawn-screen, #banishment-screen')].find(el => !el.hidden);
+    if (!visible) return;
+    document.getElementById('workflow-status')?.remove();
+    const panel = document.createElement('section');
+    panel.id = 'workflow-status';
+    panel.className = 'workflow-status';
+    panel.setAttribute('aria-label', 'Game progress');
+    const add = (tag, className, value) => {
+      const el = document.createElement(tag);
+      el.className = className;
+      el.textContent = value;
+      panel.append(el);
+    };
+    add('div', 'workflow-label', info.label);
+    add('h2', 'workflow-title', info.title);
+    add('p', 'workflow-message', info.message);
+    if (info.progress) add('p', 'workflow-progress', info.progress);
+    add('p', 'workflow-next', 'NEXT · ' + info.next);
+    visible.prepend(panel);
   }
 
   showLobby(gameId, isHost, inviteUrl) {
