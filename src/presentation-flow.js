@@ -2,6 +2,9 @@
 // Add more entries to a phase's sequence to introduce additional suspense
 // screens without database changes or new controller timer branches.
 export const PRESENTATION_SEQUENCES = Object.freeze({
+  results: Object.freeze([
+    Object.freeze({ id: 'reveal', screen: 'banishment-screen', durationMs: 6000 })
+  ]),
   dawn: Object.freeze([
     Object.freeze({ id: 'suspense', screen: 'suspense-screen', durationMs: 6000 }),
     Object.freeze({ id: 'reveal', screen: 'dawn-screen', durationMs: 6000 })
