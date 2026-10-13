@@ -19,6 +19,36 @@ export class StateEngine {
     throw new Error('Unknown game phase: ' + state.phase);
   }
 
+  // Canonical player-visible state. Elimination takes precedence over every
+  // active phase; finished games are the only subsequent screen for spectators.
+  stage(state, playerId = null, now = Date.now()) {
+    if (state.status === 'finished') return 'finished';
+    if (playerId && state.players.some(p => p.id === playerId && p.eliminated_at)) return 'eliminated';
+    if (state.status === 'lobby') return 'lobby';
+    if (state.status !== 'playing') throw new Error('Unknown game status: ' + state.status);
+    if (state.phase === 'day') return this.step(state, now) === 'voting' ? 'day.voting' : 'day.discussion';
+    if (['reveal', 'night', 'dawn', 'results'].includes(state.phase)) return state.phase;
+    throw new Error('Unknown game phase: ' + state.phase);
+  }
+
+  // Command eligibility is evaluated in one place; the repository remains
+  // responsible for transactional enforcement against concurrent clients.
+  can(state, command, { playerId = null, isHost = false, role = null, now = Date.now() } = {}) {
+    const stage = this.stage(state, playerId, now);
+    if (stage === 'finished' || stage === 'eliminated') return false;
+    switch (command) {
+      case 'START_DAY': return isHost && (stage === 'reveal' || stage === 'dawn');
+      case 'START_NIGHT': return isHost && stage === 'results';
+      case 'END_DISCUSSION': return isHost && stage === 'day.discussion';
+      case 'OPEN_VOTING': return stage === 'day.voting';
+      case 'CAST_DAY_VOTE': return stage === 'day.voting';
+      case 'FINISH_DAY': return isHost && stage === 'day.voting';
+      case 'CAST_NIGHT_VOTE': return stage === 'night' && role === 'werewolf';
+      case 'CAST_DECOY_VOTE': return stage === 'night' && role === 'villager';
+      default: return false;
+    }
+  }
+
   requiredNightActions(roles) {
     const activeRoles = new Set(roles.filter(player => !player.eliminated_at).map(player => player.role));
     return Object.entries(this.rules.nightActions)
