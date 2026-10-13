@@ -65,6 +65,7 @@ export class StateEngine {
       case 'FINISH_DAY': return isHost && stage === 'day.voting';
       case 'CAST_NIGHT_VOTE': return stage === 'night' && role === 'werewolf';
       case 'CAST_DECOY_VOTE': return stage === 'night' && role === 'villager';
+      case 'CAST_SEER_INVESTIGATION': return stage === 'night' && role === 'seer';
       default: return false;
     }
   }
