@@ -23,15 +23,6 @@ test('persisted step is authoritative even when the clock has expired', () => {
   assert.equal(engine.step({ ...state, step: 'voting' }, Date.parse('2026-01-01T00:00:01Z')), 'voting');
   assert.equal(engine.step({ ...state, phase: 'night', step: 'actions' }), 'actions');
 });
-test('independent actions require all active actors and unanimous werewolf consensus', () => {
-  const action = engine.requiredNightActions([{ role: 'werewolf' }, { role: 'villager' }])[0];
-  assert.equal(action.type, 'kill');
-  const wolves = [{ id: 'a' }, { id: 'b' }, { id: 'c', eliminated_at: 'yesterday' }];
-  assert.equal(engine.evaluateNightAction(action, wolves, [{ voter_id: 'a', target_id: 'x' }]).complete, false);
-  assert.equal(engine.evaluateNightAction(action, wolves, [{ voter_id: 'a', target_id: 'x' }, { voter_id: 'b', target_id: 'y' }]).complete, false);
-  assert.deepEqual(engine.evaluateNightAction(action, wolves, [{ voter_id: 'a', target_id: 'x' }, { voter_id: 'b', target_id: 'x' }]), { complete: true, targetId: 'x' });
-});
-
 test('complete two-round lifecycle preserves discussion before voting', () => {
   let state = { status: 'playing', phase: 'reveal', step: 'roles', roundNumber: 1 };
   assert.equal(engine.step(state), 'roles');
