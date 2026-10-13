@@ -40,7 +40,12 @@ export class StateEngine {
       case 'START_DAY': return isHost && (stage === 'reveal' || stage === 'dawn');
       case 'START_NIGHT': return isHost && stage === 'results';
       case 'END_DISCUSSION': return isHost && stage === 'day.discussion';
-      case 'OPEN_VOTING': return stage === 'day.voting';
+      case 'OPEN_VOTING': {
+        if (stage === 'day.voting') return true;
+        if (stage !== 'day.discussion') return false;
+        const deadline = Date.parse(state.phaseStartedAt || '') + (state.dayDurationSeconds ?? this.rules.discussionSeconds) * 1000;
+        return Number.isFinite(deadline) && now >= deadline;
+      }
       case 'CAST_DAY_VOTE': return stage === 'day.voting';
       case 'FINISH_DAY': return isHost && stage === 'day.voting';
       case 'CAST_NIGHT_VOTE': return stage === 'night' && role === 'werewolf';
