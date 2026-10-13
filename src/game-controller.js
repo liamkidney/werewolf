@@ -306,8 +306,7 @@ export class GameController {
 
   showMurderedPlayerSuspense(state) {
     const murderedThisRound = state.phase === 'dawn'
-      && state.lastMurderedId === this.playerId
-      && state.lastMurderedRound === state.roundNumber;
+      && state.lastMurderedId === this.playerId;
     if (murderedThisRound) {
       const key = state.id + ':' + state.roundNumber;
       if (this.murderSuspenseKey !== key) {
