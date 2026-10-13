@@ -158,8 +158,9 @@
       <p id="elimination-heading" class="lobby-eyebrow">BANISHED</p>
       <h2 id="banished-name"></h2>
       <p id="banishment-description"></p>
-      <button id="dismiss-banishment" type="button">Begin night</button>
-      <p id="banishment-waiting" class="muted" hidden>Waiting for the host to begin night…</p>
+      <div class="presentation-progress" role="progressbar" aria-label="Time until night begins" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="presentation-progress-fill"></div>
+      </div>
     </section>
     <footer class="site-footer"><a id="game-footer" href="./" hidden>New Game</a><span class="version-label">Version __BUILD_VERSION__</span></footer>
     <p id="connection-error" class="error" role="alert" hidden></p>
