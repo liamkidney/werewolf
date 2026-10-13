@@ -40,6 +40,9 @@ export class StateEngine {
   view(state, { playerId = null, now = Date.now() } = {}) {
     const player = playerId ? state.players?.find(p => p.id === playerId) : null;
     const playerStatus = player?.eliminated_at ? 'eliminated' : 'active';
+    const timed = state.status === 'playing' && playerStatus === 'active'
+      ? this.presentation(state, { now })
+      : null;
     let stage;
     if (state.status === 'finished') stage = 'finished';
     else if (playerStatus === 'eliminated') stage = 'eliminated';
@@ -47,19 +50,15 @@ export class StateEngine {
     else if (state.status !== 'playing') throw new Error('Unknown game status: ' + state.status);
     else if (state.phase === 'day') stage = this.step(state, now) === 'voting' ? 'day.voting' : 'day.discussion';
     else {
-      const presentation = this.presentation(state, { now });
-      stage = presentation ? presentation.stage : state.phase;
+      stage = timed?.stage ?? state.phase;
       if (!['reveal', 'night', 'results', 'dawn'].includes(state.phase)) {
         throw new Error('Unknown game phase: ' + state.phase);
       }
     }
-    const presentation = state.status === 'playing' && playerStatus === 'active'
-      ? this.presentation(state, { now })
-      : null;
     return {
       stage,
       playerStatus,
-      presentation: presentation?.screen ? presentation : null
+      presentation: timed?.screen ? timed : null
     };
   }
 
