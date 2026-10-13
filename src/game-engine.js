@@ -8,14 +8,6 @@ export class GameEngine {
       && (state.seerCount ?? 0) >= 0 && (state.seerCount ?? 0) <= 50;
   }
 
-  nextPhase(state) {
-    if (state.phase === 'day') throw new Error('Voting begins automatically after the discussion timer.');
-    const command = state.phase === 'reveal' ? 'START_DAY'
-      : state.phase === 'dawn' ? 'AUTO_START_DAY'
-      : state.phase === 'results' ? 'AUTO_START_NIGHT' : null;
-    return new StateEngine().transition(state, { type: command });
-  }
-
   nextWerewolfCount(state, delta) {
     return Math.max(1, Math.min(50, state.werewolfCount + delta));
   }
