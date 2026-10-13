@@ -22,7 +22,7 @@ function fixture(phase = 'results') {
     now: () => currentTime,
     schedule: (fn, delay) => {
       const id = ++nextTimerId;
-      timers.set(id, { fn, delay });
+      timers.set(id, { fn: () => { timers.delete(id); fn(); }, delay });
       return id;
     },
     cancel: id => timers.delete(id)
