@@ -81,6 +81,12 @@ export class GameRepository {
     }));
   }
 
+  async autoStartDay(gameId, round) {
+    return unwrap(await this.db.rpc('auto_start_day_after_dawn', {
+      p_game_id: gameId, p_round: round
+    }));
+  }
+
   async openDayVoting(gameId, round) {
     return unwrap(await this.db.rpc('open_day_voting', { p_game_id: gameId, p_round: round }));
   }
