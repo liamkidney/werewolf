@@ -68,7 +68,7 @@ export class Screens {
     arrow.textContent = '→';
     next.append(prefix, detail, arrow);
     panel.append(next);
-    visible.prepend(panel);
+    document.body.append(panel);
   }
 
   showLobby(gameId, isHost, inviteUrl) {
