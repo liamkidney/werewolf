@@ -524,11 +524,13 @@ body.light-screen .presentation-progress-fill{
   from{transform:scaleX(0)}
   to{transform:scaleX(1)}
 }
-body.light-screen #dawn-screen .presentation-progress{
+body.light-screen #dawn-screen .presentation-progress,
+body.light-screen #banishment-screen:not(.murdered-screen) .presentation-progress{
   background:var(--phase-line);
   margin-top:12px;
 }
-body.light-screen #dawn-screen .presentation-progress-fill{
+body.light-screen #dawn-screen .presentation-progress-fill,
+body.light-screen #banishment-screen:not(.murdered-screen) .presentation-progress-fill{
   background:var(--phase-accent);
 }
 
