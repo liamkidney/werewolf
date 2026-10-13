@@ -104,9 +104,12 @@ export class Screens {
     const count = state.players.length;
     $('lobby-message').textContent = count + (count === 1 ? ' player joined' : ' players joined');
     $('werewolf-count').textContent = state.werewolfCount;
+    $('seer-count').textContent = state.seerCount ?? 0;
     $('minimum-label').textContent = 'Minimum ' + (state.werewolfCount + 1);
     $('wolf-minus').disabled = starting || state.werewolfCount <= 1 || state.status !== 'lobby';
     $('wolf-plus').disabled = starting || state.werewolfCount >= 50 || state.status !== 'lobby';
+    $('seer-minus').disabled = starting || (state.seerCount ?? 0) <= 0 || state.status !== 'lobby';
+    $('seer-plus').disabled = starting || (state.seerCount ?? 0) >= 50 || state.status !== 'lobby';
     $('start-game').disabled = !isHost || !canStart || starting;
     $('start-game').textContent = starting ? 'Assigning roles…' : 'Start Game';
   }
@@ -114,11 +117,15 @@ export class Screens {
   showRole(role) {
     this.showScreen('role-screen');
     document.querySelector('.role-reminder').hidden = false;
-    $('role-name').textContent = role ? (role === 'werewolf' ? 'Werewolf' : 'Villager') : 'Assigning roles…';
+    $('role-name').textContent = role
+      ? role === 'werewolf' ? 'Werewolf' : role === 'seer' ? 'Seer' : 'Villager'
+      : 'Assigning roles…';
     $('role-reveal').classList.remove('revealed');
     $('role-reveal').querySelector('.role-secret').setAttribute('aria-hidden', 'true');
     $('role-description').textContent = role
-      ? (role === 'werewolf' ? 'You are a werewolf. Keep your identity hidden.' : 'You are a villager. Find the werewolves.')
+      ? role === 'werewolf' ? 'You are a werewolf. Keep your identity hidden.'
+        : role === 'seer' ? 'You are the Seer. Investigate one player each night. Keep your identity secret.'
+        : 'You are a villager. Find the werewolves.'
       : 'Please wait a moment.';
   }
 
@@ -159,6 +166,14 @@ export class Screens {
     fill.style.animationDelay = '-' + step.elapsedMs + 'ms';
   }
 
+  renderSeerResult(investigation, step) {
+    this.renderTimedPresentation(step);
+    $('seer-result-name').textContent = investigation.targetName;
+    $('seer-result-verdict').textContent = investigation.isWerewolf
+      ? 'IS A WEREWOLF'
+      : 'Is not a werewolf';
+  }
+
   renderMurderReveal(name, isHost, question = null, results = [], players = []) {
     this.showScreen('dawn-screen');
     $('dawn-victim').textContent = name;
@@ -183,16 +198,19 @@ export class Screens {
     $('endgame-winner').textContent = wolvesWon ? 'The Werewolves Win' : 'The Villagers Win';
     const list = $('endgame-roles');
     list.replaceChildren();
-    const victoriousRole = wolvesWon ? 'werewolf' : 'villager';
-    const stars = roles.filter(player => player.role === victoriousRole && !player.eliminated);
-    const supporting = roles.filter(player => player.role !== victoriousRole || player.eliminated);
+    const victorious = player => wolvesWon
+      ? player.role === 'werewolf'
+      : player.role === 'villager' || player.role === 'seer';
+    const stars = roles.filter(player => victorious(player) && !player.eliminated);
+    const supporting = roles.filter(player => !victorious(player) || player.eliminated);
 
     const addCredit = (player, supportingRole) => {
       const entry = document.createElement('div');
       entry.className = 'endgame-credit';
       const role = document.createElement('span');
       role.className = 'endgame-credit-role';
-      const character = player.role === 'werewolf' ? 'Werewolf' : 'Villager';
+      const character = player.role === 'werewolf' ? 'Werewolf'
+        : player.role === 'seer' ? 'Seer' : 'Villager';
       const fate = player.elimination_reason === 'murdered' ? 'Murdered'
         : player.elimination_reason === 'banished' ? 'Banished'
         : player.eliminated ? 'Eliminated' : '';
@@ -222,14 +240,18 @@ export class Screens {
 
   }
 
-  renderNight(state, { playerId, role, pack, casting, decoyPack }) {
+  renderNight(state, { playerId, role, pack, casting, decoyPack, seerPack }) {
     this.showScreen('night-screen');
     $('night-round').textContent = state.roundNumber;
     $('night-heading').textContent = 'Night has fallen';
     const wolf = role === 'werewolf';
-    $('night-instruction').textContent = wolf ? 'Agree on one villager to eliminate.' : 'Cast your vote. The results will be revealed at dawn.';
-    $('night-villager-controls').hidden = wolf;
-    if (!wolf) {
+    const seer = role === 'seer';
+    $('night-instruction').textContent = wolf
+      ? 'Agree on one villager to eliminate.'
+      : seer ? 'Investigate one player. Your choice is final.'
+      : 'Cast your vote. The results will be revealed at dawn.';
+    $('night-villager-controls').hidden = role !== 'villager';
+    if (role === 'villager') {
       $('decoy-question').textContent = state.decoyQuestion || decoyPack?.question || 'Who is least trustworthy?';
       const choices = $('decoy-targets');
       choices.replaceChildren();
@@ -244,6 +266,42 @@ export class Screens {
         label.append(radio, name); choices.append(label);
       }
       $('decoy-progress').textContent = decoyPack?.myVote ? 'Vote recorded. You can change it until dawn.' : 'Choose another player.';
+    }
+    $('night-seer-controls').hidden = !seer;
+    if (seer) {
+      const investigation = seerPack?.myInvestigation;
+      const choices = $('seer-targets');
+      choices.hidden = !!investigation;
+      choices.replaceChildren();
+      if (!investigation) {
+        for (const player of state.players.filter(p => !p.eliminated_at && p.id !== playerId)) {
+          const label = document.createElement('label');
+          label.className = 'night-choice';
+          const radio = document.createElement('input');
+          radio.type = 'radio';
+          radio.name = 'seer-target';
+          radio.value = player.id;
+          radio.disabled = casting;
+          const name = document.createElement('span');
+          name.className = 'night-name';
+          name.textContent = player.name;
+          label.append(radio, name);
+          choices.append(label);
+        }
+      }
+      $('seer-progress').textContent = investigation
+        ? 'Investigation recorded. Waiting for the other night actions.'
+        : 'Choose another living player. You cannot change your choice.';
+      const history = (seerPack?.history || []).filter(item => item.roundNumber < state.roundNumber);
+      $('seer-history-wrap').hidden = history.length === 0;
+      const list = $('seer-history-list');
+      list.replaceChildren();
+      for (const item of history) {
+        const li = document.createElement('li');
+        li.textContent = 'Night ' + item.roundNumber + ': ' + item.targetName
+          + (item.isWerewolf ? ' — Werewolf' : ' — Not a werewolf');
+        list.append(li);
+      }
     }
     $('night-wolf-controls').hidden = !wolf;
     if (!wolf) return;
@@ -370,6 +428,8 @@ export class Screens {
     this.nameInput.addEventListener('input', () => { $('name-error').hidden = true; });
     $('wolf-minus').addEventListener('click', () => { void handlers.onWerewolves(-1); });
     $('wolf-plus').addEventListener('click', () => { void handlers.onWerewolves(1); });
+    $('seer-minus').addEventListener('click', () => { void handlers.onSeers(-1); });
+    $('seer-plus').addEventListener('click', () => { void handlers.onSeers(1); });
     $('start-game').addEventListener('click', () => { void handlers.onStart(); });
     const reveal = $('role-reveal');
     const setRevealed = visible => {
@@ -405,6 +465,9 @@ export class Screens {
     });
     $('night-targets').addEventListener('change', event => {
       if (event.target.matches('input[name="night-target"]')) void handlers.onNightVote(event.target.value);
+    });
+    $('seer-targets').addEventListener('change', event => {
+      if (event.target.matches('input[name="seer-target"]')) void handlers.onSeerInvestigation(event.target.value);
     });
     $('dismiss-dawn').addEventListener('click', () => { void handlers.onAdvance(); });
     $('finish-voting').addEventListener('click', () => { void handlers.onFinishVoting(); });
