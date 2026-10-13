@@ -13,6 +13,10 @@ export class StateEngine {
     return this.presentationFlow.resolve(state, options);
   }
 
+  presentationDuration(phase) {
+    return this.presentationFlow.duration(phase);
+  }
+
   step(state, now = Date.now()) {
     if (state.status !== 'playing') return state.status === 'lobby' ? 'waiting' : 'finished';
     if (state.step) return state.step;
