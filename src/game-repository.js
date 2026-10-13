@@ -73,8 +73,7 @@ export class GameRepository {
   }
 
   async advancePhase(state, next, hostId) {
-    const permitted = (state.phase === 'reveal' && next.phase === 'day')
-      || (state.phase === 'results' && next.phase === 'night');
+    const permitted = state.phase === 'reveal' && next.phase === 'day';
     if (!permitted) throw new Error('Invalid requested phase transition.');
     unwrap(await this.db.rpc('advance_game_phase', {
       p_game_id: state.id, p_host: hostId, p_phase: state.phase, p_round: state.roundNumber
@@ -83,6 +82,12 @@ export class GameRepository {
 
   async autoStartDay(gameId, round) {
     return unwrap(await this.db.rpc('auto_start_day_after_dawn', {
+      p_game_id: gameId, p_round: round
+    }));
+  }
+
+  async autoStartNight(gameId, round) {
+    return unwrap(await this.db.rpc('auto_start_night_after_banishment', {
       p_game_id: gameId, p_round: round
     }));
   }
