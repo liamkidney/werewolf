@@ -327,7 +327,7 @@ export class GameController {
   }
 
   async castDecoyVote(targetId) {
-    if (this.eliminated || this.decoyCasting || this.playerRole !== 'villager' || this.state.phase !== 'night' || !targetId) return;
+    if (this.decoyCasting || !targetId || !this.can('CAST_DECOY_VOTE')) return;
     this.decoyCasting = true;
     try {
       await this.repository.castDecoyVote(this.state.id, this.state.roundNumber, this.playerId, targetId);
@@ -501,7 +501,7 @@ export class GameController {
   }
 
   async dismissBanishment() {
-    if (this.eliminated || !this.isHost || this.advancing || this.state.phase !== 'results') return;
+    if (this.advancing || !this.can('START_NIGHT')) return;
     await this.advancePhase();
   }
 
