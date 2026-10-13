@@ -27,6 +27,11 @@ export function workflowStatus(state, { role, playerId, isHost = false, pack = n
       const wolves = pack?.wolves || [];
       const votes = pack?.votes || [];
       const mine = votes.some(v => v.voter_id === playerId);
+      if (wolves.length === 1) return {
+        label: 'NIGHT ' + round + ' · WEREWOLF',
+        title: mine ? 'Your victim is selected' : 'Choose your victim',
+        ...waiting(mine ? 'Waiting for the remaining night actions.' : 'Choose one living villager to eliminate.', 'Dawn · Murder reveal')
+      };
       return { label: 'NIGHT ' + round + ' · WEREWOLF VOTE', title: mine ? 'Reach agreement with your pack' : 'Choose your victim', ...waiting('All werewolves must agree on one target. You may change your nomination.', 'Dawn · Murder reveal'), progress: wolves.length ? votes.length + ' of ' + wolves.length + ' nominated' : null };
     }
     return { label: 'NIGHT ' + round + ' · VILLAGE QUESTION', title: decoyPack?.myVote ? 'Your answer is recorded' : 'Answer the night question', ...waiting(decoyPack?.myVote ? 'You can change your answer until dawn.' : 'Choose a player to answer the question.', 'Dawn · Murder reveal') };
