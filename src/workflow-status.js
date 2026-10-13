@@ -1,18 +1,23 @@
+import { StateEngine } from './state-engine.js';
+
+const stateEngine = new StateEngine();
+
 // Player-facing workflow guidance, derived only from visible game state.
 export function workflowStatus(state, { role, playerId, isHost = false, pack = null, decoyPack = null } = {}) {
   const round = state.roundNumber;
+  const stage = stateEngine.stage(state, playerId);
   const waiting = (message, next) => ({ message, next });
-  if (state.status === 'lobby') return { label: 'LOBBY', title: 'Waiting for players', ...waiting(isHost ? 'Invite players, then start the game.' : 'Waiting for the host to start the game.', 'Secret roles are assigned') };
-  if (state.phase === 'reveal') return { label: 'ROLE REVEAL', title: 'Discover your secret role', ...waiting(isHost ? 'Reveal your role, then start the first day.' : 'Reveal your role. Waiting for the host to begin.', 'Day 1 · Discussion') };
-  if (state.phase === 'day') {
+  if (stage === 'lobby') return { label: 'LOBBY', title: 'Waiting for players', ...waiting(isHost ? 'Invite players, then start the game.' : 'Waiting for the host to start the game.', 'Secret roles are assigned') };
+  if (stage === 'reveal') return { label: 'ROLE REVEAL', title: 'Discover your secret role', ...waiting(isHost ? 'Reveal your role, then start the first day.' : 'Reveal your role. Waiting for the host to begin.', 'Day 1 · Discussion') };
+  if (stage.startsWith('day.')) {
     const active = state.players.filter(p => !p.eliminated_at);
     const votes = state.votes.filter(v => v.round_number === round);
     const mine = votes.some(v => v.voter_id === playerId);
-    const voting = state.step === 'voting' || !!state.discussionEndedAt;
+    const voting = stage === 'day.voting';
     if (!voting) return { label: 'DAY ' + round + ' · DISCUSSION', title: 'Discuss your suspects', ...waiting('Talk with the village. No vote is needed yet.', 'Vote to banish a player') };
     return { label: 'DAY ' + round + ' · VOTING', title: mine ? 'Your vote is locked' : 'Choose a player to banish', ...waiting(mine ? 'Waiting for the remaining players.' : 'Cast your final vote.', 'Banishment result'), progress: votes.length + ' of ' + active.length + ' votes cast' };
   }
-  if (state.phase === 'night') {
+  if (stage === 'night') {
     if (role === 'werewolf') {
       const wolves = pack?.wolves || [];
       const votes = pack?.votes || [];
@@ -21,7 +26,7 @@ export function workflowStatus(state, { role, playerId, isHost = false, pack = n
     }
     return { label: 'NIGHT ' + round + ' · VILLAGE QUESTION', title: decoyPack?.myVote ? 'Your answer is recorded' : 'Answer the night question', ...waiting(decoyPack?.myVote ? 'You can change your answer until dawn.' : 'Choose a player to answer the question.', 'Dawn · Murder reveal') };
   }
-  if (state.phase === 'dawn') return { label: 'DAWN ' + round, title: 'The night is over', ...waiting('Discover what happened overnight.', 'Day ' + (round + 1) + ' · Discussion') };
-  if (state.phase === 'results') return { label: 'DAY ' + round + ' · RESULT', title: 'A player has been banished', ...waiting(isHost ? 'Continue when everyone has seen the result.' : 'Waiting for the host to continue.', 'Night ' + round) };
+  if (stage === 'dawn') return { label: 'DAWN ' + round, title: 'The night is over', ...waiting('Discover what happened overnight.', 'Day ' + (round + 1) + ' · Discussion') };
+  if (stage === 'results') return { label: 'DAY ' + round + ' · RESULT', title: 'A player has been banished', ...waiting(isHost ? 'Continue when everyone has seen the result.' : 'Waiting for the host to continue.', 'Night ' + round) };
   return null;
 }
