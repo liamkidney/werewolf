@@ -94,7 +94,7 @@ export class StateEngine {
       || (command.type === 'AUTO_START_DAY' && state.phase === 'dawn')) {
       return { phase: 'day', roundNumber: state.roundNumber };
     }
-    if (command.type === 'START_NIGHT' && state.phase === 'results') {
+    if (command.type === 'AUTO_START_NIGHT' && state.phase === 'results') {
       return { phase: 'night', roundNumber: state.roundNumber };
     }
     throw new Error('Transition is not permitted from this state.');
