@@ -1,5 +1,3 @@
-import { StateEngine } from './state-engine.js';
-
 // Pure rules: no Supabase, DOM, localStorage or network calls.
 export class GameEngine {
   canStart(state) {
