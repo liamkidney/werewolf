@@ -340,21 +340,19 @@ export class GameController {
     if (this.endgameTimer !== null) clearTimeout(this.endgameTimer);
     this.endgameTimer = null;
     const started = Date.parse(state.phaseStartedAt || '');
-    const revealDuration = state.phase === 'dawn'
-      ? this.stateEngine.presentationDuration('dawn') + 4000
-      : 4000;
+    const revealDuration = this.stateEngine.presentationDuration(state.phase) + 4000;
     const remaining = Number.isFinite(started) ? Math.max(0, started + revealDuration - Date.now()) : 0;
     if (remaining > 0) {
+      const step = this.stateEngine.presentation(state);
+      if (step?.screen) {
+        this.renderTimedPresentation(step);
+        return;
+      }
+      this.stopPresentationTimer();
       if (state.phase === 'dawn') {
-        const step = this.stateEngine.presentation(state);
-        if (step?.screen) {
-          this.renderTimedPresentation(step);
-          return;
-        } else {
-          const victim = state.players.find(player => player.id === state.lastMurderedId);
-          if (victim?.id === this.playerId) this.screens.showEliminated(true, this.wasHost ? state.players.find(p => p.id === state.hostPlayerId)?.name : null);
-          else this.screens.renderMurderReveal(victim?.name || 'A villager', false, state.decoyQuestion, this.decoyPack?.results || [], state.players);
-        }
+        const victim = state.players.find(player => player.id === state.lastMurderedId);
+        if (victim?.id === this.playerId) this.screens.showEliminated(true, this.wasHost ? state.players.find(p => p.id === state.hostPlayerId)?.name : null);
+        else this.screens.renderMurderReveal(victim?.name || 'A villager', false, state.decoyQuestion, this.decoyPack?.results || [], state.players);
       } else {
         const banished = state.players.find(player => player.id === state.lastBanishedId);
         if (banished?.id === this.playerId) this.screens.showEliminated(false, this.wasHost ? state.players.find(p => p.id === state.hostPlayerId)?.name : null);
@@ -412,7 +410,14 @@ export class GameController {
     if (this.eliminated) return;
     this.stopDayTimer();
     if (state.phase !== 'night') this.stopNightPoll();
-    if (state.phase !== 'dawn') this.stopPresentationTimer();
+    // Any phase can configure timed presentation pages. Render those before
+    // the ordinary phase screen, without adding another controller branch.
+    const presentation = this.stateEngine.presentation(state);
+    if (presentation?.screen) {
+      this.renderTimedPresentation(presentation);
+      return;
+    }
+    this.stopPresentationTimer();
     if (this.stateEngine.stage(state, this.playerId) === 'lobby') {
       this.renderLobby();
       return;
@@ -423,13 +428,7 @@ export class GameController {
       if (this.nightPoll === null) this.nightPoll = setInterval(() => this.requestRefresh(), 1500);
       return;
     }
-    if (this.stateEngine.stage(state, this.playerId).startsWith('dawn.')) {
-      const step = this.stateEngine.presentation(state);
-      if (step?.screen) {
-        this.renderTimedPresentation(step);
-        return;
-      }
-      this.stopPresentationTimer();
+    if (this.stateEngine.stage(state, this.playerId) === 'dawn.reveal') {
       const victim = state.players.find(player => player.id === state.lastMurderedId);
       this.screens.renderMurderReveal(victim?.name || 'A villager', this.isHost, state.decoyQuestion, this.decoyPack?.results || [], state.players);
       this.screens.renderWorkflow(state, { isHost: this.isHost });
