@@ -47,6 +47,7 @@ export class GameController {
   }
 
   renderLobby() {
+    this.screens.renderWorkflow(this.state, { playerId: this.playerId, isHost: this.isHost });
     this.screens.renderLobby(this.state, {
       isHost: this.isHost,
       playerId: this.playerId,
@@ -369,6 +370,7 @@ export class GameController {
     }
     if (state.phase === 'night') {
       this.screens.renderNight(state, { playerId: this.playerId, role: this.playerRole, pack: this.nightPack, casting: this.nightCasting || this.decoyCasting, decoyPack: this.decoyPack });
+      this.screens.renderWorkflow(state, { playerId: this.playerId, role: this.playerRole, isHost: this.isHost, pack: this.nightPack, decoyPack: this.decoyPack });
       if (this.nightPoll === null) this.nightPoll = setInterval(() => this.requestRefresh(), 1500);
       return;
     }
@@ -380,6 +382,7 @@ export class GameController {
       this.stopSuspenseTimer();
       const victim = state.players.find(player => player.id === state.lastMurderedId);
       this.screens.renderMurderReveal(victim?.name || 'A villager', this.isHost, state.decoyQuestion, this.decoyPack?.results || [], state.players);
+      this.screens.renderWorkflow(state, { isHost: this.isHost });
       return;
     }
     if (state.phase === 'day') {
@@ -390,12 +393,14 @@ export class GameController {
     const banished = state.players.find(player => player.id === state.lastBanishedId);
     if (state.phase === 'results' && banished && state.lastBanishedRound === state.roundNumber) {
       this.screens.renderBanishment(banished.name, banished.id === this.playerId, this.isHost);
+      this.screens.renderWorkflow(state, { isHost: this.isHost });
       return;
     }
     const eliminated = state.players.some(player => player.id === this.playerId && !!player.eliminated_at);
     this.screens.showRole(eliminated ? null : this.playerRole);
     if (eliminated) this.screens.showSpectator();
     this.screens.renderPhase(state, this);
+    this.screens.renderWorkflow(state, { isHost: this.isHost, playerId: this.playerId });
   }
 
   renderDay() {
@@ -421,6 +426,7 @@ export class GameController {
       this.screens.renderDay(state, { playerId: this.playerId, isHost: this.isHost, voting, myVote, casting: this.casting, endingDiscussion: this.endingDiscussion });
       this.dayVotingOpen = voting;
       this.dayVoteSignature = signature;
+      this.screens.renderWorkflow(state, { isHost: this.isHost, playerId: this.playerId });
     }
     if (!voting) this.screens.updateClock(seconds);
     document.getElementById('vote-progress').textContent = voting
