@@ -485,7 +485,7 @@ export class GameController {
     const deadline = Date.parse(state.phaseStartedAt || '') + (state.dayDurationSeconds ?? 120) * 1000;
     const seconds = Number.isFinite(deadline) ? Math.max(0, Math.ceil((deadline - Date.now()) / 1000)) : (state.dayDurationSeconds ?? 120);
     if (seconds === 0 && state.step === 'discussion' && !this.openingVoting) void this.openDayVoting();
-    const voting = view.stage === 'day.voting';
+    const voting = this.stateEngine.stage(state, this.playerId) === 'day.voting';
     const active = state.players.filter(player => !player.eliminated_at);
     const votes = state.votes.filter(vote => vote.round_number === state.roundNumber);
     const myVote = votes.find(vote => vote.voter_id === this.playerId);
