@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import { GameEngine } from '../src/game-engine.js';
 const engine = new GameEngine();
 
-test('phases advance in order and increment round after results', () => {
+test('phases advance in order without incrementing round at night', () => {
   let state = { status: 'playing', phase: 'reveal', roundNumber: 1 };
   state = { ...state, ...engine.nextPhase(state) };
   assert.equal(state.phase, 'day');
@@ -13,7 +13,7 @@ test('phases advance in order and increment round after results', () => {
   state = { ...state, phase: 'results' };
   state = { ...state, ...engine.nextPhase(state) };
   assert.equal(state.phase, 'night');
-  assert.equal(state.roundNumber, 2);
+  assert.equal(state.roundNumber, 1);
 });
 
 test('phases cannot advance before game starts', () => {
