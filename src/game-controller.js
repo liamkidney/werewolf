@@ -31,6 +31,9 @@ export class GameController {
     this.nightPack = null;
     this.decoyPack = null;
     this.decoyCasting = false;
+    this.seerPack = null;
+    this.seerCasting = false;
+    this.seerReveal = null;
     this.endgameTimer = null;
     this.finalCreditsGameId = null;
     this.nightPoll = null;
@@ -73,10 +76,12 @@ export class GameController {
     this.screens.bind({
       onJoin: () => this.joinFromForm(),
       onWerewolves: delta => this.changeWerewolves(delta),
+      onSeers: delta => this.changeSeers(delta),
       onStart: () => this.startGame(),
       onAdvance: () => this.advancePhase(),
       onVote: target => this.castVote(target),
       onNightVote: target => this.castNightVote(target),
+      onSeerInvestigation: target => this.castSeerInvestigation(target),
       onDecoyVote: target => this.castDecoyVote(target),
       onEndDiscussion: () => this.endDiscussion(),
       onFinishVoting: () => this.finishVoting(),
@@ -175,6 +180,9 @@ export class GameController {
     if (this.endgameTimer !== null) clearTimeout(this.endgameTimer);
     this.endgameTimer = null;
     this.decoyPack = null;
+    this.seerPack = null;
+    this.seerCasting = false;
+    this.seerReveal = null;
     this.isHost = false;
     this.wasHost = false;
     this.state = new GameState({ id: gameId });
@@ -207,6 +215,10 @@ export class GameController {
           return;
         }
         this.state = state;
+        // A submitted investigation gets its private response before any
+        // simultaneous night-resolution or elimination screen can replace it.
+        if (this.seerCasting) return;
+        if (this.showSeerResultIfActive()) return;
         const me = state.players.find(player => player.id === this.playerId);
         // Elimination is a permanent player state, independent of the current
         // round's last victim or the current phase.
@@ -239,6 +251,7 @@ export class GameController {
         this.state = state;
         if (state.phase === 'night' && this.playerRole === 'werewolf') this.nightPack = await this.repository.getNightPack(id, this.playerId);
         if (state.phase === 'night' && this.playerRole === 'villager') this.decoyPack = await this.repository.getDecoyPack(id, this.playerId);
+        if (state.phase === 'night' && this.playerRole === 'seer') this.seerPack = await this.repository.getSeerPack(id, this.playerId);
         if (state.phase === 'dawn') this.decoyPack = await this.repository.getDecoyPack(id, this.playerId);
         const previousHost = this.isHost;
         this.isHost = state.hostPlayerId === this.playerId;
@@ -290,12 +303,30 @@ export class GameController {
   }
 
   renderTimedPresentation(step) {
-    this.screens.renderTimedPresentation(step);
+    if (step.screen === 'seer-result-screen' && this.seerReveal) {
+      this.screens.renderSeerResult(this.seerReveal, step);
+    } else {
+      this.screens.renderTimedPresentation(step);
+    }
     this.stopPresentationTimer();
     this.presentationTimer = setTimeout(() => {
       this.presentationTimer = null;
       this.requestRefresh();
     }, step.remainingMs + 30);
+  }
+
+  showSeerResultIfActive() {
+    if (!this.seerReveal) return false;
+    const step = this.stateEngine.presentation({ phase: 'seer-investigation' }, {
+      startedAt: this.seerReveal.startedAt
+    });
+    if (!step?.screen) {
+      this.seerReveal = null;
+      return false;
+    }
+    this.stopNightPoll();
+    this.renderTimedPresentation(step);
+    return true;
   }
 
   showVictimPresentation(state) {
@@ -367,6 +398,27 @@ export class GameController {
     }).catch(error => this.showActionError(error.message || 'Could not load final roles.'));
   }
 
+  async castSeerInvestigation(targetId) {
+    if (this.seerCasting || !targetId || this.seerPack?.myInvestigation
+      || !this.can('CAST_SEER_INVESTIGATION')) return;
+    this.seerCasting = true;
+    this.showActionError('');
+    try {
+      const result = await this.repository.castSeerInvestigation(
+        this.state.id, this.state.roundNumber, this.playerId, targetId
+      );
+      // This client controls the reveal duration, even when night resolves
+      // in the same transaction as the investigation.
+      this.seerReveal = { ...result, startedAt: Date.now() };
+      this.showSeerResultIfActive();
+    } catch (error) {
+      this.showActionError(error.message || 'Could not investigate that player.');
+    } finally {
+      this.seerCasting = false;
+      this.requestRefresh();
+    }
+  }
+
   async castDecoyVote(targetId) {
     if (this.decoyCasting || !targetId || !this.can('CAST_DECOY_VOTE')) return;
     this.decoyCasting = true;
@@ -423,8 +475,8 @@ export class GameController {
       return;
     }
     if (this.stateEngine.stage(state, this.playerId) === 'night') {
-      this.screens.renderNight(state, { playerId: this.playerId, role: this.playerRole, pack: this.nightPack, casting: this.nightCasting || this.decoyCasting, decoyPack: this.decoyPack });
-      this.screens.renderWorkflow(state, { playerId: this.playerId, role: this.playerRole, isHost: this.isHost, pack: this.nightPack, decoyPack: this.decoyPack });
+      this.screens.renderNight(state, { playerId: this.playerId, role: this.playerRole, pack: this.nightPack, casting: this.nightCasting || this.decoyCasting || this.seerCasting, decoyPack: this.decoyPack, seerPack: this.seerPack });
+      this.screens.renderWorkflow(state, { playerId: this.playerId, role: this.playerRole, isHost: this.isHost, pack: this.nightPack, decoyPack: this.decoyPack, seerPack: this.seerPack });
       if (this.nightPoll === null) this.nightPoll = setInterval(() => this.requestRefresh(), 1500);
       return;
     }
@@ -556,6 +608,18 @@ export class GameController {
       await this.repository.setWerewolfCount(this.state.id, next);
       this.requestRefresh();
     } catch (error) { this.showActionError(error.message); }
+  }
+
+  async changeSeers(delta) {
+    if (this.eliminated || !this.isHost || this.starting || this.state.status !== 'lobby') return;
+    const next = this.engine.nextSeerCount(this.state, delta);
+    if (next === this.state.seerCount) return;
+    try {
+      await this.repository.setSeerCount(this.state.id, this.playerId, next);
+      this.requestRefresh();
+    } catch (error) {
+      this.showActionError(error.message || 'Could not change the Seer count.');
+    }
   }
 
   async advancePhase() {
