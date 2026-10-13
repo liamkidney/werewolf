@@ -386,3 +386,32 @@ body.light-screen #day-screen #vote-controls{gap:12px}
   body.light-screen .day-clock{font-size:clamp(4rem,16vw,6rem)}
   body.light-screen .lobby{gap:12px}
 }
+
+
+/* Compact lobby roster: simple two-column names, no ornamental player dots. */
+body.light-screen .lobby{gap:12px}
+body.light-screen .lobby #host-tools{gap:8px}
+body.light-screen .lobby .join-header{gap:8px}
+body.light-screen .lobby .qr-wrap{padding:8px;border-radius:8px}
+body.light-screen .lobby .qr-wrap canvas{display:block;width:min(43vw,180px);height:auto}
+body.light-screen .lobby .players-heading{padding-top:10px;gap:8px;font-size:.92rem}
+body.light-screen .lobby .players-heading span{font-size:.76rem}
+body.light-screen .lobby .player-list{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px 18px;padding:4px 0;margin:0;
+  border:0;border-radius:0;background:transparent;box-shadow:none;
+}
+body.light-screen .lobby .player-list li,
+body.light-screen .lobby .player-list li+li{
+  display:block;min-height:0;min-width:0;padding:2px 0;margin:0;
+  border:0;background:transparent;border-radius:0;
+  font-size:.91rem;line-height:1.4;overflow-wrap:anywhere;
+}
+body.light-screen .lobby .player-list .player-dot{display:none}
+body.light-screen .lobby #host-controls{gap:12px;margin-top:0}
+body.light-screen .lobby .role-config{border-top:1px solid var(--phase-line);padding-top:12px}
+body.light-screen .lobby .stepper{background:transparent;border:1px solid var(--phase-line)}
+body.light-screen .lobby .stepper button{width:40px;min-height:40px}
+body.light-screen .lobby .stepper output{min-width:34px;padding:8px 4px}
+body.light-screen .lobby #start-game{min-height:48px}
+@media(max-width:360px){body.light-screen .lobby .player-list{gap:6px 10px}}
