@@ -26,9 +26,9 @@ export class GameController {
     this.eliminated = false;
     this.starting = false;
     this.advancing = false;
-    this.autoStartingDay = false;
-    this.autoDayRetryTimer = null;
-    this.autoDayNextAttemptAt = 0;
+    this.autoAdvancingPhase = false;
+    this.autoPhaseRetryTimer = null;
+    this.autoPhaseNextAttemptAt = 0;
     this.casting = false;
     this.nightCasting = false;
     this.nightPack = null;
@@ -87,8 +87,7 @@ export class GameController {
       onSeerInvestigation: target => this.castSeerInvestigation(target),
       onDecoyVote: target => this.castDecoyVote(target),
       onEndDiscussion: () => this.endDiscussion(),
-      onFinishVoting: () => this.finishVoting(),
-      onDismissBanishment: () => this.dismissBanishment()
+      onFinishVoting: () => this.finishVoting()
     });
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden && this.state.id) this.requestRefresh();
@@ -178,9 +177,9 @@ export class GameController {
     this.stopDayTimer();
     this.stopNightPoll();
     this.stopPresentationTimer();
-    this.stopAutoDayRetry();
-    this.autoStartingDay = false;
-    this.autoDayNextAttemptAt = 0;
+    this.stopAutoPhaseRetry();
+    this.autoAdvancingPhase = false;
+    this.autoPhaseNextAttemptAt = 0;
     this.victimPresentation = null;
     this.eliminationDisplayUntil = 0;
     if (this.endgameTimer !== null) clearTimeout(this.endgameTimer);
@@ -284,7 +283,7 @@ export class GameController {
     this.stopDayTimer();
     this.stopNightPoll();
     this.stopPresentationTimer();
-    this.stopAutoDayRetry();
+    this.stopAutoPhaseRetry();
     if (this.endgameTimer !== null) clearTimeout(this.endgameTimer);
     this.endgameTimer = null;
     const murdered = player.elimination_reason === 'murdered'
@@ -317,6 +316,9 @@ export class GameController {
       const victim = state.players.find(player => player.id === state.lastMurderedId);
       this.screens.renderMurderReveal(victim?.name || 'A villager',
         state.decoyQuestion, this.decoyPack?.results || [], state.players, step);
+    } else if (step.screen === 'banishment-screen') {
+      const banished = this.state.players.find(player => player.id === this.state.lastBanishedId);
+      this.screens.renderBanishment(banished?.name || 'A player', step);
     } else {
       this.screens.renderTimedPresentation(step);
     }
@@ -383,13 +385,11 @@ export class GameController {
   renderFinished(state) {
     this.stopNightPoll();
     this.stopDayTimer();
-    this.stopAutoDayRetry();
+    this.stopAutoPhaseRetry();
     if (this.endgameTimer !== null) clearTimeout(this.endgameTimer);
     this.endgameTimer = null;
     const started = Date.parse(state.phaseStartedAt || '');
-    const revealDuration = state.phase === 'dawn'
-      ? this.stateEngine.presentationDuration('dawn')
-      : 4000;
+    const revealDuration = this.stateEngine.presentationDuration(state.phase) || 4000;
     const remaining = Number.isFinite(started) ? Math.max(0, started + revealDuration - Date.now()) : 0;
     if (remaining > 0) {
       const step = this.stateEngine.presentation(state);
@@ -406,7 +406,7 @@ export class GameController {
       } else {
         const banished = state.players.find(player => player.id === state.lastBanishedId);
         if (banished?.id === this.playerId) this.screens.showEliminated(false, this.wasHost ? state.players.find(p => p.id === state.hostPlayerId)?.name : null);
-        else this.screens.renderBanishment(banished?.name || 'A player', false, false);
+        else this.screens.renderBanishment(banished?.name || 'A player');
       }
       this.endgameTimer = setTimeout(() => { this.endgameTimer = null; this.requestRefresh(); }, remaining + 30);
       return;
@@ -489,7 +489,7 @@ export class GameController {
       return;
     }
     this.stopPresentationTimer();
-    if (state.phase !== 'dawn') this.stopAutoDayRetry();
+    if (state.phase !== 'dawn' && state.phase !== 'results') this.stopAutoPhaseRetry();
     if (this.stateEngine.stage(state, this.playerId) === 'lobby') {
       this.renderLobby();
       return;
@@ -504,7 +504,13 @@ export class GameController {
       const victim = state.players.find(player => player.id === state.lastMurderedId);
       this.screens.renderMurderReveal(victim?.name || 'A villager',
         state.decoyQuestion, this.decoyPack?.results || [], state.players);
-      void this.autoStartDay();
+      void this.autoAdvancePhase();
+      return;
+    }
+    if (this.stateEngine.stage(state, this.playerId) === 'results.complete') {
+      const banished = state.players.find(player => player.id === state.lastBanishedId);
+      this.screens.renderBanishment(banished?.name || 'A player');
+      void this.autoAdvancePhase();
       return;
     }
     if (this.stateEngine.stage(state, this.playerId).startsWith('day.')) {
@@ -514,7 +520,7 @@ export class GameController {
     }
     const banished = state.players.find(player => player.id === state.lastBanishedId);
     if (state.phase === 'results' && banished && state.lastBanishedRound === state.roundNumber) {
-      this.screens.renderBanishment(banished.name, banished.id === this.playerId, this.isHost);
+      this.screens.renderBanishment(banished.name);
       this.screens.renderWorkflow(state, { isHost: this.isHost });
       return;
     }
@@ -616,11 +622,6 @@ export class GameController {
     }
   }
 
-  async dismissBanishment() {
-    if (this.advancing || !this.can('START_NIGHT')) return;
-    await this.advancePhase();
-  }
-
   async changeWerewolves(delta) {
     if (this.eliminated || !this.isHost || this.starting || this.state.status !== 'lobby') return;
     const next = this.engine.nextWerewolfCount(this.state, delta);
@@ -643,50 +644,59 @@ export class GameController {
     }
   }
 
-  stopAutoDayRetry() {
-    if (this.autoDayRetryTimer !== null) clearTimeout(this.autoDayRetryTimer);
-    this.autoDayRetryTimer = null;
-    this.autoDayNextAttemptAt = 0;
+  stopAutoPhaseRetry() {
+    if (this.autoPhaseRetryTimer !== null) clearTimeout(this.autoPhaseRetryTimer);
+    this.autoPhaseRetryTimer = null;
+    this.autoPhaseNextAttemptAt = 0;
   }
 
-  scheduleAutoDayRetry() {
-    if (this.autoDayRetryTimer !== null) return;
-    this.autoDayRetryTimer = setTimeout(() => {
-      this.autoDayRetryTimer = null;
-      if (this.state.status === 'playing' && this.state.phase === 'dawn') this.requestRefresh();
+  scheduleAutoPhaseRetry() {
+    if (this.autoPhaseRetryTimer !== null) return;
+    this.autoPhaseRetryTimer = setTimeout(() => {
+      this.autoPhaseRetryTimer = null;
+      if (this.state.status === 'playing'
+        && (this.state.phase === 'dawn' || this.state.phase === 'results')) {
+        this.requestRefresh();
+      }
     }, 1500);
   }
 
-  async autoStartDay() {
-    if (this.autoStartingDay || !this.can('AUTO_START_DAY')
-      || Date.now() < this.autoDayNextAttemptAt) return;
-    // Every surviving client can request the transition. The database checks
-    // the game, round and deadline atomically; only one request can win.
-    this.autoStartingDay = true;
-    this.autoDayNextAttemptAt = Date.now() + 1400;
+  async autoAdvancePhase() {
+    const phase = this.state.phase;
+    const command = phase === 'dawn' ? 'AUTO_START_DAY'
+      : phase === 'results' ? 'AUTO_START_NIGHT' : null;
+    if (!command || this.autoAdvancingPhase || !this.can(command)
+      || Date.now() < this.autoPhaseNextAttemptAt) return;
+
+    // Every surviving client can request the transition. The database
+    // checks phase, round and elapsed reveal time atomically.
+    this.autoAdvancingPhase = true;
+    this.autoPhaseNextAttemptAt = Date.now() + 1400;
     const gameId = this.state.id;
     const round = this.state.roundNumber;
     try {
-      const advanced = await this.repository.autoStartDay(gameId, round);
+      const advanced = phase === 'dawn'
+        ? await this.repository.autoStartDay(gameId, round)
+        : await this.repository.autoStartNight(gameId, round);
       if (gameId !== this.state.id) return;
       if (advanced) this.requestRefresh();
-      else this.scheduleAutoDayRetry(); // Another client may already have won.
+      else this.scheduleAutoPhaseRetry(); // Another client may already have advanced.
     } catch (error) {
-      this.screens.showConnectionError(error.message || 'Could not begin the day.');
-      if (gameId === this.state.id) this.scheduleAutoDayRetry();
+      this.screens.showConnectionError(error.message || 'Could not advance the game.');
+      if (gameId === this.state.id) this.scheduleAutoPhaseRetry();
     } finally {
-      this.autoStartingDay = false;
+      this.autoAdvancingPhase = false;
     }
   }
 
   async advancePhase() {
-    if (this.advancing || (!this.can('START_DAY') && !this.can('START_NIGHT'))) return;
+    if (this.advancing || !this.can('START_DAY')) return;
     this.advancing = true;
     this.screens.renderPhase(this.state, this);
     this.showActionError('');
     try {
       const fresh = await this.repository.getState(this.state.id);
-      const next = this.stateEngine.transition(fresh, { type: fresh.phase === 'reveal' ? 'START_DAY' : 'START_NIGHT' });
+      const next = this.stateEngine.transition(fresh, { type: 'START_DAY' });
       await this.repository.advancePhase(fresh, next, this.playerId);
       this.requestRefresh();
     } catch (error) {
