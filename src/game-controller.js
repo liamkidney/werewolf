@@ -26,6 +26,9 @@ export class GameController {
     this.eliminated = false;
     this.starting = false;
     this.advancing = false;
+    this.autoStartingDay = false;
+    this.autoDayRetryTimer = null;
+    this.autoDayNextAttemptAt = 0;
     this.casting = false;
     this.nightCasting = false;
     this.nightPack = null;
@@ -175,6 +178,9 @@ export class GameController {
     this.stopDayTimer();
     this.stopNightPoll();
     this.stopPresentationTimer();
+    this.stopAutoDayRetry();
+    this.autoStartingDay = false;
+    this.autoDayNextAttemptAt = 0;
     this.victimPresentation = null;
     this.eliminationDisplayUntil = 0;
     if (this.endgameTimer !== null) clearTimeout(this.endgameTimer);
@@ -305,6 +311,11 @@ export class GameController {
   renderTimedPresentation(step) {
     if (step.screen === 'seer-result-screen' && this.seerReveal) {
       this.screens.renderSeerResult(this.seerReveal, step);
+    } else if (step.screen === 'dawn-screen') {
+      const state = this.state;
+      const victim = state.players.find(player => player.id === state.lastMurderedId);
+      this.screens.renderMurderReveal(victim?.name || 'A villager',
+        state.decoyQuestion, this.decoyPack?.results || [], state.players, step);
     } else {
       this.screens.renderTimedPresentation(step);
     }
@@ -346,7 +357,9 @@ export class GameController {
     const step = this.stateEngine.presentation(sequenceState, {
       startedAt: this.victimPresentation.startedAt
     });
-    if (!step?.screen) return false;
+    // The victim gets the common suspense screen, then their private
+    // elimination message; they must not enter the public timed reveal.
+    if (step?.stage !== 'dawn.suspense') return false;
     this.renderTimedPresentation(step);
     return true;
   }
@@ -371,7 +384,9 @@ export class GameController {
     if (this.endgameTimer !== null) clearTimeout(this.endgameTimer);
     this.endgameTimer = null;
     const started = Date.parse(state.phaseStartedAt || '');
-    const revealDuration = this.stateEngine.presentationDuration(state.phase) + 4000;
+    const revealDuration = state.phase === 'dawn'
+      ? this.stateEngine.presentationDuration('dawn')
+      : 4000;
     const remaining = Number.isFinite(started) ? Math.max(0, started + revealDuration - Date.now()) : 0;
     if (remaining > 0) {
       const step = this.stateEngine.presentation(state);
@@ -383,7 +398,8 @@ export class GameController {
       if (state.phase === 'dawn') {
         const victim = state.players.find(player => player.id === state.lastMurderedId);
         if (victim?.id === this.playerId) this.screens.showEliminated(true, this.wasHost ? state.players.find(p => p.id === state.hostPlayerId)?.name : null);
-        else this.screens.renderMurderReveal(victim?.name || 'A villager', false, state.decoyQuestion, this.decoyPack?.results || [], state.players);
+        else this.screens.renderMurderReveal(victim?.name || 'A villager',
+          state.decoyQuestion, this.decoyPack?.results || [], state.players);
       } else {
         const banished = state.players.find(player => player.id === state.lastBanishedId);
         if (banished?.id === this.playerId) this.screens.showEliminated(false, this.wasHost ? state.players.find(p => p.id === state.hostPlayerId)?.name : null);
@@ -470,6 +486,7 @@ export class GameController {
       return;
     }
     this.stopPresentationTimer();
+    if (state.phase !== 'dawn') this.stopAutoDayRetry();
     if (this.stateEngine.stage(state, this.playerId) === 'lobby') {
       this.renderLobby();
       return;
@@ -480,10 +497,11 @@ export class GameController {
       if (this.nightPoll === null) this.nightPoll = setInterval(() => this.requestRefresh(), 1500);
       return;
     }
-    if (this.stateEngine.stage(state, this.playerId) === 'dawn.reveal') {
+    if (this.stateEngine.stage(state, this.playerId) === 'dawn.complete') {
       const victim = state.players.find(player => player.id === state.lastMurderedId);
-      this.screens.renderMurderReveal(victim?.name || 'A villager', this.isHost, state.decoyQuestion, this.decoyPack?.results || [], state.players);
-      this.screens.renderWorkflow(state, { isHost: this.isHost });
+      this.screens.renderMurderReveal(victim?.name || 'A villager',
+        state.decoyQuestion, this.decoyPack?.results || [], state.players);
+      void this.autoStartDay();
       return;
     }
     if (this.stateEngine.stage(state, this.playerId).startsWith('day.')) {
@@ -629,7 +647,7 @@ export class GameController {
     this.showActionError('');
     try {
       const fresh = await this.repository.getState(this.state.id);
-      const next = this.stateEngine.transition(fresh, { type: fresh.phase === 'reveal' || fresh.phase === 'dawn' ? 'START_DAY' : 'START_NIGHT' });
+      const next = this.stateEngine.transition(fresh, { type: fresh.phase === 'reveal' ? 'START_DAY' : 'START_NIGHT' });
       await this.repository.advancePhase(fresh, next, this.playerId);
       this.requestRefresh();
     } catch (error) {
