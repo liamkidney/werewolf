@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import { GameEngine } from '../src/game-engine.js';
 import { StateEngine } from '../src/state-engine.js';
 import { DEFAULT_RULES } from '../src/game-rules.js';
+import { ROLES } from '../src/role-registry.js';
 import { PresentationFlow } from '../src/presentation-flow.js';
 
 const engine = new GameEngine();
@@ -57,13 +58,15 @@ test('Seer can only investigate during an active night', () => {
     'CAST_SEER_INVESTIGATION', { playerId:'seer', role:'seer' }), false);
 });
 
-test('Seer investigation is independent of werewolf consensus', () => {
-  const actions = states.requiredNightActions([{ role:'villager' }, { role:'seer' }, { role:'werewolf' }]);
-  assert.deepEqual(actions.map(action => action.type), ['kill', 'inspect']);
-  const inspect = DEFAULT_RULES.nightActions.inspect;
-  assert.equal(states.evaluateNightAction(inspect,
-    [{id:'s1'},{id:'s2'}],
-    [{voter_id:'s1',target_id:'a'},{voter_id:'s2',target_id:'b'}]).complete, true);
+test('night actions and village alignment are role metadata', () => {
+  assert.equal(ROLES.hasAction('werewolf', 'kill'), true);
+  assert.equal(ROLES.hasAction('villager', 'decoy'), true);
+  assert.equal(ROLES.hasAction('seer', 'inspect'), true);
+  assert.equal(ROLES.hasAction('seer', 'kill'), false);
+  assert.equal(ROLES.isOnTeam('seer', 'village'), true);
+  assert.equal(ROLES.isOnTeam('werewolf', 'village'), false);
+  assert.equal(DEFAULT_RULES.nightActions.inspect.consensus, 'individual');
+  assert.equal(DEFAULT_RULES.nightActions.kill.consensus, 'unanimous');
 });
 
 test('Seer result is a private six-second timed presentation', () => {
