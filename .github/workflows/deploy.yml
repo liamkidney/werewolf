@@ -38,15 +38,21 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Install dependencies
-        run: cd development && npm install --no-audit --no-fund
+      - name: Install production dependencies
+        run: npm install --prefix production --no-audit --no-fund
 
-      - name: Test
-        run: cd development && npm test
+      - name: Test production
+        run: npm test --prefix production
+
+      - name: Install development dependencies
+        run: npm install --prefix development --no-audit --no-fund
+
+      - name: Test development
+        run: npm test --prefix development
 
       - name: Build production
         run: |
-          SITE_ROOT="$GITHUB_WORKSPACE/production" SITE_BASE="/werewolf/" SITE_OUT="$GITHUB_WORKSPACE/_site" npm run build --prefix development
+          SITE_ROOT="$GITHUB_WORKSPACE/production" SITE_BASE="/werewolf/" SITE_OUT="$GITHUB_WORKSPACE/_site" npm run build --prefix production
 
       - name: Build development
         run: |
