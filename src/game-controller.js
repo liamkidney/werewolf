@@ -412,7 +412,7 @@ export class GameController {
     if (state.phase !== 'night') this.stopNightPoll();
     // Any phase can configure timed presentation pages. Render those before
     // the ordinary phase screen, without adding another controller branch.
-    const presentation = this.stateEngine.presentation(state);
+    const presentation = state.status === 'playing' ? this.stateEngine.presentation(state) : null;
     if (presentation?.screen) {
       this.renderTimedPresentation(presentation);
       return;
