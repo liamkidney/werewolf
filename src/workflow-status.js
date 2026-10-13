@@ -26,7 +26,7 @@ export function workflowStatus(state, { role, playerId, isHost = false, pack = n
     }
     return { label: 'NIGHT ' + round + ' · VILLAGE QUESTION', title: decoyPack?.myVote ? 'Your answer is recorded' : 'Answer the night question', ...waiting(decoyPack?.myVote ? 'You can change your answer until dawn.' : 'Choose a player to answer the question.', 'Dawn · Murder reveal') };
   }
-  if (stage === 'dawn') return { label: 'DAWN ' + round, title: 'The night is over', ...waiting('Discover what happened overnight.', 'Day ' + (round + 1) + ' · Discussion') };
+  if (stage === 'dawn') return { label: 'DAY ' + round + ' · DAWN', title: 'The night is over', ...waiting('Discover what happened overnight.', 'Discussion') };
   if (stage === 'results') return { label: 'DAY ' + round + ' · RESULT', title: 'A player has been banished', ...waiting(isHost ? 'Continue when everyone has seen the result.' : 'Waiting for the host to continue.', 'Night ' + round) };
   return null;
 }
