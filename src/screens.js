@@ -43,7 +43,7 @@ export class Screens {
     $('game-footer').hidden = false;
     $('role-reveal').classList.remove('revealed');
     $('role-reveal').querySelector('.role-secret').setAttribute('aria-hidden', 'true');
-    for (const screen of ['lobby', 'role-screen', 'day-screen', 'night-screen', 'dawn-screen', 'endgame-screen', 'suspense-screen', 'marquee-screen', 'banishment-screen']) $(screen).hidden = screen !== id;
+    for (const screen of ['lobby', 'role-screen', 'day-screen', 'night-screen', 'dawn-screen', 'endgame-screen', 'suspense-screen', 'seer-result-screen', 'marquee-screen', 'banishment-screen']) $(screen).hidden = screen !== id;
   }
 
   renderWorkflow(state, context = {}) {
@@ -105,7 +105,7 @@ export class Screens {
     $('lobby-message').textContent = count + (count === 1 ? ' player joined' : ' players joined');
     $('werewolf-count').textContent = state.werewolfCount;
     $('seer-count').textContent = state.seerCount ?? 0;
-    $('minimum-label').textContent = 'Minimum ' + (state.werewolfCount + 1);
+    $('minimum-label').textContent = 'Minimum ' + Math.max(3, state.werewolfCount + (state.seerCount ?? 0) + 1);
     $('wolf-minus').disabled = starting || state.werewolfCount <= 1 || state.status !== 'lobby';
     $('wolf-plus').disabled = starting || state.werewolfCount >= 50 || state.status !== 'lobby';
     $('seer-minus').disabled = starting || (state.seerCount ?? 0) <= 0 || state.status !== 'lobby';
