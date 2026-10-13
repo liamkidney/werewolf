@@ -54,7 +54,7 @@ export class StateEngine {
     switch (command) {
       case 'START_DAY': return isHost && (stage === 'reveal' || stage === 'reveal.complete');
       case 'AUTO_START_DAY': return stage === 'dawn.complete';
-      case 'START_NIGHT': return isHost && (stage === 'results' || stage === 'results.complete');
+      case 'AUTO_START_NIGHT': return stage === 'results.complete';
       case 'END_DISCUSSION': return isHost && stage === 'day.discussion';
       case 'OPEN_VOTING': {
         if (stage === 'day.voting') return true;
