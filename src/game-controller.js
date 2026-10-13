@@ -284,6 +284,7 @@ export class GameController {
     this.stopDayTimer();
     this.stopNightPoll();
     this.stopPresentationTimer();
+    this.stopAutoDayRetry();
     if (this.endgameTimer !== null) clearTimeout(this.endgameTimer);
     this.endgameTimer = null;
     const murdered = player.elimination_reason === 'murdered'
@@ -637,6 +638,42 @@ export class GameController {
       this.requestRefresh();
     } catch (error) {
       this.showActionError(error.message || 'Could not change the Seer count.');
+    }
+  }
+
+  stopAutoDayRetry() {
+    if (this.autoDayRetryTimer !== null) clearTimeout(this.autoDayRetryTimer);
+    this.autoDayRetryTimer = null;
+    this.autoDayNextAttemptAt = 0;
+  }
+
+  scheduleAutoDayRetry() {
+    if (this.autoDayRetryTimer !== null) return;
+    this.autoDayRetryTimer = setTimeout(() => {
+      this.autoDayRetryTimer = null;
+      if (this.state.status === 'playing' && this.state.phase === 'dawn') this.requestRefresh();
+    }, 1500);
+  }
+
+  async autoStartDay() {
+    if (this.autoStartingDay || !this.can('AUTO_START_DAY')
+      || Date.now() < this.autoDayNextAttemptAt) return;
+    // Every surviving client can request the transition. The database checks
+    // the game, round and deadline atomically; only one request can win.
+    this.autoStartingDay = true;
+    this.autoDayNextAttemptAt = Date.now() + 1400;
+    const gameId = this.state.id;
+    const round = this.state.roundNumber;
+    try {
+      const advanced = await this.repository.autoStartDay(gameId, round);
+      if (gameId !== this.state.id) return;
+      if (advanced) this.requestRefresh();
+      else this.scheduleAutoDayRetry(); // Another client may already have won.
+    } catch (error) {
+      this.screens.showConnectionError(error.message || 'Could not begin the day.');
+      if (gameId === this.state.id) this.scheduleAutoDayRetry();
+    } finally {
+      this.autoStartingDay = false;
     }
   }
 
