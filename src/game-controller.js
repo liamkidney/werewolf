@@ -340,7 +340,9 @@ export class GameController {
     if (this.endgameTimer !== null) clearTimeout(this.endgameTimer);
     this.endgameTimer = null;
     const started = Date.parse(state.phaseStartedAt || '');
-    const revealDuration = state.phase === 'dawn' ? 10000 : 4000;
+    const revealDuration = state.phase === 'dawn'
+      ? this.stateEngine.presentationDuration('dawn') + 4000
+      : 4000;
     const remaining = Number.isFinite(started) ? Math.max(0, started + revealDuration - Date.now()) : 0;
     if (remaining > 0) {
       if (state.phase === 'dawn') {
