@@ -12,7 +12,7 @@ export class GameEngine {
     if (state.phase === 'day') throw new Error('Voting begins automatically after the discussion timer.');
     const command = state.phase === 'reveal' ? 'START_DAY'
       : state.phase === 'dawn' ? 'AUTO_START_DAY'
-      : state.phase === 'results' ? 'START_NIGHT' : null;
+      : state.phase === 'results' ? 'AUTO_START_NIGHT' : null;
     return new StateEngine().transition(state, { type: command });
   }
 
