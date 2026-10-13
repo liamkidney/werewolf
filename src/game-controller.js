@@ -34,9 +34,9 @@ export class GameController {
     this.endgameTimer = null;
     this.finalCreditsGameId = null;
     this.nightPoll = null;
-    this.suspenseTimer = null;
-    this.murderSuspenseKey = null;
-    this.murderSuspenseUntil = 0;
+    this.presentationTimer = null;
+    this.victimPresentation = null;
+    this.eliminationDisplayUntil = 0;
     this.finishing = false;
     this.endingDiscussion = false;
     this.dayTicker = null;
@@ -169,9 +169,9 @@ export class GameController {
     this.finalCreditsGameId = null;
     this.stopDayTimer();
     this.stopNightPoll();
-    this.stopSuspenseTimer();
-    this.murderSuspenseKey = null;
-    this.murderSuspenseUntil = 0;
+    this.stopPresentationTimer();
+    this.victimPresentation = null;
+    this.eliminationDisplayUntil = 0;
     if (this.endgameTimer !== null) clearTimeout(this.endgameTimer);
     this.endgameTimer = null;
     this.decoyPack = null;
@@ -211,10 +211,9 @@ export class GameController {
         // Elimination is a permanent player state, independent of the current
         // round's last victim or the current phase.
         if (me.eliminated_at) {
-          // The murder is persisted at the night-to-dawn transition, before
-          // the six-second announcement. Let the victim see that announcement
-          // before switching permanently to their eliminated screen.
-          if (!this.eliminated && this.showMurderedPlayerSuspense(state)) return;
+          // Murdered players receive the same timed presentation substate
+          // before entering their permanent eliminated state.
+          if (!this.eliminated && this.showVictimPresentation(state)) return;
           this.enterEliminatedState(me, state);
           if (state.status !== 'finished') return;
         }
@@ -223,7 +222,8 @@ export class GameController {
         }
         if (state.status === 'finished') {
           if (me.eliminated_at) {
-            // Eliminated players skip the intervening phase/reveal screens.
+            // Preserve the newly murdered player's farewell before credits.
+            if (this.holdVictimFarewell(state)) return;
             this.showFinalCredits(state);
           } else {
             this.isHost = state.hostPlayerId === this.playerId;
@@ -264,7 +264,7 @@ export class GameController {
     this.refreshPending = false;
     this.stopDayTimer();
     this.stopNightPoll();
-    this.stopSuspenseTimer();
+    this.stopPresentationTimer();
     if (this.endgameTimer !== null) clearTimeout(this.endgameTimer);
     this.endgameTimer = null;
     const murdered = player.elimination_reason === 'murdered'
@@ -284,41 +284,53 @@ export class GameController {
     }).catch(error => this.showActionError(error.message || 'Could not load final roles.'));
   }
 
-  suspenseRemaining(state) {
-    if (state.phase !== 'dawn') return 0;
-    const started = Date.parse(state.phaseStartedAt || '');
-    return Number.isFinite(started) ? Math.max(0, started + 6000 - Date.now()) : 0;
+  stopPresentationTimer() {
+    if (this.presentationTimer !== null) clearTimeout(this.presentationTimer);
+    this.presentationTimer = null;
   }
 
-  stopSuspenseTimer() {
-    if (this.suspenseTimer !== null) clearTimeout(this.suspenseTimer);
-    this.suspenseTimer = null;
-  }
-
-  showSuspense(state, remaining = this.suspenseRemaining(state)) {
-    this.screens.renderSuspense();
-    if (this.suspenseTimer !== null) return;
-    this.suspenseTimer = setTimeout(() => {
-      this.suspenseTimer = null;
+  renderTimedPresentation(step) {
+    this.screens.renderTimedPresentation(step);
+    this.stopPresentationTimer();
+    this.presentationTimer = setTimeout(() => {
+      this.presentationTimer = null;
       this.requestRefresh();
-    }, remaining + 30);
+    }, step.remainingMs + 30);
   }
 
-  showMurderedPlayerSuspense(state) {
-    const murderedThisRound = state.phase === 'dawn'
-      && state.lastMurderedId === this.playerId;
-    if (murderedThisRound) {
-      const key = state.id + ':' + state.roundNumber;
-      if (this.murderSuspenseKey !== key) {
-        this.murderSuspenseKey = key;
-        // Start when this client learns of the murder: a delayed realtime
-        // message must not deprive the victim of the announcement.
-        this.murderSuspenseUntil = Date.now() + 6000;
-      }
+  showVictimPresentation(state) {
+    // The victim's first realtime notification can arrive late. Anchor their
+    // personal sequence to first observation rather than the server clock.
+    if (!this.victimPresentation && state.phase === 'dawn'
+      && state.lastMurderedId === this.playerId) {
+      this.victimPresentation = {
+        gameId: state.id,
+        phase: 'dawn',
+        startedAt: Date.now()
+      };
     }
-    const remaining = this.murderSuspenseUntil - Date.now();
-    if (!this.murderSuspenseKey || remaining <= 0) return false;
-    this.showSuspense(state, remaining);
+    if (this.victimPresentation?.gameId !== state.id) return false;
+    // Complete a sequence already in progress even if the host has advanced.
+    const sequenceState = { ...state, phase: this.victimPresentation.phase };
+    const step = this.stateEngine.presentation(sequenceState, {
+      startedAt: this.victimPresentation.startedAt
+    });
+    if (!step?.screen) return false;
+    this.renderTimedPresentation(step);
+    return true;
+  }
+
+  holdVictimFarewell(state) {
+    if (!this.victimPresentation || state.lastMurderedId !== this.playerId) return false;
+    if (!this.eliminationDisplayUntil) this.eliminationDisplayUntil = Date.now() + 4000;
+    const remaining = this.eliminationDisplayUntil - Date.now();
+    if (remaining <= 0) return false;
+    if (this.endgameTimer === null) {
+      this.endgameTimer = setTimeout(() => {
+        this.endgameTimer = null;
+        this.requestRefresh();
+      }, remaining + 30);
+    }
     return true;
   }
 
@@ -328,16 +340,19 @@ export class GameController {
     if (this.endgameTimer !== null) clearTimeout(this.endgameTimer);
     this.endgameTimer = null;
     const started = Date.parse(state.phaseStartedAt || '');
-    const revealDuration = state.phase === 'dawn' ? 10000 : 4000;
+    const revealDuration = this.stateEngine.presentationDuration(state.phase) + 4000;
     const remaining = Number.isFinite(started) ? Math.max(0, started + revealDuration - Date.now()) : 0;
     if (remaining > 0) {
+      const step = this.stateEngine.presentation(state);
+      if (step?.screen) {
+        this.renderTimedPresentation(step);
+        return;
+      }
+      this.stopPresentationTimer();
       if (state.phase === 'dawn') {
-        if (this.suspenseRemaining(state) > 0) this.showSuspense(state);
-        else {
-          const victim = state.players.find(player => player.id === state.lastMurderedId);
-          if (victim?.id === this.playerId) this.screens.showEliminated(true, this.wasHost ? state.players.find(p => p.id === state.hostPlayerId)?.name : null);
-          else this.screens.renderMurderReveal(victim?.name || 'A villager', false, state.decoyQuestion, this.decoyPack?.results || [], state.players);
-        }
+        const victim = state.players.find(player => player.id === state.lastMurderedId);
+        if (victim?.id === this.playerId) this.screens.showEliminated(true, this.wasHost ? state.players.find(p => p.id === state.hostPlayerId)?.name : null);
+        else this.screens.renderMurderReveal(victim?.name || 'A villager', false, state.decoyQuestion, this.decoyPack?.results || [], state.players);
       } else {
         const banished = state.players.find(player => player.id === state.lastBanishedId);
         if (banished?.id === this.playerId) this.screens.showEliminated(false, this.wasHost ? state.players.find(p => p.id === state.hostPlayerId)?.name : null);
@@ -346,7 +361,7 @@ export class GameController {
       this.endgameTimer = setTimeout(() => { this.endgameTimer = null; this.requestRefresh(); }, remaining + 30);
       return;
     }
-    this.stopSuspenseTimer();
+    this.stopPresentationTimer();
     void this.repository.getFinalRoles(state.id).then(roles => {
       if (this.state.id === state.id && this.state.status === 'finished') this.screens.renderEndgame(state.winner, roles);
     }).catch(error => this.showActionError(error.message || 'Could not load final roles.'));
@@ -395,7 +410,14 @@ export class GameController {
     if (this.eliminated) return;
     this.stopDayTimer();
     if (state.phase !== 'night') this.stopNightPoll();
-    if (state.phase !== 'dawn') this.stopSuspenseTimer();
+    // Any phase can configure timed presentation pages. Render those before
+    // the ordinary phase screen, without adding another controller branch.
+    const presentation = state.status === 'playing' ? this.stateEngine.presentation(state) : null;
+    if (presentation?.screen) {
+      this.renderTimedPresentation(presentation);
+      return;
+    }
+    this.stopPresentationTimer();
     if (this.stateEngine.stage(state, this.playerId) === 'lobby') {
       this.renderLobby();
       return;
@@ -406,12 +428,7 @@ export class GameController {
       if (this.nightPoll === null) this.nightPoll = setInterval(() => this.requestRefresh(), 1500);
       return;
     }
-    if (this.stateEngine.stage(state, this.playerId) === 'dawn') {
-      if (this.suspenseRemaining(state) > 0) {
-        this.showSuspense(state);
-        return;
-      }
-      this.stopSuspenseTimer();
+    if (this.stateEngine.stage(state, this.playerId) === 'dawn.reveal') {
       const victim = state.players.find(player => player.id === state.lastMurderedId);
       this.screens.renderMurderReveal(victim?.name || 'A villager', this.isHost, state.decoyQuestion, this.decoyPack?.results || [], state.players);
       this.screens.renderWorkflow(state, { isHost: this.isHost });
@@ -542,7 +559,7 @@ export class GameController {
   }
 
   async advancePhase() {
-    if (this.advancing || (!this.can('START_DAY') && !this.can('START_NIGHT')) || this.suspenseRemaining(this.state) > 0) return;
+    if (this.advancing || (!this.can('START_DAY') && !this.can('START_NIGHT'))) return;
     this.advancing = true;
     this.screens.renderPhase(this.state, this);
     this.showActionError('');

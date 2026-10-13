@@ -187,26 +187,26 @@ body.light-screen #night-screen .muted{color:#aeb9c9}
 body.light-screen:has(#night-screen:not([hidden])) .site-footer{color:#9eacbc}
 
 /* Phase reveal artwork and colour treatments. */
-body.light-screen .screen:has(#suspense-screen:not([hidden])),
+body.light-screen .screen:has(.timed-presentation-screen:not([hidden])),
 body.light-screen .screen:has(#dawn-screen:not([hidden])),
 body.light-screen .screen:has(#banishment-screen.murdered-screen:not([hidden])){padding-top:0}
-body.light-screen #suspense-screen:not([hidden]) .phase-art,
+body.light-screen .timed-presentation-screen:not([hidden]) .phase-art,
 body.light-screen #dawn-screen:not([hidden]) .phase-art,
 body.light-screen #banishment-screen.murdered-screen:not([hidden]) .phase-art{width:calc(100% + 48px);max-width:none;margin-left:-24px;margin-right:-24px;flex:none}
-body.light-screen #suspense-screen:not([hidden]),
+body.light-screen .timed-presentation-screen:not([hidden]),
 body.light-screen #dawn-screen:not([hidden]),
 body.light-screen #banishment-screen.murdered-screen:not([hidden]){margin-top:0}
-body.light-screen:has(#suspense-screen:not([hidden])),
-body.light-screen:has(#suspense-screen:not([hidden])) .screen,
+body.light-screen:has(.timed-presentation-screen:not([hidden])),
+body.light-screen:has(.timed-presentation-screen:not([hidden])) .screen,
 body.light-screen:has(#banishment-screen.murdered-screen:not([hidden])),
 body.light-screen:has(#banishment-screen.murdered-screen:not([hidden])) .screen{background:#0b1723;color:#e8edf5}
-body.light-screen #suspense-screen:not([hidden]),
+body.light-screen .timed-presentation-screen:not([hidden]),
 body.light-screen #banishment-screen.murdered-screen:not([hidden]){color:#e8edf5}
-body.light-screen #suspense-screen .phase-art-night,
+body.light-screen .timed-presentation-screen .phase-art-night,
 body.light-screen #banishment-screen .phase-art-night{--art-base:#0b1723}
-body.light-screen #suspense-screen .lobby-eyebrow,
+body.light-screen .timed-presentation-screen .lobby-eyebrow,
 body.light-screen #banishment-screen.murdered-screen .lobby-eyebrow{color:#aeb9c9}
-body.light-screen:has(#suspense-screen:not([hidden])) .site-footer,
+body.light-screen:has(.timed-presentation-screen:not([hidden])) .site-footer,
 body.light-screen:has(#banishment-screen.murdered-screen:not([hidden])) .site-footer{color:#9eacbc}
 
 body.light-screen .screen:has(#banishment-screen:not([hidden])){padding-top:0}
@@ -307,7 +307,7 @@ body.light-screen{
   --phase-muted:#626b73;--phase-line:#c8c7c2;--phase-accent:#8d303b;
 }
 body.light-screen:has(#night-screen:not([hidden])),
-body.light-screen:has(#suspense-screen:not([hidden])),
+body.light-screen:has(.timed-presentation-screen:not([hidden])),
 body.light-screen:has(#banishment-screen.murdered-screen:not([hidden])),
 body.light-screen:has(#endgame-screen.wolves-won:not([hidden])),
 body.light-screen:has(#role-screen:not([hidden])){
@@ -373,7 +373,7 @@ body.light-screen .site-footer{color:var(--phase-muted)}
 body.light-screen .phase-art{--art-base:var(--phase-bg)}
 body.light-screen #role-screen .phase-art-role,
 body.light-screen #night-screen .phase-art-night,
-body.light-screen #suspense-screen .phase-art-night,
+body.light-screen .timed-presentation-screen .phase-art-night,
 body.light-screen #banishment-screen.murdered-screen .phase-art-night,
 body.light-screen #endgame-screen.wolves-won .endgame-night-art{--art-base:#19232e}
 /* Keep the illustration prominent while avoiding giant empty gaps. */
@@ -439,7 +439,7 @@ body.light-screen .phase-art::after{
     var(--art-base) 100%);
 }
 body.light-screen:has(#night-screen:not([hidden])),
-body.light-screen:has(#suspense-screen:not([hidden])),
+body.light-screen:has(.timed-presentation-screen:not([hidden])),
 body.light-screen:has(#banishment-screen.murdered-screen:not([hidden])),
 body.light-screen:has(#endgame-screen.wolves-won:not([hidden])){
   --phase-bg:var(--art-dark-night);
@@ -449,7 +449,7 @@ body.light-screen:has(#role-screen:not([hidden])){
   --phase-bg:var(--art-light-night);
 }
 body.light-screen #night-screen .phase-art-night,
-body.light-screen #suspense-screen .phase-art-night,
+body.light-screen .timed-presentation-screen .phase-art-night,
 body.light-screen #banishment-screen.murdered-screen .phase-art-night,
 body.light-screen #endgame-screen.wolves-won .endgame-night-art{
   --art-base:var(--art-dark-night);
@@ -496,4 +496,37 @@ body.light-screen .lobby .role-config{padding-top:12px}
 body.light-screen .lobby .role-row{align-items:center}
 @media(max-width:360px){
   body.light-screen .lobby .player-list{padding:12px;gap:8px 10px}
+}
+
+
+/* One restrained progress indicator for all timed presentation substates.
+   Each step supplies its duration and elapsed time, so late updates do not
+   restart the visual countdown. */
+body.light-screen .presentation-progress{
+  width:min(64%,240px);
+  height:3px;
+  margin:8px auto 0;
+  border-radius:999px;
+  background:rgb(232 237 245 / 22%);
+  overflow:hidden;
+  flex:none;
+}
+body.light-screen .presentation-progress-fill{
+  width:100%;
+  height:100%;
+  background:#cfae90;
+  transform-origin:left center;
+  animation-name:presentation-progress-fill;
+  animation-timing-function:linear;
+  animation-fill-mode:both;
+}
+@keyframes presentation-progress-fill{
+  from{transform:scaleX(0)}
+  to{transform:scaleX(1)}
+}
+body.light-screen .banishment-screen .presentation-progress-caption{
+  margin:0;
+  font-size:.76rem;
+  letter-spacing:.07em;
+  color:#aeb9c9;
 }

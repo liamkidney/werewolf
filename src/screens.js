@@ -10,6 +10,13 @@ export class Screens {
     this.nameInput = $('player-name');
     this.marqueeFont = null;
     this.dayVoteRound = null;
+    // Retain the standard day illustration until the new victory asset is deployed.
+    const victoryArt = $('endgame-screen').querySelector('.endgame-day-art img');
+    victoryArt.addEventListener('error', () => {
+      if (victoryArt.getAttribute('src') !== './images/werewolf-day.png') {
+        victoryArt.src = './images/werewolf-day.png';
+      }
+    });
   }
 
   showError(message) {
@@ -140,8 +147,16 @@ export class Screens {
     $('advance-phase').disabled = advancing;
   }
 
-  renderSuspense() {
-    this.showScreen('suspense-screen');
+  // Any timed presentation substate uses this same progress indicator.
+  // Changing the screen within the sequence requires no controller changes.
+  renderTimedPresentation(step) {
+    this.showScreen(step.screen);
+    const progress = $(step.screen).querySelector('.presentation-progress');
+    if (!progress) return;
+    const fill = progress.querySelector('.presentation-progress-fill');
+    progress.setAttribute('aria-valuenow', String(Math.round(step.progress * 100)));
+    fill.style.animationDuration = step.durationMs + 'ms';
+    fill.style.animationDelay = '-' + step.elapsedMs + 'ms';
   }
 
   renderMurderReveal(name, isHost, question = null, results = [], players = []) {
