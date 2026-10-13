@@ -4,6 +4,5 @@ export const PHASES = Object.freeze({
   dawn: { next: 'day', title: 'Dawn breaks', description: 'The murder is revealed before discussion begins.', action: '' },
   night: { next: null, title: 'Night falls', description: 'Night actions resolve automatically when all required actions are complete.', action: '' },
   day: { next: 'voting', title: 'Day breaks', description: 'Discuss who should be banished.', action: 'Voting opens automatically' },
-  voting: { next: 'results', title: 'Time to vote', description: 'Discuss your choice. In-app voting will be added in a future iteration.', action: 'Show results' },
   results: { next: 'night', title: 'Banishment result', description: 'The village learns who was banished before night begins automatically.', action: '' }
 });
