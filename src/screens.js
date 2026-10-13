@@ -172,6 +172,7 @@ export class Screens {
     $('seer-result-verdict').textContent = investigation.isWerewolf
       ? 'IS A WEREWOLF'
       : 'Is not a werewolf';
+    $('seer-result-verdict').classList.toggle('not-werewolf', !investigation.isWerewolf);
   }
 
   renderMurderReveal(name, isHost, question = null, results = [], players = []) {
