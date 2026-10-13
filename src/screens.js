@@ -114,7 +114,7 @@ export class Screens {
     $('start-game').textContent = starting ? 'Assigning roles…' : 'Start Game';
   }
 
-  showRole(role) {
+  showRole(role, packmates = null) {
     this.showScreen('role-screen');
     document.querySelector('.role-reminder').hidden = false;
     $('role-name').textContent = role
@@ -127,6 +127,16 @@ export class Screens {
         : role === 'seer' ? 'You are the Seer. Investigate one player each night. Keep your identity secret.'
         : 'You are a villager. Find the werewolves.'
       : 'Please wait a moment.';
+
+    // Packmates are private and belong inside the existing hold-to-reveal area.
+    const pack = $('role-pack');
+    pack.hidden = role !== 'werewolf';
+    const names = role === 'werewolf' && Array.isArray(packmates) ? packmates : [];
+    $('role-pack-names').textContent = names.join(' · ');
+    $('role-pack-names').hidden = !names.length;
+    $('role-pack-heading').textContent = role !== 'werewolf' ? ''
+      : packmates === null ? 'Finding your pack…'
+      : names.length ? 'Your fellow werewolves' : 'You are the only werewolf.';
   }
 
   showEliminated(murdered = false, newHostName = null) {
