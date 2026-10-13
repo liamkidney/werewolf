@@ -100,11 +100,11 @@ test('timed sequences can be configured for other phases', () => {
   const engine = new StateEngine(undefined, flow);
   const results = dawn({ phase: 'results', players: [survivor] });
   assert.equal(engine.stage(results, survivor.id, startedAt + 1000), 'results.suspense');
-  assert.equal(engine.can(results, 'START_NIGHT',
-    { playerId: survivor.id, isHost: true, now: startedAt + 1000 }), false);
+  assert.equal(engine.can(results, 'AUTO_START_NIGHT',
+    { playerId: survivor.id, now: startedAt + 1000 }), false);
   assert.equal(engine.stage(results, survivor.id, startedAt + 2500), 'results.complete');
-  assert.equal(engine.can(results, 'START_NIGHT',
-    { playerId: survivor.id, isHost: true, now: startedAt + 2500 }), true);
+  assert.equal(engine.can(results, 'AUTO_START_NIGHT',
+    { playerId: survivor.id, now: startedAt + 2500 }), true);
 
   const roles = { ...results, phase: 'reveal' };
   assert.equal(engine.stage(roles, survivor.id, startedAt + 1000), 'reveal.suspense');
@@ -112,4 +112,38 @@ test('timed sequences can be configured for other phases', () => {
     { playerId: survivor.id, isHost: true, now: startedAt + 1000 }), false);
   assert.equal(engine.can(roles, 'START_DAY',
     { playerId: survivor.id, isHost: true, now: startedAt + 1200 }), true);
+});
+
+test('banishment reveals the eliminated player for six seconds before automatic night', () => {
+  const engine = new StateEngine();
+  const results = dawn({
+    phase: 'results',
+    roundNumber: 3,
+    lastBanishedId: 'victim',
+    lastBanishedRound: 3
+  });
+  const first = engine.presentation(results, { now: startedAt });
+  assert.equal(engine.presentationDuration('results'), 6000);
+  assert.equal(first.stage, 'results.reveal');
+  assert.equal(first.screen, 'banishment-screen');
+  assert.equal(first.remainingMs, 6000);
+  assert.equal(engine.can(results, 'AUTO_START_NIGHT', {
+    playerId: survivor.id, now: startedAt + 5999
+  }), false);
+  const midpoint = engine.presentation(results, { now: startedAt + 3000 });
+  assert.equal(midpoint.progress, .5);
+  assert.equal(midpoint.remainingMs, 3000);
+  assert.equal(engine.stage(results, survivor.id, startedAt + 6000), 'results.complete');
+  assert.equal(engine.can(results, 'AUTO_START_NIGHT', {
+    playerId: survivor.id, now: startedAt + 6000
+  }), true);
+  assert.equal(engine.can(results, 'AUTO_START_NIGHT', {
+    playerId: victim.id, now: startedAt + 6000
+  }), false);
+  assert.equal(engine.can(results, 'START_NIGHT', {
+    playerId: survivor.id, isHost: true, now: startedAt + 6000
+  }), false);
+  assert.equal(engine.can({ ...results, status: 'finished' }, 'AUTO_START_NIGHT', {
+    playerId: survivor.id, now: startedAt + 6000
+  }), false);
 });
