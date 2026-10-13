@@ -77,3 +77,21 @@ test('bad or missing timestamps do not trap players on suspense', () => {
   assert.equal(flow.resolve(dawn({ phaseStartedAt: null })).stage, 'dawn.reveal');
   assert.equal(flow.resolve({ phase: 'night' }), null);
 });
+
+
+test('future suspense pages work for other reveal-style phases without controller-specific timers', () => {
+  const flow = new PresentationFlow({
+    results: [{ id: 'suspense', screen: 'results-suspense-screen', durationMs: 2500 }],
+    reveal: [{ id: 'suspense', screen: 'roles-suspense-screen', durationMs: 1200 }]
+  });
+  const engine = new StateEngine(undefined, flow);
+  const results = dawn({ phase: 'results', players: [survivor] });
+  assert.equal(engine.stage(results, survivor.id, startedAt + 1000), 'results.suspense');
+  assert.equal(engine.can(results, 'START_NIGHT', { playerId: survivor.id, isHost: true, now: startedAt + 1000 }), false);
+  assert.equal(engine.stage(results, survivor.id, startedAt + 2500), 'results.reveal');
+  assert.equal(engine.can(results, 'START_NIGHT', { playerId: survivor.id, isHost: true, now: startedAt + 2500 }), true);
+  const roles = { ...results, phase: 'reveal' };
+  assert.equal(engine.stage(roles, survivor.id, startedAt + 1000), 'reveal.suspense');
+  assert.equal(engine.can(roles, 'START_DAY', { playerId: survivor.id, isHost: true, now: startedAt + 1000 }), false);
+  assert.equal(engine.can(roles, 'START_DAY', { playerId: survivor.id, isHost: true, now: startedAt + 1200 }), true);
+});
