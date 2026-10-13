@@ -1,4 +1,5 @@
 import { PHASES } from './game-phases.js';
+import { ROLES } from './role-registry.js';
 import { workflowStatus } from './workflow-status.js';
 import QRCode from 'qrcode';
 
@@ -117,16 +118,10 @@ export class Screens {
   showRole(role, packmates = null) {
     this.showScreen('role-screen');
     document.querySelector('.role-reminder').hidden = false;
-    $('role-name').textContent = role
-      ? role === 'werewolf' ? 'Werewolf' : role === 'seer' ? 'Seer' : 'Villager'
-      : 'Assigning roles…';
+    $('role-name').textContent = role ? ROLES.label(role) : 'Assigning roles…';
     $('role-reveal').classList.remove('revealed');
     $('role-reveal').querySelector('.role-secret').setAttribute('aria-hidden', 'true');
-    $('role-description').textContent = role
-      ? role === 'werewolf' ? 'You are a werewolf. Keep your identity hidden.'
-        : role === 'seer' ? 'You are the Seer. Investigate one player each night. Keep your identity secret.'
-        : 'You are a villager. Find the werewolves.'
-      : 'Please wait a moment.';
+    $('role-description').textContent = role ? ROLES.description(role) : 'Please wait a moment.';
 
     // Packmates are private and belong inside the existing hold-to-reveal area.
     const pack = $('role-pack');
@@ -213,9 +208,7 @@ export class Screens {
     $('endgame-winner').textContent = wolvesWon ? 'The Werewolves Win' : 'The Villagers Win';
     const list = $('endgame-roles');
     list.replaceChildren();
-    const victorious = player => wolvesWon
-      ? player.role === 'werewolf'
-      : player.role === 'villager' || player.role === 'seer';
+    const victorious = player => ROLES.isOnTeam(player.role, wolvesWon ? 'werewolves' : 'village');
     const stars = roles.filter(player => victorious(player) && !player.eliminated);
     const supporting = roles.filter(player => !victorious(player) || player.eliminated);
 
@@ -224,8 +217,7 @@ export class Screens {
       entry.className = 'endgame-credit';
       const role = document.createElement('span');
       role.className = 'endgame-credit-role';
-      const character = player.role === 'werewolf' ? 'Werewolf'
-        : player.role === 'seer' ? 'Seer' : 'Villager';
+      const character = ROLES.label(player.role);
       const fate = player.elimination_reason === 'murdered' ? 'Murdered'
         : player.elimination_reason === 'banished' ? 'Banished'
         : player.eliminated ? 'Eliminated' : '';
