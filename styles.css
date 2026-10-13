@@ -524,11 +524,12 @@ body.light-screen .presentation-progress-fill{
   from{transform:scaleX(0)}
   to{transform:scaleX(1)}
 }
-body.light-screen .banishment-screen .presentation-progress-caption{
-  margin:0;
-  font-size:.76rem;
-  letter-spacing:.07em;
-  color:#aeb9c9;
+body.light-screen #dawn-screen .presentation-progress{
+  background:var(--phase-line);
+  margin-top:12px;
+}
+body.light-screen #dawn-screen .presentation-progress-fill{
+  background:var(--phase-accent);
 }
 
 
