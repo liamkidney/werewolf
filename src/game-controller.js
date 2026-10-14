@@ -100,8 +100,10 @@ export class GameController {
     });
     if (this.requestedGame) {
       // Show join intent immediately, before any asynchronous game lookup.
-      document.querySelector('.entry label').textContent = 'Enter your name to join';
-      this.screens.form.querySelector('button').textContent = 'Join Game →';
+      document.getElementById('entry-context').hidden = false;
+      document.querySelector('.entry label').textContent = 'Your name';
+      // Keep the same labelled arrow treatment on both entry paths.
+      this.screens.form.querySelector('button').firstChild.textContent = 'Join Game ';
       document.getElementById('resume-game').hidden = true;
     }
     if (!this.requestedGame) {
