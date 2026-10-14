@@ -1,10 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { GameState } from './game-state.js';
-
-const db = createClient(
-  'https://guldhewlhxhsxchbattf.supabase.co',
-  'sb_publishable_6g3XdNkAJesxzGzFZ9ulYg_redoxZWj'
-);
 
 function unwrap(result) {
   if (result.error) throw result.error;
@@ -12,7 +6,10 @@ function unwrap(result) {
 }
 
 export class GameRepository {
-  constructor(client = db) { this.db = client; }
+  constructor(client) {
+    if (!client) throw new Error('A Supabase client must be provided to GameRepository.');
+    this.db = client;
+  }
 
   async createGame() {
     return unwrap(await this.db.from('games').insert({ seer_count: 1 }).select('id').single()).id;
