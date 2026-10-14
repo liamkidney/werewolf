@@ -17,9 +17,10 @@
     <section class="hero" aria-label="Werewolf">
       <div class="art" aria-hidden="true"><img src="./images/werewolf-night-dark.png" alt=""></div>
       <h1>WEREWOLF</h1>
-      <p class="tagline">A party game of deception<br>and deduction</p>
+      <p class="tagline">A game of deception and deduction</p>
     </section>
     <form id="new-game" class="entry" novalidate>
+      <p id="entry-context" class="entry-context" hidden>JOIN THE VILLAGE</p>
       <label for="player-name">What's your name?</label>
       <input id="player-name" name="name" type="text" placeholder="Enter your name" autocomplete="nickname" maxlength="32" required>
       <p class="error" id="name-error" role="alert" hidden>Please enter your name.</p>
@@ -30,14 +31,14 @@
     <section id="lobby" class="lobby" hidden aria-live="polite">
       <div id="host-tools" hidden>
         <div class="guest-art" aria-hidden="true"><img src="./images/werewolf-night-light.png" alt=""></div>
-        <div class="join-header"><h2 class="join-heading">Scan to join</h2>
+        <div class="join-header"><h2 class="join-heading">Invite your village</h2>
         <div class="invite-row"><input id="invite-link" type="hidden"><button id="copy-link" type="button" aria-label="Copy invite link" title="Copy invite link"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg></button><span id="copy-feedback" class="copy-feedback" role="status" aria-live="polite"></span></div></div>
         <div class="qr-wrap"><canvas id="join-qr" role="img" aria-label="QR code to join this game"></canvas></div>
       </div>
       <div id="guest-intro" class="guest-intro" hidden>
         <div class="guest-art" aria-hidden="true"><img src="./images/werewolf-night-light.png" alt=""></div>
-        <h2>You're in!</h2>
-        <p>Waiting for the host to start the game…</p>
+        <h2>You're in.</h2>
+        <p>Waiting for the host to begin.</p>
       </div>
       <div class="players-heading"><strong id="lobby-message">Waiting for players…</strong><span id="minimum-label">Minimum 3</span></div>
       <ul id="player-list" class="player-list"></ul>
