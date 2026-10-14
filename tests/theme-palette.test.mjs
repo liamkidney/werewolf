@@ -23,17 +23,17 @@ function contrast(a, b) {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
-test('home and join pages share the navy, ivory and crimson palette', () => {
+test('home and join pages share the navy, ivory and burgundy palette', () => {
   assert.equal(token('entry-bg'), '#0b1926');
   assert.equal(token('entry-ink'), '#f8f4ee');
   assert.equal(token('entry-secondary'), '#c6ccd2');
   assert.equal(token('action-primary'), '#8d303b');
-  assert.match(css, /--entry-accent:var\(--action-primary\)/);
+
   assert.match(css, /--lobby-accent:var\(--action-primary\)/);
   assert.match(css, /body\{[^}]*background:var\(--entry-bg\)/);
   assert.match(css, /\.art\{--art-base:var\(--entry-bg\)\}/);
   assert.match(css, /\.tagline\{[^}]*color:var\(--entry-secondary\)/);
-  assert.match(css, /button\{[^}]*background:var\(--entry-accent\)/);
+  assert.match(css, /button\{[^}]*background:var\(--action-primary\)/);
   assert.match(css, /@media\(hover:hover\)\{button:not\(:disabled\):hover\{filter:brightness\(\.94\)\}\}/);
   assert.match(html, /<meta name="theme-color" content="#0B1926">/);
 });
