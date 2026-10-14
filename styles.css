@@ -8,6 +8,7 @@
   --entry-field-bg:#fff;
   --entry-field-ink:#19232e;
   --action-primary:#8d303b;
+  --action-border-on-dark:#b9777d;
   --entry-accent:var(--action-primary);
 
   /* Village lobby: warm bone, ink and a restrained burgundy accent. */
@@ -45,7 +46,7 @@ button{border:0;background:var(--entry-accent);color:#fff;font-size:1.4rem;font-
    never leave a darker-looking button behind in a sticky hover state. */
 @media(hover:hover){button:not(:disabled):hover{filter:brightness(.94)}}
 button:disabled{opacity:.42;cursor:not-allowed}
-.entry button{position:relative}
+.entry button{position:relative;border:1px solid var(--action-border-on-dark)}
 .entry button span{position:absolute;right:20px}
 .error{color:#ffd6d6;margin:-8px 0 0;font-size:.95rem}
 
@@ -296,7 +297,7 @@ body.light-screen #role-screen .role-secret .role-pack-heading{color:#c0c5c8;fon
 body.light-screen #role-screen .role-secret .role-pack-names{margin-top:8px;font-family:'Cormorant Garamond',Georgia,serif;font-size:clamp(1.45rem,6vw,1.9rem);line-height:1.2;color:#e8e5dd;overflow-wrap:anywhere}
 body.light-screen #role-screen .role-reminder{border:0;padding:6px 0 0;margin:0;color:#a5a8a5;font-size:.95rem;line-height:1.5}
 body.light-screen #role-screen #phase-host-controls{margin-top:4px}
-body.light-screen #role-screen #phase-host-controls button{border-radius:8px}
+body.light-screen #role-screen #phase-host-controls button{border:1px solid var(--action-border-on-dark);border-radius:8px}
 body.light-screen:has(#role-screen:not([hidden])) .site-footer{color:#a5a8a5}
 body.light-screen:has(#role-screen:not([hidden])) .workflow-status{background:#19232e;color:#e8e5dd;border-top-color:#49525b;box-shadow:none}
 body.light-screen:has(#role-screen:not([hidden])) .workflow-next{border-top-color:#49525b}
