@@ -6,7 +6,7 @@ const css = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
 
 test('every primary button takes its background from one burgundy token', () => {
   assert.match(css, /--action-primary:#8d303b;/);
-  assert.match(css, /--entry-accent:var\(--action-primary\)/);
+  assert.match(css, /button\{[^}]*background:var\(--action-primary\)/);
   assert.match(css, /--lobby-accent:var\(--action-primary\)/);
   assert.match(css, /#phase-host-controls button\{[^}]*background:var\(--action-primary\)/);
   assert.match(css, /body\.light-screen \.day-screen button:not\(\.night-choice\),[\s\S]*?body\.light-screen #start-game\{[^}]*background:var\(--action-primary\)/);
