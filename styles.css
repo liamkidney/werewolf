@@ -121,13 +121,15 @@ body.marquee-mode .screen{width:100%;max-width:none;min-height:100dvh;padding:12
   .marquee-vote{transform:rotate(90deg);width:90dvh;max-width:90dvh;flex:none;font-size:clamp(3rem,15dvh,8rem)}
 }
 
-/* Night vote options: tap to submit, live percentage of surviving werewolves. */
-.night-targets{width:100%;display:grid;gap:10px;text-align:left}
-.night-choice{position:relative;display:flex;align-items:center;gap:12px;min-height:64px;padding:12px 16px;border:1px solid #d7d9dc;border-radius:14px;background:#fff;overflow:hidden;cursor:pointer;font-size:1.05rem}
+/* All night actions occupy the same available width, regardless of
+   changing vote counts, percentages or confirmation messages. */
+.night-action-controls{width:100%;min-width:0}
+.night-targets{width:100%;min-width:0;display:grid;grid-template-columns:minmax(0,1fr);gap:10px;text-align:left}
+.night-choice{position:relative;display:flex;align-items:center;gap:12px;width:100%;min-width:0;min-height:64px;padding:12px 16px;border:1px solid #d7d9dc;border-radius:14px;background:#fff;overflow:hidden;cursor:pointer;font-size:1.05rem}
 .night-choice .night-bar{position:absolute;inset:0 auto 0 0;background:#f2c4c7;pointer-events:none;transition:width .2s}
-.night-choice input{position:relative;width:22px;min-height:22px;height:22px;flex:none;accent-color:#d92d3a}
+.night-choice input{position:relative;width:22px;min-height:22px;height:22px;flex:none;padding:0;border:0;background:transparent;accent-color:#d92d3a}
 .night-choice .night-name,.night-choice .night-percent{position:relative;z-index:1}
-.night-choice .night-name{flex:1}.night-choice .night-percent{font-variant-numeric:tabular-nums;color:#59616d}
+.night-choice .night-name{flex:1;min-width:0;overflow-wrap:anywhere}.night-choice .night-percent{font-variant-numeric:tabular-nums;color:#59616d}
 .night-choice:has(input:checked){border-color:#d92d3a}
 
 /* Persistent navigation and deployed build identification. */
@@ -540,7 +542,6 @@ body.light-screen #banishment-screen:not(.murdered-screen) .presentation-progres
 
 /* Seer screens reuse the ordinary night choices and timed-presentation chrome. */
 body.light-screen #night-seer-controls{
-  width:100%;
   display:grid;
   gap:12px;
   text-align:left;
