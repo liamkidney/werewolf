@@ -154,7 +154,7 @@ body.light-screen .guest-intro h2{font-size:2.15rem;margin:6px 0 0}
 body.light-screen .guest-intro p{font-size:1rem;line-height:1.4;color:var(--lobby-muted);margin:0;max-width:320px}
 body.light-screen .role-screen{color:#131d2c}
 body.light-screen .role-reminder{border-color:#dedddc;color:#5e6775}
-@media(max-height:740px){body.light-screen .screen{padding-top:calc(env(safe-area-inset-top) + 12px);gap:10px}body.light-screen .lobby{gap:10px}body.light-screen .qr-wrap canvas{width:min(44vw,170px)}body.light-screen .guest-art{width:calc(100% + 48px)}body.light-screen .guest-art img{object-fit:cover;object-position:center 40%}body.light-screen .player-list li{padding:9px 13px;min-height:44px}body.light-screen .guest-intro{gap:6px}body.light-screen .guest-intro h2{font-size:2rem}}
+@media(max-height:740px){body.light-screen .screen{padding-top:calc(env(safe-area-inset-top) + 12px);gap:10px}body.light-screen .lobby{gap:10px}body.light-screen .qr-wrap canvas{width:min(40vw,148px)}body.light-screen .guest-art{width:calc(100% + 48px)}body.light-screen .guest-art img{object-fit:cover;object-position:center 40%}body.light-screen .player-list li{padding:9px 13px;min-height:44px}body.light-screen .guest-intro{gap:6px}body.light-screen .guest-intro h2{font-size:2rem}}
 
 /* Game phase progression */
 #phase-host-controls{width:100%;margin-top:24px}
@@ -550,7 +550,6 @@ body.light-screen .lobby .player-list .my-name{font-weight:500}
 body.light-screen .lobby .player-list .player-you{
   color:var(--phase-muted);font-weight:400;font-size:.85em;
 }
-body.light-screen .lobby #host-controls{gap:13px}
 body.light-screen .lobby .role-config{padding-top:12px}
 body.light-screen .lobby .role-row{align-items:center}
 @media(max-width:360px){
