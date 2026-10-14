@@ -47,27 +47,62 @@ button:hover{background:#ed3a47}
 .entry button span{position:absolute;right:20px}
 .error{color:#ffd6d6;margin:-8px 0 0;font-size:.95rem}
 
-/* Landing page: explicit rows keep the hero, form and footer independent.
-   Spare height is shared above and below the main content, not inserted
-   unpredictably between the tagline and form. */
+/* One compact composition for both home and invitation entry.
+   Extra height goes below the form, not between the branding and form. */
 .screen:has(> .entry:not([hidden])){
-  padding-top:0;
-  grid-template-rows:auto minmax(0,1fr) auto auto;
-  display:grid;
-  row-gap:0;
+  display:flex;flex-direction:column;gap:0;
+  padding:0 24px calc(env(safe-area-inset-bottom) + 22px);
 }
-.screen:has(> .entry:not([hidden])) > .hero{grid-row:1;margin-inline:-28px}
-.screen:has(> .entry:not([hidden])) > .entry{grid-row:3;margin-top:24px}
-.screen:has(> .entry:not([hidden])) > .site-footer{grid-row:4;margin-top:0}
+.screen:has(> .entry:not([hidden])) > .hero{
+  display:flex;flex-direction:column;align-items:center;
+  width:calc(100% + 48px);margin:0 -24px;
+}
+.screen:has(> .entry:not([hidden])) > .hero .art{
+  width:100%;margin:0;flex:none;
+}
+.screen:has(> .entry:not([hidden])) > .hero h1{
+  font-size:clamp(2.8rem,11.5vw,4rem);line-height:1;
+  margin:10px 24px 0;max-width:calc(100% - 48px);
+}
+.screen:has(> .entry:not([hidden])) > .hero .tagline{
+  margin:10px 24px 0;max-width:calc(100% - 48px);
+  font-size:clamp(.94rem,3.8vw,1.05rem);line-height:1.45;
+}
+.screen:has(> .entry:not([hidden])) > .entry{
+  display:grid;grid-template-columns:minmax(0,1fr);
+  width:100%;max-width:392px;gap:10px;margin:32px auto 0;
+}
+.screen:has(> .entry:not([hidden])) > .entry label{
+  font-size:1.08rem;line-height:1.25;
+}
+.screen:has(> .entry:not([hidden])) > .entry .entry-context{
+  margin:0 0 -2px;color:var(--entry-secondary);
+  font-size:.72rem;font-weight:700;letter-spacing:.16em;
+}
+.screen:has(> .entry:not([hidden])) > .entry input,
+.screen:has(> .entry:not([hidden])) > .entry button{
+  min-height:56px;border-radius:10px;
+}
+.screen:has(> .entry:not([hidden])) > .entry input{
+  padding:0 16px;font-size:1.06rem;
+}
+.screen:has(> .entry:not([hidden])) > .entry button{
+  margin-top:4px;font-size:1.16rem;
+}
+.screen:has(> .entry:not([hidden])) > .entry button span{right:18px}
+.screen:has(> .entry:not([hidden])) > .site-footer{
+  margin-top:auto;padding:28px 0 0;
+}
 @media(min-width:650px){.screen{border-left:1px solid #ffffff15;border-right:1px solid #ffffff15}}
 @media(max-height:700px){
   .screen{gap:14px;padding-top:calc(env(safe-area-inset-top) + 10px);padding-bottom:calc(env(safe-area-inset-bottom) + 18px)}
-  .art{max-width:none}
-  h1{font-size:3.6rem}
-  .tagline{margin-top:10px}
   .entry{gap:10px}
-  input,button{min-height:52px}
-  .screen:has(> .entry:not([hidden])) > .entry{margin-top:16px}
+  .screen:has(> .entry:not([hidden])) > .entry{margin-top:18px;gap:8px}
+  .screen:has(> .entry:not([hidden])) > .entry input,
+  .screen:has(> .entry:not([hidden])) > .entry button{min-height:50px}
+  .screen:has(> .entry:not([hidden])) > .hero h1{margin-top:5px}
+  .screen:has(> .entry:not([hidden])) > .hero .tagline{margin-top:6px}
+  .screen:has(> .entry:not([hidden])) > .site-footer{padding-top:16px}
 }
 
 [hidden]{display:none!important}
@@ -80,13 +115,13 @@ body.light-screen .screen{background:var(--lobby-bg);justify-content:flex-start;
 body.light-screen .muted{color:var(--lobby-muted)}
 body.light-screen .error{color:var(--lobby-accent)}
 body.light-screen button:focus-visible,body.light-screen input:focus-visible{outline-color:#596b82}
-body.light-screen .lobby{display:flex;flex-direction:column;gap:16px;margin:0;padding:0;width:100%}
+body.light-screen .lobby{display:flex;flex-direction:column;gap:12px;margin:0;padding:0;width:100%;min-width:0}
 .lobby-eyebrow{text-align:center;letter-spacing:.18em;font-weight:700;font-size:.85rem;color:#555d69;margin:0}
-body.light-screen .lobby #host-tools{display:flex;flex-direction:column;gap:12px}
-body.light-screen .join-heading{text-align:center;font-size:1.85rem;margin:0}
-body.light-screen .qr-wrap{display:grid;justify-items:center;align-self:center;position:relative;padding:12px;border-radius:14px;background:#fff;box-shadow:0 2px 24px #15243a0a}
-body.light-screen .qr-wrap canvas{width:min(54vw,225px)}
-body.light-screen .join-header{display:flex;align-items:center;justify-content:center;gap:8px}
+body.light-screen .lobby #host-tools{display:flex;flex-direction:column;gap:10px}
+body.light-screen .join-heading{text-align:center;font-size:1.7rem;margin:0}
+body.light-screen .qr-wrap{display:grid;justify-items:center;align-self:center;position:relative;padding:9px;border:1px solid var(--lobby-line);border-radius:9px;background:#fff}
+body.light-screen .qr-wrap canvas{display:block;width:min(42vw,160px);height:auto}
+body.light-screen .join-header{display:flex;align-items:center;justify-content:center;gap:10px}
 body.light-screen .invite-row{position:relative;margin:0;padding:0}
 body.light-screen .invite-row button{display:grid;place-items:center;flex:none;width:42px;min-height:42px;border-radius:10px;background:var(--lobby-panel);color:var(--lobby-ink);padding:0}
 body.light-screen .invite-row button svg{display:block;width:20px;height:20px}
@@ -109,14 +144,14 @@ body.light-screen .villager-row{font-size:.86rem;color:#6e7682;font-weight:400}
 body.light-screen .stepper{display:flex;align-items:center;gap:0;background:#ebeaec;border-radius:12px;overflow:hidden}
 body.light-screen .stepper button{background:transparent;color:var(--lobby-ink);border-radius:0;width:44px;min-height:44px}
 body.light-screen .stepper output{background:#fff;min-width:44px;padding:12px 4px;color:#111827}
-body.light-screen #start-game{min-height:60px;font-size:1.25rem}
+body.light-screen #start-game{min-height:52px;font-size:1.12rem}
 body.light-screen #start-status{font-size:.8rem;text-align:center}
-body.light-screen .guest-intro{text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;padding-top:5px}
+body.light-screen .guest-intro{text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;padding-top:0}
 body.light-screen .guest-intro[hidden],body.light-screen .guest-waiting[hidden]{display:none}
 body.light-screen .guest-art{width:100%;aspect-ratio:2/1}
 body.light-screen .guest-art img{display:block;width:100%;height:100%;object-fit:cover;object-position:center 40%}
-body.light-screen .guest-intro h2{font-size:2.4rem;margin:0}
-body.light-screen .guest-intro p{font-size:1.15rem;line-height:1.5;color:var(--lobby-muted);margin:0 0 10px;max-width:300px}
+body.light-screen .guest-intro h2{font-size:2.15rem;margin:6px 0 0}
+body.light-screen .guest-intro p{font-size:1rem;line-height:1.4;color:var(--lobby-muted);margin:0;max-width:320px}
 body.light-screen .role-screen{color:#131d2c}
 body.light-screen .role-reminder{border-color:#dedddc;color:#5e6775}
 @media(max-height:740px){body.light-screen .screen{padding-top:calc(env(safe-area-inset-top) + 12px);gap:10px}body.light-screen .lobby{gap:10px}body.light-screen .qr-wrap canvas{width:min(44vw,170px)}body.light-screen .guest-art{width:calc(100% + 48px)}body.light-screen .guest-art img{object-fit:cover;object-position:center 40%}body.light-screen .player-list li{padding:9px 13px;min-height:44px}body.light-screen .guest-intro{gap:6px}body.light-screen .guest-intro h2{font-size:2rem}}
@@ -379,7 +414,6 @@ body.light-screen #start-game{
 body.light-screen .day-screen button:disabled{opacity:.55}
 body.light-screen .guest-intro p,body.light-screen .muted{color:var(--phase-muted)}
 /* Lobby: QR stays high contrast for reliable scanning; surrounding chrome is quiet. */
-body.light-screen .lobby{gap:18px}
 body.light-screen .join-header{gap:12px}
 body.light-screen .qr-wrap{border-radius:8px;box-shadow:none;border:1px solid var(--phase-line);padding:14px}
 body.light-screen .invite-row button{border-radius:8px;background:#dadbd8;color:#283747}
@@ -415,16 +449,10 @@ body.light-screen #day-screen #vote-controls{gap:12px}
 @media(max-height:740px){
   body.light-screen .day-screen,body.light-screen .banishment-screen{gap:12px}
   body.light-screen .day-clock{font-size:clamp(4rem,16vw,6rem)}
-  body.light-screen .lobby{gap:12px}
-}
+  }
 
 
 /* Compact lobby roster: simple two-column names, no ornamental player dots. */
-body.light-screen .lobby{gap:12px}
-body.light-screen .lobby #host-tools{gap:8px}
-body.light-screen .lobby .join-header{gap:8px}
-body.light-screen .lobby .qr-wrap{padding:8px;border-radius:8px}
-body.light-screen .lobby .qr-wrap canvas{display:block;width:min(43vw,180px);height:auto}
 body.light-screen .lobby .players-heading{padding-top:10px;gap:8px;font-size:.92rem}
 body.light-screen .lobby .players-heading span{font-size:.76rem}
 body.light-screen .lobby .player-list{
