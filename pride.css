@@ -1,0 +1,197 @@
+/* Queerwolf: an opt-in Pride / queer-nightlife skin.
+   Fully scoped so classic Werewolf is visually unchanged. */
+body[data-edition="pride"]{
+  --entry-bg:#130a26;
+  --entry-ink:#fff7fd;
+  --entry-secondary:#e7cde9;
+  --entry-muted:#c4acd0;
+  --entry-field-bg:#fff7ff;
+  --entry-field-ink:#27113d;
+  --action-primary:#92215f;
+  --action-border-on-dark:#f1a5d7;
+  --lobby-bg:#f2edfa;
+  --lobby-panel:#fffaff;
+  --lobby-ink:#27163c;
+  --lobby-muted:#62566e;
+  --lobby-line:#d7c9e5;
+  --lobby-accent:var(--action-primary);
+  background:var(--entry-bg);
+  color:var(--entry-ink);
+}
+
+/* A thin, unambiguous Pride signature on every screen, including gameplay. */
+body[data-edition="pride"]::before{
+  content:"";
+  position:fixed;
+  inset:0 0 auto;
+  height:5px;
+  z-index:100;
+  pointer-events:none;
+  background:linear-gradient(to right,
+    #e8586b 0% 16.66%,
+    #ffaf55 16.66% 33.33%,
+    #f8e081 33.33% 50%,
+    #6dd7a6 50% 66.66%,
+    #5eabf3 66.66% 83.33%,
+    #c88af6 83.33% 100%);
+}
+body[data-edition="pride"] .screen:has(> .entry:not([hidden])){
+  background:radial-gradient(ellipse at 50% 15%,#34215b 0%,#1d103b 48%,#130a26 90%);
+}
+body[data-edition="pride"] .hero .art::before,
+body[data-edition="pride"] .guest-art::before,
+body[data-edition="pride"] .phase-art::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:1;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at 53% 22%,rgba(243,128,232,.32),transparent 34%),
+    linear-gradient(105deg,rgba(225,75,153,.24),rgba(94,55,212,.20) 52%,rgba(41,210,201,.24));
+  mix-blend-mode:screen;
+}
+body[data-edition="pride"] .edition-kicker{
+  margin:8px 0 0;
+  font-size:.66rem;
+  font-weight:800;
+  letter-spacing:.30em;
+  color:#f5bded;
+  text-shadow:0 0 18px rgba(230,117,222,.35);
+}
+body[data-edition="pride"] .screen:has(> .entry:not([hidden])) > .hero h1{
+  margin-top:4px;
+  font-size:clamp(2.7rem,10.8vw,3.95rem);
+  letter-spacing:.015em;
+  background:linear-gradient(95deg,#ffe0ed 3%,#ffafd8 31%,#e0c6ff 63%,#9cf1ef 100%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+  text-shadow:none;
+  transform:rotate(-1.5deg);
+}
+body[data-edition="pride"] .screen:has(> .entry:not([hidden])) > .hero .tagline{
+  color:var(--entry-secondary);
+  max-width:340px;
+}
+body[data-edition="pride"] .entry input{
+  box-shadow:0 0 0 1px rgba(240,176,233,.5);
+}
+body[data-edition="pride"] .entry button{
+  background:var(--action-primary);
+  border-color:var(--action-border-on-dark);
+  box-shadow:0 5px 18px rgba(162,35,124,.26);
+}
+body[data-edition="pride"] .edition-switch{
+  color:#f0b9e5;
+}
+.edition-switch{
+  display:block;
+  margin:5px auto 0;
+  text-align:center;
+  color:var(--entry-secondary);
+  font-size:.87rem;
+  line-height:1.4;
+  text-decoration:underline;
+  text-underline-offset:4px;
+  text-decoration-color:currentColor;
+}
+.edition-switch:focus-visible{outline:2px solid currentColor;outline-offset:5px}
+body[data-edition="pride"] .site-footer{color:var(--entry-muted)}
+
+/* Day and lobby are lilac-and-ivory; night and role reveal remain genuinely dark. */
+body[data-edition="pride"].light-screen{
+  --phase-bg:var(--lobby-bg);
+  --phase-panel:var(--lobby-panel);
+  --phase-ink:var(--lobby-ink);
+  --phase-muted:var(--lobby-muted);
+  --phase-line:var(--lobby-line);
+  --phase-accent:var(--action-primary);
+  --art-day:var(--lobby-bg);
+  --art-light-night:#1b1031;
+  --art-dark-night:#1b1031;
+}
+body[data-edition="pride"].light-screen:has(#night-screen:not([hidden])),
+body[data-edition="pride"].light-screen:has(.timed-presentation-screen:not([hidden])),
+body[data-edition="pride"].light-screen:has(#banishment-screen.murdered-screen:not([hidden])),
+body[data-edition="pride"].light-screen:has(#endgame-screen.wolves-won:not([hidden])),
+body[data-edition="pride"].light-screen:has(#role-screen:not([hidden])){
+  --phase-bg:#1b1031;
+  --phase-panel:#302048;
+  --phase-ink:#faf1ff;
+  --phase-muted:#cbb8dd;
+  --phase-line:#705788;
+  --phase-accent:#e9a2d4;
+}
+body[data-edition="pride"].light-screen .lobby .player-list,
+body[data-edition="pride"].light-screen .role-config,
+body[data-edition="pride"].light-screen .invite-row button{
+  border-color:var(--phase-line);
+}
+body[data-edition="pride"].light-screen .qr-wrap{
+  border-color:#c5addd;
+  background:#fff;
+}
+body[data-edition="pride"].light-screen .qr-wrap canvas{
+  background:#fff;
+}
+body[data-edition="pride"].light-screen .lobby .stepper{
+  background:#e7dcef;
+}
+body[data-edition="pride"].light-screen .lobby .stepper button{
+  color:var(--lobby-ink);
+}
+body[data-edition="pride"].light-screen #role-screen .role-reveal{
+  border-color:#9776b3;
+  background:#2a193f;
+}
+body[data-edition="pride"].light-screen #role-screen .role-hint::before{
+  color:#f4a6d5;
+}
+body[data-edition="pride"].light-screen #role-screen > .muted::after{
+  background:linear-gradient(90deg,#fd94bb,#bc8bf6,#77d7e7);
+}
+body[data-edition="pride"].light-screen #role-screen .role-reveal.revealed{
+  box-shadow:0 0 0 1px rgba(239,146,218,.35),0 0 32px rgba(139,80,213,.18);
+}
+body[data-edition="pride"].light-screen .day-screen button:not(.night-choice),
+body[data-edition="pride"].light-screen .banishment-screen button,
+body[data-edition="pride"].light-screen #start-game,
+body[data-edition="pride"].light-screen #phase-host-controls button{
+  background:var(--action-primary);
+  color:#fff;
+}
+body[data-edition="pride"].light-screen #role-screen #phase-host-controls button{
+  border-color:var(--action-border-on-dark);
+}
+body[data-edition="pride"].light-screen .night-choice:has(input:checked){
+  border-color:var(--phase-accent);
+  box-shadow:inset 3px 0 0 var(--phase-accent);
+}
+body[data-edition="pride"].light-screen .night-choice input,
+body[data-edition="pride"].light-screen .vote-targets input{
+  accent-color:var(--phase-accent);
+}
+body[data-edition="pride"].light-screen .presentation-progress-fill,
+body[data-edition="pride"].light-screen #dawn-screen .presentation-progress-fill,
+body[data-edition="pride"].light-screen #banishment-screen:not(.murdered-screen) .presentation-progress-fill{
+  background:linear-gradient(90deg,#ea709c,#e3aa65,#b2dcac,#80b9e6,#c894f1);
+}
+body[data-edition="pride"].light-screen #seer-result-screen #seer-result-verdict{
+  color:#ffbbdf;
+}
+body[data-edition="pride"].light-screen #seer-result-screen #seer-result-verdict.not-werewolf{
+  color:#aee6e7;
+}
+body[data-edition="pride"].marquee-mode .marquee-screen{
+  background:#1b1031;
+  color:#fff2ff;
+}
+body[data-edition="pride"].marquee-mode .marquee-vote{
+  text-shadow:0 0 22px rgba(224,141,240,.20);
+}
+@media (prefers-reduced-motion:reduce){
+  body[data-edition="pride"] .entry button{
+    transition:none;
+  }
+}
