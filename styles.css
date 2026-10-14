@@ -37,10 +37,12 @@ label{font-size:1.35rem;font-weight:600}
 .entry label{color:var(--entry-ink)}
 input,button{font:inherit;border-radius:13px;width:100%;min-height:64px}
 input{background:var(--entry-field-bg);color:var(--entry-field-ink);border:2px solid transparent;padding:0 20px;font-size:1.15rem}
-input:focus-visible,button:focus-visible{outline:3px solid var(--entry-secondary);outline-offset:3px}
+input:focus-visible,button:focus-visible{outline:3px solid #f2e3bf;outline-offset:3px}
+.entry input:focus-visible,.entry button:focus-visible{outline-color:var(--entry-secondary)}
 input::placeholder{color:#737f8a}
 button{border:0;background:var(--entry-accent);color:#fff;font-size:1.4rem;font-weight:700;cursor:pointer;padding:12px 20px}
-button:hover{background:var(--entry-accent-hover)}
+button:hover{background:#ed3a47}
+.entry button:hover{background:var(--entry-accent-hover)}
 .entry button{position:relative}
 .entry button span{position:absolute;right:20px}
 .error{color:#ffd6d6;margin:-8px 0 0;font-size:.95rem}
