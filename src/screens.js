@@ -1,4 +1,4 @@
-import { PHASES } from './game-phases.js';
+import { ROLES } from './role-registry.js';
 import { workflowStatus } from './workflow-status.js';
 import QRCode from 'qrcode';
 
@@ -9,6 +9,14 @@ export class Screens {
     this.form = $('new-game');
     this.nameInput = $('player-name');
     this.marqueeFont = null;
+    this.dayVoteRound = null;
+    // Retain the standard day illustration until the new victory asset is deployed.
+    const victoryArt = $('endgame-screen').querySelector('.endgame-day-art img');
+    victoryArt.addEventListener('error', () => {
+      if (victoryArt.getAttribute('src') !== './images/werewolf-day.png') {
+        victoryArt.src = './images/werewolf-day.png';
+      }
+    });
   }
 
   showError(message) {
@@ -35,7 +43,7 @@ export class Screens {
     $('game-footer').hidden = false;
     $('role-reveal').classList.remove('revealed');
     $('role-reveal').querySelector('.role-secret').setAttribute('aria-hidden', 'true');
-    for (const screen of ['lobby', 'role-screen', 'day-screen', 'night-screen', 'dawn-screen', 'endgame-screen', 'suspense-screen', 'marquee-screen', 'banishment-screen']) $(screen).hidden = screen !== id;
+    for (const screen of ['lobby', 'role-screen', 'day-screen', 'night-screen', 'dawn-screen', 'endgame-screen', 'suspense-screen', 'seer-result-screen', 'marquee-screen', 'banishment-screen']) $(screen).hidden = screen !== id;
   }
 
   renderWorkflow(state, context = {}) {
@@ -85,33 +93,44 @@ export class Screens {
     state.players.forEach((player, index) => {
       const item = document.createElement('li');
       const dot = document.createElement('span');
-      dot.className = 'player-dot dot-' + (index % 6);
+      dot.remove();
       const name = document.createElement('span');
       const mine = player.id === playerId;
       name.textContent = player.name + (mine ? ' (you)' : '');
       if (mine) name.className = 'my-name';
-      item.append(dot, name);
+      item.append(name);
       list.append(item);
     });
     const count = state.players.length;
     $('lobby-message').textContent = count + (count === 1 ? ' player joined' : ' players joined');
     $('werewolf-count').textContent = state.werewolfCount;
-    $('minimum-label').textContent = 'Minimum ' + (state.werewolfCount + 1);
+    $('seer-count').textContent = state.seerCount ?? 0;
+    $('minimum-label').textContent = 'Minimum ' + Math.max(3, state.werewolfCount + (state.seerCount ?? 0) + 1);
     $('wolf-minus').disabled = starting || state.werewolfCount <= 1 || state.status !== 'lobby';
     $('wolf-plus').disabled = starting || state.werewolfCount >= 50 || state.status !== 'lobby';
+    $('seer-minus').disabled = starting || (state.seerCount ?? 0) <= 0 || state.status !== 'lobby';
+    $('seer-plus').disabled = starting || (state.seerCount ?? 0) >= 50 || state.status !== 'lobby';
     $('start-game').disabled = !isHost || !canStart || starting;
     $('start-game').textContent = starting ? 'Assigning roles…' : 'Start Game';
   }
 
-  showRole(role) {
+  showRole(role, packmates = null) {
     this.showScreen('role-screen');
     document.querySelector('.role-reminder').hidden = false;
-    $('role-name').textContent = role ? (role === 'werewolf' ? 'Werewolf' : 'Villager') : 'Assigning roles…';
+    $('role-name').textContent = role ? ROLES.label(role) : 'Assigning roles…';
     $('role-reveal').classList.remove('revealed');
     $('role-reveal').querySelector('.role-secret').setAttribute('aria-hidden', 'true');
-    $('role-description').textContent = role
-      ? (role === 'werewolf' ? 'You are a werewolf. Keep your identity hidden.' : 'You are a villager. Find the werewolves.')
-      : 'Please wait a moment.';
+    $('role-description').textContent = role ? ROLES.description(role) : 'Please wait a moment.';
+
+    // Packmates are private and belong inside the existing hold-to-reveal area.
+    const pack = $('role-pack');
+    pack.hidden = role !== 'werewolf';
+    const names = role === 'werewolf' && Array.isArray(packmates) ? packmates : [];
+    $('role-pack-names').textContent = names.join(' · ');
+    $('role-pack-names').hidden = !names.length;
+    $('role-pack-heading').textContent = role !== 'werewolf' ? ''
+      : packmates === null ? 'Finding your pack…'
+      : names.length ? 'Your fellow werewolves' : 'You are the only werewolf.';
   }
 
   showEliminated(murdered = false, newHostName = null) {
@@ -122,28 +141,41 @@ export class Screens {
     $('elimination-heading').textContent = murdered ? 'MURDERED' : 'BANISHED';
     $('banished-name').textContent = murdered ? 'You were murdered' : 'You have been banished';
     $('banishment-description').textContent = 'You are out of the game.' + (newHostName ? ' ' + newHostName + ' is now the host.' : '');
-    $('dismiss-banishment').hidden = true;
-    $('banishment-waiting').hidden = true;
+    $('banishment-screen').querySelector('.presentation-progress').hidden = true;
   }
 
-  showSpectator() {
-    $('role-name').textContent = 'Eliminated';
-    $('role-description').textContent = 'You are watching the rest of the game.';
-    document.querySelector('.role-reminder').hidden = true;
-  }
-
-  renderPhase(state, { isHost, advancing }) {
-    const phase = PHASES[state.phase];
+  renderRoleStartControls({ isHost, advancing }) {
     $('phase-host-controls').hidden = !isHost;
-    $('advance-phase').textContent = advancing ? 'Updating…' : phase?.action || 'Continue';
+    $('advance-phase').textContent = advancing ? 'Updating…' : 'Start Day';
     $('advance-phase').disabled = advancing;
   }
 
-  renderSuspense() {
-    this.showScreen('suspense-screen');
+  // Any timed presentation substate uses this same progress indicator.
+  // Changing the screen within the sequence requires no controller changes.
+  renderTimedPresentation(step) {
+    this.showScreen(step.screen);
+    this.updateTimedProgress(step.screen, step);
   }
 
-  renderMurderReveal(name, isHost, question = null, results = [], players = []) {
+  updateTimedProgress(screenId, step) {
+    const progress = $(screenId).querySelector('.presentation-progress');
+    if (!progress) return;
+    const fill = progress.querySelector('.presentation-progress-fill');
+    progress.setAttribute('aria-valuenow', String(Math.round(step.progress * 100)));
+    fill.style.animationDuration = step.durationMs + 'ms';
+    fill.style.animationDelay = '-' + step.elapsedMs + 'ms';
+  }
+
+  renderSeerResult(investigation, step) {
+    this.renderTimedPresentation(step);
+    $('seer-result-name').textContent = investigation.targetName;
+    $('seer-result-verdict').textContent = investigation.isWerewolf
+      ? 'IS A WEREWOLF'
+      : 'Is not a werewolf';
+    $('seer-result-verdict').classList.toggle('not-werewolf', !investigation.isWerewolf);
+  }
+
+  renderMurderReveal(name, question = null, results = [], players = [], timedStep = null) {
     this.showScreen('dawn-screen');
     $('dawn-victim').textContent = name;
     $('dawn-decoy').hidden = !question;
@@ -154,8 +186,9 @@ export class Screens {
     const total = results.reduce((sum, item) => sum + item.votes, 0);
     $('dawn-decoy-result').textContent = !total ? 'No votes were cast.'
       : names.join(', ') + ' — ' + max + (max === 1 ? ' vote' : ' votes') + ' (' + total + ' total).';
-    $('dismiss-dawn').hidden = !isHost;
-    $('dawn-waiting').hidden = isHost;
+    // A timed dawn reveal always progresses to the day without host input.
+    const step = timedStep || { durationMs: 1, elapsedMs: 1, progress: 1 };
+    this.updateTimedProgress('dawn-screen', step);
   }
 
   renderEndgame(winner, roles) {
@@ -167,16 +200,16 @@ export class Screens {
     $('endgame-winner').textContent = wolvesWon ? 'The Werewolves Win' : 'The Villagers Win';
     const list = $('endgame-roles');
     list.replaceChildren();
-    const victoriousRole = wolvesWon ? 'werewolf' : 'villager';
-    const stars = roles.filter(player => player.role === victoriousRole && !player.eliminated);
-    const supporting = roles.filter(player => player.role !== victoriousRole || player.eliminated);
+    const victorious = player => ROLES.isOnTeam(player.role, wolvesWon ? 'werewolves' : 'village');
+    const stars = roles.filter(player => victorious(player) && !player.eliminated);
+    const supporting = roles.filter(player => !victorious(player) || player.eliminated);
 
     const addCredit = (player, supportingRole) => {
       const entry = document.createElement('div');
       entry.className = 'endgame-credit';
       const role = document.createElement('span');
       role.className = 'endgame-credit-role';
-      const character = player.role === 'werewolf' ? 'Werewolf' : 'Villager';
+      const character = ROLES.label(player.role);
       const fate = player.elimination_reason === 'murdered' ? 'Murdered'
         : player.elimination_reason === 'banished' ? 'Banished'
         : player.eliminated ? 'Eliminated' : '';
@@ -206,14 +239,20 @@ export class Screens {
 
   }
 
-  renderNight(state, { playerId, role, pack, casting, decoyPack }) {
+  renderNight(state, { playerId, role, pack, casting, decoyPack, seerPack }) {
     this.showScreen('night-screen');
     $('night-round').textContent = state.roundNumber;
     $('night-heading').textContent = 'Night has fallen';
     const wolf = role === 'werewolf';
-    $('night-instruction').textContent = wolf ? 'Agree on one villager to eliminate.' : 'Cast your vote. The results will be revealed at dawn.';
-    $('night-villager-controls').hidden = wolf;
-    if (!wolf) {
+    const seer = role === 'seer';
+    const loneWolf = wolf && pack?.wolves?.length === 1;
+    $('night-instruction').textContent = wolf
+      ? loneWolf ? 'You are the only werewolf! Pick a villager to eliminate.'
+        : 'Agree on one villager to eliminate.'
+      : seer ? 'Investigate one player. Your choice is final.'
+      : 'Cast your vote. The results will be revealed at dawn.';
+    $('night-villager-controls').hidden = role !== 'villager';
+    if (role === 'villager') {
       $('decoy-question').textContent = state.decoyQuestion || decoyPack?.question || 'Who is least trustworthy?';
       const choices = $('decoy-targets');
       choices.replaceChildren();
@@ -229,30 +268,65 @@ export class Screens {
       }
       $('decoy-progress').textContent = decoyPack?.myVote ? 'Vote recorded. You can change it until dawn.' : 'Choose another player.';
     }
+    $('night-seer-controls').hidden = !seer;
+    if (seer) {
+      const investigation = seerPack?.myInvestigation;
+      const choices = $('seer-targets');
+      choices.hidden = !!investigation;
+      choices.replaceChildren();
+      if (!investigation) {
+        for (const player of state.players.filter(p => !p.eliminated_at && p.id !== playerId)) {
+          const label = document.createElement('label');
+          label.className = 'night-choice';
+          const radio = document.createElement('input');
+          radio.type = 'radio';
+          radio.name = 'seer-target';
+          radio.value = player.id;
+          radio.disabled = casting;
+          const name = document.createElement('span');
+          name.className = 'night-name';
+          name.textContent = player.name;
+          label.append(radio, name);
+          choices.append(label);
+        }
+      }
+      $('seer-progress').textContent = investigation
+        ? 'Investigation recorded. Waiting for the other night actions.'
+        : 'Choose another living player. You cannot change your choice.';
+      const history = (seerPack?.history || []).filter(item => item.roundNumber < state.roundNumber);
+      $('seer-history-wrap').hidden = history.length === 0;
+      const list = $('seer-history-list');
+      list.replaceChildren();
+      for (const item of history) {
+        const li = document.createElement('li');
+        li.textContent = 'Night ' + item.roundNumber + ': ' + item.targetName
+          + (item.isWerewolf ? ' — Werewolf' : ' — Not a werewolf');
+        list.append(li);
+      }
+    }
     $('night-wolf-controls').hidden = !wolf;
     if (!wolf) return;
     const wolves = pack?.wolves || [];
     const votes = pack?.votes || [];
-    const names = new Map(state.players.map(player => [player.id, player.name]));
+    $('night-wolf-roster').hidden = loneWolf;
+    $('night-wolf-choose-heading').hidden = loneWolf;
     const list = $('night-wolves');
     list.replaceChildren();
-    for (const member of wolves) {
-      const vote = votes.find(item => item.voter_id === member.id);
-      const item = document.createElement('li');
-      item.textContent = member.name + (member.id === playerId ? ' (you)' : '') + ' — ' + (vote ? names.get(vote.target_id) || 'Unknown' : 'Not nominated');
-      list.append(item);
+    if (!loneWolf) {
+      const names = new Map(state.players.map(player => [player.id, player.name]));
+      for (const member of wolves) {
+        const vote = votes.find(item => item.voter_id === member.id);
+        const item = document.createElement('li');
+        item.textContent = member.name + (member.id === playerId ? ' (you)' : '') + ' — ' + (vote ? names.get(vote.target_id) || 'Unknown' : 'Not nominated');
+        list.append(item);
+      }
     }
     const choices = $('night-targets');
     const selected = votes.find(item => item.voter_id === playerId)?.target_id;
     choices.replaceChildren();
     for (const player of state.players.filter(p => !p.eliminated_at && !wolves.some(w => w.id === p.id))) {
-      const count = votes.filter(v => v.target_id === player.id).length;
-      const percent = wolves.length ? Math.round(count * 100 / wolves.length) : 0;
       const label = document.createElement('label');
       label.className = 'night-choice';
-      const bar = document.createElement('span');
-      bar.className = 'night-bar';
-      bar.style.width = percent + '%';
       const radio = document.createElement('input');
       radio.type = 'radio';
       radio.name = 'night-target';
@@ -262,13 +336,25 @@ export class Screens {
       const name = document.createElement('span');
       name.className = 'night-name';
       name.textContent = player.name;
-      const share = document.createElement('span');
-      share.className = 'night-percent';
-      share.textContent = percent + '%';
-      label.append(bar, radio, name, share);
+      if (loneWolf) {
+        // Direct selection: no consensus meter or pack percentage.
+        label.append(radio, name);
+      } else {
+        const count = votes.filter(v => v.target_id === player.id).length;
+        const percent = wolves.length ? Math.round(count * 100 / wolves.length) : 0;
+        const bar = document.createElement('span');
+        bar.className = 'night-bar';
+        bar.style.width = percent + '%';
+        const share = document.createElement('span');
+        share.className = 'night-percent';
+        share.textContent = percent + '%';
+        label.append(bar, radio, name, share);
+      }
       choices.append(label);
     }
-    $('night-progress').textContent = votes.length + '/' + wolves.length + ' votes. Unanimous agreement ends the night.';
+    $('night-progress').textContent = loneWolf
+      ? selected ? 'Choice recorded. Waiting for the remaining night actions.' : ''
+      : votes.length + '/' + wolves.length + ' votes. Unanimous agreement ends the night.';
   }
 
   renderDay(state, { playerId, isHost, voting, myVote, casting, endingDiscussion }) {
@@ -285,7 +371,12 @@ export class Screens {
     const voted = state.votes.filter(vote => vote.round_number === state.roundNumber).length;
     $('vote-controls').hidden = !voting || !!myVote || !active.some(player => player.id === playerId);
     const choices = $('vote-targets');
-    const selected = choices.querySelector('input[name="vote-target"]:checked')?.value;
+    // Preserve a pending selection only within the same round. The DOM is
+    // reused between rounds, so a previous round's checked radio is stale.
+    const selected = this.dayVoteRound === state.roundNumber
+      ? choices.querySelector('input[name="vote-target"]:checked')?.value
+      : null;
+    this.dayVoteRound = state.roundNumber;
     choices.replaceChildren();
     for (const player of active.filter(player => player.id !== playerId)) {
       const label = document.createElement('label');
@@ -324,15 +415,19 @@ export class Screens {
     $('finish-voting').textContent = finishing ? 'Finishing…' : 'All Done';
   }
 
-  renderBanishment(name, eliminated, isHost) {
+  renderBanishment(name, step = null) {
     this.showScreen('banishment-screen');
+    const screen = $('banishment-screen');
+    screen.classList.remove('murdered-screen');
+    screen.querySelector('.murder-art').hidden = true;
+    screen.querySelector('.banished-art').hidden = false;
+    screen.querySelector('.presentation-progress').hidden = false;
     $('elimination-heading').textContent = 'BANISHED';
-    $('banished-name').textContent = eliminated ? 'You have been banished' : name;
-    $('banishment-description').textContent = eliminated
-      ? 'You are out of the game. You can watch, but cannot vote again.'
-      : name + ' has been eliminated from the game.';
-    $('dismiss-banishment').hidden = !isHost;
-    $('banishment-waiting').hidden = isHost;
+    $('banished-name').textContent = name;
+    $('banishment-description').textContent = name + ' has been eliminated from the game.';
+    this.updateTimedProgress('banishment-screen', step || {
+      durationMs: 1, elapsedMs: 1, progress: 1
+    });
   }
 
   async renderQr(inviteUrl) {
@@ -349,6 +444,8 @@ export class Screens {
     this.nameInput.addEventListener('input', () => { $('name-error').hidden = true; });
     $('wolf-minus').addEventListener('click', () => { void handlers.onWerewolves(-1); });
     $('wolf-plus').addEventListener('click', () => { void handlers.onWerewolves(1); });
+    $('seer-minus').addEventListener('click', () => { void handlers.onSeers(-1); });
+    $('seer-plus').addEventListener('click', () => { void handlers.onSeers(1); });
     $('start-game').addEventListener('click', () => { void handlers.onStart(); });
     const reveal = $('role-reveal');
     const setRevealed = visible => {
@@ -385,9 +482,11 @@ export class Screens {
     $('night-targets').addEventListener('change', event => {
       if (event.target.matches('input[name="night-target"]')) void handlers.onNightVote(event.target.value);
     });
-    $('dismiss-dawn').addEventListener('click', () => { void handlers.onAdvance(); });
+    $('seer-targets').addEventListener('change', event => {
+      if (event.target.matches('input[name="seer-target"]')) void handlers.onSeerInvestigation(event.target.value);
+    });
+
     $('finish-voting').addEventListener('click', () => { void handlers.onFinishVoting(); });
-    $('dismiss-banishment').addEventListener('click', () => { void handlers.onDismissBanishment(); });
     let feedbackTimeout;
     $('copy-link').addEventListener('click', async () => {
       const feedback = $('copy-feedback');

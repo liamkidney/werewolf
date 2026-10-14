@@ -1,20 +1,17 @@
-import { StateEngine } from './state-engine.js';
-
 // Pure rules: no Supabase, DOM, localStorage or network calls.
 export class GameEngine {
   canStart(state) {
-    return state.status === 'lobby' && state.players.length >= 3 && state.players.length > state.werewolfCount
-      && state.werewolfCount >= 1 && state.werewolfCount <= 50;
-  }
-
-  nextPhase(state) {
-    if (state.phase === 'day') throw new Error('Voting begins automatically after the discussion timer.');
-    const command = (state.phase === 'reveal' || state.phase === 'dawn') ? 'START_DAY' : state.phase === 'results' ? 'START_NIGHT' : null;
-    return new StateEngine().transition(state, { type: command });
+    return state.status === 'lobby' && state.players.length >= 3 && state.players.length > state.werewolfCount + (state.seerCount ?? 0)
+      && state.werewolfCount >= 1 && state.werewolfCount <= 50
+      && (state.seerCount ?? 0) >= 0 && (state.seerCount ?? 0) <= 50;
   }
 
   nextWerewolfCount(state, delta) {
     return Math.max(1, Math.min(50, state.werewolfCount + delta));
+  }
+
+  nextSeerCount(state, delta) {
+    return Math.max(0, Math.min(50, (state.seerCount ?? 0) + delta));
   }
 
   assignRoles(state, randomInt) {
@@ -28,7 +25,8 @@ export class GameEngine {
     return players.map((player, index) => ({
       player_id: player.id,
       game_id: state.id,
-      role: index < state.werewolfCount ? 'werewolf' : 'villager'
+      role: index < state.werewolfCount ? 'werewolf'
+        : index < state.werewolfCount + (state.seerCount ?? 0) ? 'seer' : 'villager'
     }));
   }
 }

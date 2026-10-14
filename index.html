@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0b1723">
+  <meta name="theme-color" content="#0B1926">
   <meta name="description" content="Werewolf — a party game of deception and deduction.">
   <title>Werewolf</title>
   <link rel="icon" href="./favicon.ico" sizes="any">
@@ -17,9 +17,10 @@
     <section class="hero" aria-label="Werewolf">
       <div class="art" aria-hidden="true"><img src="./images/werewolf-night-dark.png" alt=""></div>
       <h1>WEREWOLF</h1>
-      <p class="tagline">A party game of deception<br>and deduction</p>
+      <p class="tagline">A game of deception and deduction</p>
     </section>
     <form id="new-game" class="entry" novalidate>
+      <p id="entry-context" class="entry-context" hidden>JOIN THE VILLAGE</p>
       <label for="player-name">What's your name?</label>
       <input id="player-name" name="name" type="text" placeholder="Enter your name" autocomplete="nickname" maxlength="32" required>
       <p class="error" id="name-error" role="alert" hidden>Please enter your name.</p>
@@ -30,20 +31,21 @@
     <section id="lobby" class="lobby" hidden aria-live="polite">
       <div id="host-tools" hidden>
         <div class="guest-art" aria-hidden="true"><img src="./images/werewolf-night-light.png" alt=""></div>
-        <div class="join-header"><h2 class="join-heading">Scan to join</h2>
+        <div class="join-header"><h2 class="join-heading">Invite your village</h2>
         <div class="invite-row"><input id="invite-link" type="hidden"><button id="copy-link" type="button" aria-label="Copy invite link" title="Copy invite link"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg></button><span id="copy-feedback" class="copy-feedback" role="status" aria-live="polite"></span></div></div>
         <div class="qr-wrap"><canvas id="join-qr" role="img" aria-label="QR code to join this game"></canvas></div>
       </div>
       <div id="guest-intro" class="guest-intro" hidden>
         <div class="guest-art" aria-hidden="true"><img src="./images/werewolf-night-light.png" alt=""></div>
-        <h2>You're in!</h2>
-        <p>Waiting for the host to start the game…</p>
+        <h2>You're in.</h2>
+        <p>Waiting for the host to begin.</p>
       </div>
       <div class="players-heading"><strong id="lobby-message">Waiting for players…</strong><span id="minimum-label">Minimum 3</span></div>
       <ul id="player-list" class="player-list"></ul>
       <div id="host-controls" hidden>
         <div class="role-config">
           <div class="role-row"><label for="werewolf-count">Werewolves</label><div class="stepper"><button id="wolf-minus" type="button" aria-label="Fewer werewolves">−</button><output id="werewolf-count" aria-live="polite">2</output><button id="wolf-plus" type="button" aria-label="More werewolves">+</button></div></div>
+          <div class="role-row"><label for="seer-count">Seers</label><div class="stepper"><button id="seer-minus" type="button" aria-label="Fewer seers">−</button><output id="seer-count" aria-live="polite">1</output><button id="seer-plus" type="button" aria-label="More seers">+</button></div></div>
         </div>
         <button id="start-game" type="button" disabled>Start Game</button>
       </div>
@@ -56,6 +58,10 @@
         <div class="role-secret" aria-hidden="true">
           <h2 id="role-name">Waiting for role…</h2>
           <p id="role-description" class="muted"></p>
+          <div id="role-pack" class="role-pack" hidden>
+            <p id="role-pack-heading" class="role-pack-heading"></p>
+            <p id="role-pack-names" class="role-pack-names"></p>
+          </div>
         </div>
       </div>
       <p class="role-reminder">Keep your role secret from other players.</p>
@@ -68,23 +74,46 @@
       <p class="lobby-eyebrow">NIGHT <span id="night-round"></span></p>
       <h2 id="night-heading">Night has fallen</h2>
       <p id="night-instruction">Close your eyes.</p>
-      <div id="night-villager-controls" hidden>
+      <div id="night-villager-controls" class="night-action-controls" hidden>
         <h3 id="decoy-question"></h3>
         <div id="decoy-targets" class="night-targets" role="radiogroup" aria-label="Answer the night question"></div>
         <p id="decoy-progress" class="muted"></p>
       </div>
-      <div id="night-wolf-controls" hidden>
-        <h3>Werewolves</h3>
-        <ul id="night-wolves" class="player-list"></ul>
-        <h3>Choose a villager</h3>
+      <div id="night-seer-controls" class="night-action-controls" hidden>
+        <h3>Choose someone to investigate</h3>
+        <div id="seer-targets" class="night-targets" role="radiogroup" aria-label="Choose someone to investigate"></div>
+        <p id="seer-progress" class="muted"></p>
+        <div id="seer-history-wrap" class="seer-history" hidden>
+          <h3>Previous investigations</h3>
+          <ul id="seer-history-list"></ul>
+        </div>
+      </div>
+      <div id="night-wolf-controls" class="night-action-controls" hidden>
+        <div id="night-wolf-roster">
+          <h3>Werewolves</h3>
+          <ul id="night-wolves" class="player-list"></ul>
+        </div>
+        <h3 id="night-wolf-choose-heading">Choose a villager</h3>
         <div id="night-targets" class="night-targets" role="radiogroup" aria-label="Choose a villager"></div>
         <p id="night-progress" class="muted"></p>
       </div>
     </section>
-    <section id="suspense-screen" class="banishment-screen" hidden aria-live="polite">
+    <section id="suspense-screen" class="banishment-screen timed-presentation-screen" hidden aria-live="polite">
       <div class="phase-art phase-art-night" aria-hidden="true"><img src="./images/werewolf-night-dark.png" alt=""></div>
       <p class="lobby-eyebrow">NIGHT HAS ENDED</p>
       <h2>The werewolves have struck</h2>
+      <div class="presentation-progress" role="progressbar" aria-label="Time until next screen" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="presentation-progress-fill"></div>
+      </div>
+    </section>
+    <section id="seer-result-screen" class="banishment-screen timed-presentation-screen" hidden aria-live="polite">
+      <div class="phase-art phase-art-night" aria-hidden="true"><img src="./images/werewolf-night-dark.png" alt=""></div>
+      <p class="lobby-eyebrow">THE SEER HAS SEEN</p>
+      <h2 id="seer-result-name"></h2>
+      <p id="seer-result-verdict"></p>
+      <div class="presentation-progress" role="progressbar" aria-label="Time until next screen" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="presentation-progress-fill"></div>
+      </div>
     </section>
     <section id="dawn-screen" class="banishment-screen" hidden>
       <div class="phase-art phase-art-day" aria-hidden="true"><img src="./images/werewolf-day.png" alt=""></div>
@@ -96,11 +125,12 @@
         <h3 id="dawn-decoy-question"></h3>
         <p id="dawn-decoy-result"></p>
       </div>
-      <button id="dismiss-dawn" type="button">Start Day</button>
-      <p id="dawn-waiting" class="muted" hidden>Waiting for the host to start the day…</p>
+      <div class="presentation-progress" role="progressbar" aria-label="Time until discussion begins" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="presentation-progress-fill"></div>
+      </div>
     </section>
     <section id="endgame-screen" class="banishment-screen" hidden>
-      <div class="phase-art phase-art-day endgame-day-art" aria-hidden="true"><img src="./images/werewolf-day.png" alt=""></div>
+      <div class="phase-art phase-art-day endgame-day-art" aria-hidden="true"><img src="./images/werewolf-day-victory.png" alt=""></div>
       <div class="phase-art phase-art-night endgame-night-art" aria-hidden="true" hidden><img src="./images/werewolf-night-dark.png" alt=""></div>
       <p class="lobby-eyebrow">THE END</p>
       <h2 id="endgame-winner"></h2>
@@ -135,8 +165,9 @@
       <p id="elimination-heading" class="lobby-eyebrow">BANISHED</p>
       <h2 id="banished-name"></h2>
       <p id="banishment-description"></p>
-      <button id="dismiss-banishment" type="button">Begin night</button>
-      <p id="banishment-waiting" class="muted" hidden>Waiting for the host to begin night…</p>
+      <div class="presentation-progress" role="progressbar" aria-label="Time until night begins" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="presentation-progress-fill"></div>
+      </div>
     </section>
     <footer class="site-footer"><a id="game-footer" href="./" hidden>New Game</a><span class="version-label">Version __BUILD_VERSION__</span></footer>
     <p id="connection-error" class="error" role="alert" hidden></p>

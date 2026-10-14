@@ -13,8 +13,9 @@
 <div id="grid" class="grid"></div>
 <script type="module">
 import { GameRepository } from './src/game-repository.js';
+import { supabaseClient } from './src/supabase-client.js';
 const names=['Alice','Ben','Charlie','Diana','Ethan','Fiona'];
-const repo=new GameRepository();
+const repo=new GameRepository(supabaseClient);
 const grid=document.getElementById('grid'),status=document.getElementById('status'),button=document.getElementById('create'),link=document.getElementById('game-link');
 const setStatus=text=>{status.textContent=text;};
 async function create(){

@@ -1,6 +1,10 @@
 import { GameController } from './src/game-controller.js';
+import { GameRepository } from './src/game-repository.js';
+import { supabaseClient } from './src/supabase-client.js';
 
-const game = new GameController();
+const game = new GameController({
+  repository: new GameRepository(supabaseClient)
+});
 const params = new URLSearchParams(location.search);
 const testPlayer = params.get('test_player');
 const testHost = params.get('test_host') === '1';

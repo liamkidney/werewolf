@@ -1,17 +1,19 @@
 import { GameState } from './game-state.js';
 import { GameEngine, secureRandomInt } from './game-engine.js';
-import { GameRepository } from './game-repository.js';
 import { GameSync } from './game-sync.js';
 import { GameSession } from './game-session.js';
 import { Screens } from './screens.js';
 import { StateEngine } from './state-engine.js';
+import { PhaseAdvancer } from './phase-advancer.js';
+import { PresentationController } from './presentation-controller.js';
 
 export class GameController {
   constructor({
-    repository = new GameRepository(),
+    repository,
     engine = new GameEngine(),
     screens = new Screens()
   } = {}) {
+    if (!repository) throw new Error('A game repository must be provided to GameController.');
     this.repository = repository;
     this.session = new GameSession();
     this.engine = engine;
@@ -21,6 +23,7 @@ export class GameController {
     this.state = new GameState();
     this.playerId = null;
     this.playerRole = null;
+    this.werewolfPackmates = null;
     this.isHost = false;
     this.wasHost = false;
     this.eliminated = false;
@@ -31,10 +34,10 @@ export class GameController {
     this.nightPack = null;
     this.decoyPack = null;
     this.decoyCasting = false;
-    this.endgameTimer = null;
+    this.seerPack = null;
+    this.seerCasting = false;
     this.finalCreditsGameId = null;
     this.nightPoll = null;
-    this.suspenseTimer = null;
     this.finishing = false;
     this.endingDiscussion = false;
     this.dayTicker = null;
@@ -43,6 +46,17 @@ export class GameController {
     this.dayVoteSignature = '';
     this.refreshPending = false;
     this.refreshRunning = false;
+    this.presentations = new PresentationController({
+      stateEngine: this.stateEngine,
+      requestRefresh: () => this.requestRefresh()
+    });
+    this.phaseAdvancer = new PhaseAdvancer({
+      repository: this.repository,
+      getState: () => this.state,
+      can: command => this.can(command),
+      requestRefresh: () => this.requestRefresh(),
+      reportError: message => this.screens.showConnectionError(message)
+    });
     this.requestedGame = this.session.requestedGame;
   }
 
@@ -71,22 +85,25 @@ export class GameController {
     this.screens.bind({
       onJoin: () => this.joinFromForm(),
       onWerewolves: delta => this.changeWerewolves(delta),
+      onSeers: delta => this.changeSeers(delta),
       onStart: () => this.startGame(),
       onAdvance: () => this.advancePhase(),
       onVote: target => this.castVote(target),
       onNightVote: target => this.castNightVote(target),
+      onSeerInvestigation: target => this.castSeerInvestigation(target),
       onDecoyVote: target => this.castDecoyVote(target),
       onEndDiscussion: () => this.endDiscussion(),
-      onFinishVoting: () => this.finishVoting(),
-      onDismissBanishment: () => this.dismissBanishment()
+      onFinishVoting: () => this.finishVoting()
     });
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden && this.state.id) this.requestRefresh();
     });
     if (this.requestedGame) {
       // Show join intent immediately, before any asynchronous game lookup.
-      document.querySelector('.entry label').textContent = 'Enter your name to join';
-      this.screens.form.querySelector('button').textContent = 'Join Game →';
+      document.getElementById('entry-context').hidden = false;
+      document.querySelector('.entry label').textContent = 'Your name';
+      // Keep the same labelled arrow treatment on both entry paths.
+      this.screens.form.querySelector('button').firstChild.textContent = 'Join Game ';
       document.getElementById('resume-game').hidden = true;
     }
     if (!this.requestedGame) {
@@ -163,14 +180,16 @@ export class GameController {
   async enterGame(gameId, playerId) {
     this.playerId = playerId;
     this.playerRole = null;
+    this.werewolfPackmates = null;
     this.eliminated = false;
     this.finalCreditsGameId = null;
     this.stopDayTimer();
     this.stopNightPoll();
-    this.stopSuspenseTimer();
-    if (this.endgameTimer !== null) clearTimeout(this.endgameTimer);
-    this.endgameTimer = null;
+    this.presentations.reset();
+    this.phaseAdvancer.reset();
     this.decoyPack = null;
+    this.seerPack = null;
+    this.seerCasting = false;
     this.isHost = false;
     this.wasHost = false;
     this.state = new GameState({ id: gameId });
@@ -203,10 +222,17 @@ export class GameController {
           return;
         }
         this.state = state;
+        // A submitted investigation gets its private response before any
+        // simultaneous night-resolution or elimination screen can replace it.
+        if (this.seerCasting) return;
+        if (this.showSeerResultIfActive()) return;
         const me = state.players.find(player => player.id === this.playerId);
         // Elimination is a permanent player state, independent of the current
         // round's last victim or the current phase.
         if (me.eliminated_at) {
+          // Murdered players receive the same timed presentation substate
+          // before entering their permanent eliminated state.
+          if (!this.eliminated && this.showVictimPresentation(state)) return;
           this.enterEliminatedState(me, state);
           if (state.status !== 'finished') return;
         }
@@ -215,7 +241,8 @@ export class GameController {
         }
         if (state.status === 'finished') {
           if (me.eliminated_at) {
-            // Eliminated players skip the intervening phase/reveal screens.
+            // Preserve the newly murdered player's farewell before credits.
+            if (this.presentations.holdVictimFarewell(state, this.playerId)) return;
             this.showFinalCredits(state);
           } else {
             this.isHost = state.hostPlayerId === this.playerId;
@@ -227,10 +254,15 @@ export class GameController {
         if (state.status === 'playing' && !this.playerRole) {
           this.playerRole = await this.repository.getMyRole(id, this.playerId);
         }
+        if (state.status === 'playing' && state.phase === 'reveal'
+            && this.playerRole === 'werewolf' && this.werewolfPackmates === null) {
+          this.werewolfPackmates = await this.repository.getWerewolfPackmates(id, this.playerId);
+        }
         if (id !== this.state.id || this.eliminated) return;
         this.state = state;
         if (state.phase === 'night' && this.playerRole === 'werewolf') this.nightPack = await this.repository.getNightPack(id, this.playerId);
         if (state.phase === 'night' && this.playerRole === 'villager') this.decoyPack = await this.repository.getDecoyPack(id, this.playerId);
+        if (state.phase === 'night' && this.playerRole === 'seer') this.seerPack = await this.repository.getSeerPack(id, this.playerId);
         if (state.phase === 'dawn') this.decoyPack = await this.repository.getDecoyPack(id, this.playerId);
         const previousHost = this.isHost;
         this.isHost = state.hostPlayerId === this.playerId;
@@ -256,9 +288,9 @@ export class GameController {
     this.refreshPending = false;
     this.stopDayTimer();
     this.stopNightPoll();
-    this.stopSuspenseTimer();
-    if (this.endgameTimer !== null) clearTimeout(this.endgameTimer);
-    this.endgameTimer = null;
+    this.presentations.stopStep();
+    this.presentations.stopHold();
+    this.phaseAdvancer.stopRetry();
     const murdered = player.elimination_reason === 'murdered'
       || (!player.elimination_reason && state.lastMurderedId === this.playerId);
     const successor = this.wasHost && state.hostPlayerId !== this.playerId
@@ -276,54 +308,91 @@ export class GameController {
     }).catch(error => this.showActionError(error.message || 'Could not load final roles.'));
   }
 
-  suspenseRemaining(state) {
-    if (state.phase !== 'dawn') return 0;
-    const started = Date.parse(state.phaseStartedAt || '');
-    return Number.isFinite(started) ? Math.max(0, started + 6000 - Date.now()) : 0;
+  renderTimedPresentation(step) {
+    this.presentations.show(step, currentStep => {
+      if (currentStep.screen === 'seer-result-screen' && this.presentations.seerResult) {
+        this.screens.renderSeerResult(this.presentations.seerResult, currentStep);
+      } else if (currentStep.screen === 'dawn-screen') {
+        const state = this.state;
+        const victim = state.players.find(player => player.id === state.lastMurderedId);
+        this.screens.renderMurderReveal(victim?.name || 'A villager',
+          state.decoyQuestion, this.decoyPack?.results || [], state.players, currentStep);
+      } else if (currentStep.screen === 'banishment-screen') {
+        const banished = this.state.players.find(player => player.id === this.state.lastBanishedId);
+        this.screens.renderBanishment(banished?.name || 'A player', currentStep);
+      } else {
+        this.screens.renderTimedPresentation(currentStep);
+      }
+    });
   }
 
-  stopSuspenseTimer() {
-    if (this.suspenseTimer !== null) clearTimeout(this.suspenseTimer);
-    this.suspenseTimer = null;
+  showSeerResultIfActive() {
+    const step = this.presentations.currentSeerStep();
+    if (!step) return false;
+    this.stopNightPoll();
+    this.renderTimedPresentation(step);
+    return true;
   }
 
-  showSuspense(state) {
-    this.screens.renderSuspense();
-    if (this.suspenseTimer !== null) return;
-    this.suspenseTimer = setTimeout(() => {
-      this.suspenseTimer = null;
-      this.requestRefresh();
-    }, this.suspenseRemaining(state) + 30);
+  showVictimPresentation(state) {
+    const step = this.presentations.victimSuspenseStep(state, this.playerId);
+    if (!step) return false;
+    this.stopNightPoll();
+    this.renderTimedPresentation(step);
+    return true;
   }
 
   renderFinished(state) {
     this.stopNightPoll();
     this.stopDayTimer();
-    if (this.endgameTimer !== null) clearTimeout(this.endgameTimer);
-    this.endgameTimer = null;
+    this.phaseAdvancer.stopRetry();
+    this.presentations.stopHold();
     const started = Date.parse(state.phaseStartedAt || '');
-    const revealDuration = state.phase === 'dawn' ? 10000 : 4000;
+    const revealDuration = this.stateEngine.presentationDuration(state.phase) || 4000;
     const remaining = Number.isFinite(started) ? Math.max(0, started + revealDuration - Date.now()) : 0;
     if (remaining > 0) {
+      const step = this.stateEngine.presentation(state);
+      if (step?.screen) {
+        this.renderTimedPresentation(step);
+        return;
+      }
+      this.presentations.stopStep();
       if (state.phase === 'dawn') {
-        if (this.suspenseRemaining(state) > 0) this.showSuspense(state);
-        else {
-          const victim = state.players.find(player => player.id === state.lastMurderedId);
-          if (victim?.id === this.playerId) this.screens.showEliminated(true, this.wasHost ? state.players.find(p => p.id === state.hostPlayerId)?.name : null);
-          else this.screens.renderMurderReveal(victim?.name || 'A villager', false, state.decoyQuestion, this.decoyPack?.results || [], state.players);
-        }
+        const victim = state.players.find(player => player.id === state.lastMurderedId);
+        if (victim?.id === this.playerId) this.screens.showEliminated(true, this.wasHost ? state.players.find(p => p.id === state.hostPlayerId)?.name : null);
+        else this.screens.renderMurderReveal(victim?.name || 'A villager',
+          state.decoyQuestion, this.decoyPack?.results || [], state.players);
       } else {
         const banished = state.players.find(player => player.id === state.lastBanishedId);
         if (banished?.id === this.playerId) this.screens.showEliminated(false, this.wasHost ? state.players.find(p => p.id === state.hostPlayerId)?.name : null);
-        else this.screens.renderBanishment(banished?.name || 'A player', false, false);
+        else this.screens.renderBanishment(banished?.name || 'A player');
       }
-      this.endgameTimer = setTimeout(() => { this.endgameTimer = null; this.requestRefresh(); }, remaining + 30);
+      this.presentations.hold(remaining);
       return;
     }
-    this.stopSuspenseTimer();
-    void this.repository.getFinalRoles(state.id).then(roles => {
-      if (this.state.id === state.id && this.state.status === 'finished') this.screens.renderEndgame(state.winner, roles);
-    }).catch(error => this.showActionError(error.message || 'Could not load final roles.'));
+    this.presentations.stopStep();
+    this.showFinalCredits(state);
+  }
+
+  async castSeerInvestigation(targetId) {
+    if (this.seerCasting || !targetId || this.seerPack?.myInvestigation
+      || !this.can('CAST_SEER_INVESTIGATION')) return;
+    this.seerCasting = true;
+    this.showActionError('');
+    try {
+      const result = await this.repository.castSeerInvestigation(
+        this.state.id, this.state.roundNumber, this.playerId, targetId
+      );
+      // This client controls the reveal duration, even when night resolves
+      // in the same transaction as the investigation.
+      this.presentations.startSeerResult(result);
+      this.showSeerResultIfActive();
+    } catch (error) {
+      this.showActionError(error.message || 'Could not investigate that player.');
+    } finally {
+      this.seerCasting = false;
+      this.requestRefresh();
+    }
   }
 
   async castDecoyVote(targetId) {
@@ -369,43 +438,45 @@ export class GameController {
     if (this.eliminated) return;
     this.stopDayTimer();
     if (state.phase !== 'night') this.stopNightPoll();
-    if (state.phase !== 'dawn') this.stopSuspenseTimer();
-    if (this.stateEngine.stage(state, this.playerId) === 'lobby') {
+    // Any phase can configure timed presentation pages. Render those before
+    // the ordinary phase screen, without adding another controller branch.
+    const view = this.stateEngine.view(state, { playerId: this.playerId });
+    if (view.presentation) {
+      this.renderTimedPresentation(view.presentation);
+      return;
+    }
+    this.presentations.stopStep();
+    if (state.phase !== 'dawn' && state.phase !== 'results') this.phaseAdvancer.stopRetry();
+    if (view.stage === 'lobby') {
       this.renderLobby();
       return;
     }
-    if (this.stateEngine.stage(state, this.playerId) === 'night') {
-      this.screens.renderNight(state, { playerId: this.playerId, role: this.playerRole, pack: this.nightPack, casting: this.nightCasting || this.decoyCasting, decoyPack: this.decoyPack });
-      this.screens.renderWorkflow(state, { playerId: this.playerId, role: this.playerRole, isHost: this.isHost, pack: this.nightPack, decoyPack: this.decoyPack });
+    if (view.stage === 'night') {
+      this.screens.renderNight(state, { playerId: this.playerId, role: this.playerRole, pack: this.nightPack, casting: this.nightCasting || this.decoyCasting || this.seerCasting, decoyPack: this.decoyPack, seerPack: this.seerPack });
+      this.screens.renderWorkflow(state, { playerId: this.playerId, role: this.playerRole, isHost: this.isHost, pack: this.nightPack, decoyPack: this.decoyPack, seerPack: this.seerPack });
       if (this.nightPoll === null) this.nightPoll = setInterval(() => this.requestRefresh(), 1500);
       return;
     }
-    if (this.stateEngine.stage(state, this.playerId) === 'dawn') {
-      if (this.suspenseRemaining(state) > 0) {
-        this.showSuspense(state);
-        return;
-      }
-      this.stopSuspenseTimer();
+    if (view.stage === 'dawn.complete') {
       const victim = state.players.find(player => player.id === state.lastMurderedId);
-      this.screens.renderMurderReveal(victim?.name || 'A villager', this.isHost, state.decoyQuestion, this.decoyPack?.results || [], state.players);
-      this.screens.renderWorkflow(state, { isHost: this.isHost });
+      this.screens.renderMurderReveal(victim?.name || 'A villager',
+        state.decoyQuestion, this.decoyPack?.results || [], state.players);
+      void this.phaseAdvancer.advance();
       return;
     }
-    if (this.stateEngine.stage(state, this.playerId).startsWith('day.')) {
+    if (view.stage === 'results.complete') {
+      const banished = state.players.find(player => player.id === state.lastBanishedId);
+      this.screens.renderBanishment(banished?.name || 'A player');
+      void this.phaseAdvancer.advance();
+      return;
+    }
+    if (view.stage.startsWith('day.')) {
       this.renderDay();
       this.dayTicker = setInterval(() => this.renderDay(), 250);
       return;
     }
-    const banished = state.players.find(player => player.id === state.lastBanishedId);
-    if (state.phase === 'results' && banished && state.lastBanishedRound === state.roundNumber) {
-      this.screens.renderBanishment(banished.name, banished.id === this.playerId, this.isHost);
-      this.screens.renderWorkflow(state, { isHost: this.isHost });
-      return;
-    }
-    const eliminated = state.players.some(player => player.id === this.playerId && !!player.eliminated_at);
-    this.screens.showRole(eliminated ? null : this.playerRole);
-    if (eliminated) this.screens.showSpectator();
-    this.screens.renderPhase(state, this);
+    this.screens.showRole(this.playerRole, this.werewolfPackmates);
+    this.screens.renderRoleStartControls(this);
     this.screens.renderWorkflow(state, { isHost: this.isHost, playerId: this.playerId });
   }
 
@@ -500,11 +571,6 @@ export class GameController {
     }
   }
 
-  async dismissBanishment() {
-    if (this.advancing || !this.can('START_NIGHT')) return;
-    await this.advancePhase();
-  }
-
   async changeWerewolves(delta) {
     if (this.eliminated || !this.isHost || this.starting || this.state.status !== 'lobby') return;
     const next = this.engine.nextWerewolfCount(this.state, delta);
@@ -515,14 +581,26 @@ export class GameController {
     } catch (error) { this.showActionError(error.message); }
   }
 
+  async changeSeers(delta) {
+    if (this.eliminated || !this.isHost || this.starting || this.state.status !== 'lobby') return;
+    const next = this.engine.nextSeerCount(this.state, delta);
+    if (next === this.state.seerCount) return;
+    try {
+      await this.repository.setSeerCount(this.state.id, this.playerId, next);
+      this.requestRefresh();
+    } catch (error) {
+      this.showActionError(error.message || 'Could not change the Seer count.');
+    }
+  }
+
   async advancePhase() {
-    if (this.advancing || (!this.can('START_DAY') && !this.can('START_NIGHT')) || this.suspenseRemaining(this.state) > 0) return;
+    if (this.advancing || !this.can('START_DAY')) return;
     this.advancing = true;
-    this.screens.renderPhase(this.state, this);
+    this.screens.renderRoleStartControls(this);
     this.showActionError('');
     try {
       const fresh = await this.repository.getState(this.state.id);
-      const next = this.stateEngine.transition(fresh, { type: fresh.phase === 'reveal' || fresh.phase === 'dawn' ? 'START_DAY' : 'START_NIGHT' });
+      const next = this.stateEngine.transition(fresh, { type: 'START_DAY' });
       await this.repository.advancePhase(fresh, next, this.playerId);
       this.requestRefresh();
     } catch (error) {
@@ -530,7 +608,7 @@ export class GameController {
       this.requestRefresh();
     } finally {
       this.advancing = false;
-      if (this.state.status === 'playing' && this.state.phase === 'reveal') this.screens.renderPhase(this.state, this);
+      if (this.state.status === 'playing' && this.state.phase === 'reveal') this.screens.renderRoleStartControls(this);
     }
   }
 
