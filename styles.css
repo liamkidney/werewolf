@@ -9,7 +9,6 @@
   --entry-field-ink:#19232e;
   --action-primary:#8d303b;
   --action-border-on-dark:#b9777d;
-  --entry-accent:var(--action-primary);
 
   /* Village lobby: warm bone, ink and a restrained burgundy accent. */
   --lobby-bg:#e8e5dd;
@@ -41,7 +40,7 @@ input{background:var(--entry-field-bg);color:var(--entry-field-ink);border:2px s
 input:focus-visible,button:focus-visible{outline:3px solid #f2e3bf;outline-offset:3px}
 .entry input:focus-visible,.entry button:focus-visible{outline-color:var(--entry-secondary)}
 input::placeholder{color:#737f8a}
-button{border:0;background:var(--entry-accent);color:#fff;font-size:1.4rem;font-weight:700;cursor:pointer;padding:12px 20px}
+button{border:0;background:var(--action-primary);color:#fff;font-size:1.4rem;font-weight:700;cursor:pointer;padding:12px 20px}
 /* Only pointer-hover devices get a subtle hover treatment. Touch taps
    never leave a darker-looking button behind in a sticky hover state. */
 @media(hover:hover){button:not(:disabled):hover{filter:brightness(.94)}}
