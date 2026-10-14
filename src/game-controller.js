@@ -103,7 +103,8 @@ export class GameController {
       document.getElementById('entry-context').hidden = false;
       document.querySelector('.entry label').textContent = 'Your name';
       // Keep the same labelled arrow treatment on both entry paths.
-      this.screens.form.querySelector('button').firstChild.textContent = 'Join Game ';
+      this.screens.form.querySelector('button').firstChild.textContent =
+        this.session.edition === 'pride' ? 'Join the party ' : 'Join Game ';
       document.getElementById('resume-game').hidden = true;
     }
     if (!this.requestedGame) {
