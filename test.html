@@ -60,7 +60,6 @@ async function create(){
    frame.src=gameUrl({gameId,edition:selectedEdition,playerId:ids[i],isHost:i===0});
    card.append(head,frame);grid.append(card);
   }
-  edition.disabled=true;
   setStatus('Ready. Use Alice’s screen to start the game; all six screens are interactive. New game resets the console.');
  }catch(error){setStatus('Error: '+(error.message||error));}
  finally{button.disabled=false;}
