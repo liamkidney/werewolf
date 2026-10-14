@@ -1,4 +1,5 @@
 import { ROLES } from './role-registry.js';
+import { EDITION_PRIDE, PRIDE_COPY } from './edition.js';
 import { workflowStatus } from './workflow-status.js';
 import QRCode from 'qrcode';
 
@@ -8,6 +9,7 @@ export class Screens {
   constructor() {
     this.form = $('new-game');
     this.nameInput = $('player-name');
+    this.edition = document.body?.dataset?.edition === EDITION_PRIDE ? EDITION_PRIDE : 'classic';
     this.marqueeFont = null;
     this.dayVoteRound = null;
     // Retain the standard day illustration until the new victory asset is deployed.
@@ -120,7 +122,9 @@ export class Screens {
     $('role-name').textContent = role ? ROLES.label(role) : 'Assigning roles…';
     $('role-reveal').classList.remove('revealed');
     $('role-reveal').querySelector('.role-secret').setAttribute('aria-hidden', 'true');
-    $('role-description').textContent = role ? ROLES.description(role) : 'Please wait a moment.';
+    $('role-description').textContent = role
+      ? (this.edition === EDITION_PRIDE ? PRIDE_COPY.roleDescriptions[role] : null) || ROLES.description(role)
+      : 'Please wait a moment.';
 
     // Packmates are private and belong inside the existing hold-to-reveal area.
     const pack = $('role-pack');
@@ -197,7 +201,9 @@ export class Screens {
     $('endgame-screen').classList.toggle('wolves-won', wolvesWon);
     $('endgame-screen').querySelector('.endgame-day-art').hidden = wolvesWon;
     $('endgame-screen').querySelector('.endgame-night-art').hidden = !wolvesWon;
-    $('endgame-winner').textContent = wolvesWon ? 'The Werewolves Win' : 'The Villagers Win';
+    $('endgame-winner').textContent = this.edition === EDITION_PRIDE
+      ? (wolvesWon ? PRIDE_COPY.wolfVictory : PRIDE_COPY.villageVictory)
+      : (wolvesWon ? 'The Werewolves Win' : 'The Villagers Win');
     const list = $('endgame-roles');
     list.replaceChildren();
     const victorious = player => ROLES.isOnTeam(player.role, wolvesWon ? 'werewolves' : 'village');
@@ -242,7 +248,7 @@ export class Screens {
   renderNight(state, { playerId, role, pack, casting, decoyPack, seerPack }) {
     this.showScreen('night-screen');
     $('night-round').textContent = state.roundNumber;
-    $('night-heading').textContent = 'Night has fallen';
+    $('night-heading').textContent = this.edition === EDITION_PRIDE ? PRIDE_COPY.nightHeading : 'Night has fallen';
     const wolf = role === 'werewolf';
     const seer = role === 'seer';
     const loneWolf = wolf && pack?.wolves?.length === 1;
@@ -360,13 +366,16 @@ export class Screens {
   renderDay(state, { playerId, isHost, voting, myVote, casting, endingDiscussion }) {
     this.showScreen('day-screen');
     $('day-round').textContent = state.roundNumber;
-    $('day-heading').textContent = voting ? 'Vote to banish' : 'Discuss';
+    $('day-heading').textContent = this.edition === EDITION_PRIDE
+      ? (voting ? PRIDE_COPY.dayVote : PRIDE_COPY.dayDiscussion)
+      : (voting ? 'Vote to banish' : 'Discuss');
     $('day-clock').hidden = voting;
     $('end-discussion').hidden = voting || !isHost;
     $('end-discussion').disabled = endingDiscussion;
-    $('day-instruction').textContent = voting
-      ? 'Choose one player. Your vote is final.'
-      : 'Discuss who should be banished. Voting opens when the timer ends.';
+    $('day-instruction').textContent = this.edition === EDITION_PRIDE
+      ? (voting ? PRIDE_COPY.votingInstruction : PRIDE_COPY.dayInstruction)
+      : (voting ? 'Choose one player. Your vote is final.'
+        : 'Discuss who should be banished. Voting opens when the timer ends.');
     const active = state.players.filter(player => !player.eliminated_at);
     const voted = state.votes.filter(vote => vote.round_number === state.roundNumber).length;
     $('vote-controls').hidden = !voting || !!myVote || !active.some(player => player.id === playerId);
