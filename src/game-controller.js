@@ -1,6 +1,5 @@
 import { GameState } from './game-state.js';
 import { GameEngine, secureRandomInt } from './game-engine.js';
-import { GameRepository } from './game-repository.js';
 import { GameSync } from './game-sync.js';
 import { GameSession } from './game-session.js';
 import { Screens } from './screens.js';
@@ -10,10 +9,11 @@ import { PresentationController } from './presentation-controller.js';
 
 export class GameController {
   constructor({
-    repository = new GameRepository(),
+    repository,
     engine = new GameEngine(),
     screens = new Screens()
   } = {}) {
+    if (!repository) throw new Error('A game repository must be provided to GameController.');
     this.repository = repository;
     this.session = new GameSession();
     this.engine = engine;
