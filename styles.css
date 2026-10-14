@@ -209,10 +209,6 @@ body.marquee-mode .site-footer{position:fixed;bottom:calc(env(safe-area-inset-bo
 .phase-art{width:100%;margin:0 auto -10px}
 .phase-art-day{display:block}
 
-/* Full-bleed landing art, with the heading and form on the normal content grid. */
-.screen:has(> .entry:not([hidden])) .hero h1,
-.screen:has(> .entry:not([hidden])) .hero .tagline{margin-left:28px;margin-right:28px}
-
 /* Artwork is full-bleed on mobile across landing, guest, day and night screens. */
 body.light-screen .screen:has(.guest-intro:not([hidden])),
 body.light-screen .screen:has(#day-screen:not([hidden])),
