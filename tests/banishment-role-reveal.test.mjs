@@ -47,7 +47,7 @@ test('banishment screen shows a role only when one is explicitly supplied', () =
   const node = id => {
     if (!nodes.has(id)) nodes.set(id, {
       hidden: false, textContent: '',
-      classList: { remove() {} },
+      classList: { remove() {}, toggle() {} },
       querySelector: () => ({ hidden: false })
     });
     return nodes.get(id);
