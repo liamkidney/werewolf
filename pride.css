@@ -195,3 +195,19 @@ body[data-edition="pride"].marquee-mode .marquee-vote{
     transition:none;
   }
 }
+
+/* Public game information: share the same layout with the Pride palette. */
+body[data-edition="pride"] .game-info-dialog{
+  --info-bg:#1b1031;
+  --info-ink:#faf1ff;
+  --info-secondary:#cbb8dd;
+  --info-faint:#af9dbf;
+  --info-accent:#e37bae;
+  --info-line:rgba(227,123,174,.7);
+}
+body[data-edition="pride"] .game-info-button{
+  background:rgba(27,16,49,.18);
+  border-color:rgba(250,241,255,.27);
+  color:rgba(250,241,255,.86);
+}
+/* End public game information. */
