@@ -16,7 +16,7 @@ export class GameRepository {
   }
 
   async getGame(gameId) {
-    return unwrap(await this.db.from('games').select('id,status,werewolf_count,seer_count,phase,step,round_number,phase_started_at,day_duration_seconds,discussion_ended_at,last_banished_id,last_banished_round,last_murdered_id,last_murdered_round,host_player_id,decoy_question,winner').eq('id', gameId).maybeSingle());
+    return unwrap(await this.db.from('games').select('id,status,werewolf_count,seer_count,reveal_banished_role,last_banished_role,phase,step,round_number,phase_started_at,day_duration_seconds,discussion_ended_at,last_banished_id,last_banished_round,last_murdered_id,last_murdered_round,host_player_id,decoy_question,winner').eq('id', gameId).maybeSingle());
   }
 
   async hasPlayer(gameId, playerId) {
@@ -41,7 +41,7 @@ export class GameRepository {
     ]);
     if (!game) throw new Error('Game not found.');
     return new GameState({
-      id: game.id, status: game.status, phase: game.phase, step: game.step, roundNumber: game.round_number, werewolfCount: game.werewolf_count, seerCount: game.seer_count ?? 0, players, votes,
+      id: game.id, status: game.status, phase: game.phase, step: game.step, roundNumber: game.round_number, werewolfCount: game.werewolf_count, seerCount: game.seer_count ?? 0, revealBanishedRole: game.reveal_banished_role ?? false, lastBanishedRole: game.last_banished_role ?? null, players, votes,
       phaseStartedAt: game.phase_started_at, dayDurationSeconds: game.day_duration_seconds, discussionEndedAt: game.discussion_ended_at, lastBanishedId: game.last_banished_id, lastBanishedRound: game.last_banished_round,
       lastMurderedId: game.last_murdered_id, lastMurderedRound: game.last_murdered_round, hostPlayerId: game.host_player_id, decoyQuestion: game.decoy_question, winner: game.winner
     });
@@ -59,6 +59,12 @@ export class GameRepository {
   async setSeerCount(gameId, hostId, count) {
     unwrap(await this.db.rpc('set_lobby_seer_count', {
       p_game_id: gameId, p_host: hostId, p_count: count
+    }));
+  }
+
+  async setRevealBanishedRole(gameId, hostId, enabled) {
+    unwrap(await this.db.rpc('set_lobby_reveal_banished_role', {
+      p_game_id: gameId, p_host: hostId, p_reveal: enabled
     }));
   }
 
