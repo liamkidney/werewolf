@@ -67,7 +67,10 @@ export class Screens {
       const item = document.createElement('li');
       const name = document.createElement('span');
       const number = document.createElement('strong');
-      name.textContent = ROLES.label(role) + (count === 1 ? '' : 's');
+      const singular = ROLES.label(role);
+      name.className = 'game-info-role-label';
+      name.textContent = count === 1 ? singular
+        : role === 'werewolf' ? 'Werewolves' : singular + 's';
       number.textContent = String(count);
       item.append(name, number);
       rolesList.append(item);
