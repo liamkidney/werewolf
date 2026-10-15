@@ -223,6 +223,8 @@ export class GameController {
           return;
         }
         this.state = state;
+        // Eliminated players keep the last information available to them.
+        if (!this.eliminated) this.screens.renderGameInfo(state);
         // A submitted investigation gets its private response before any
         // simultaneous night-resolution or elimination screen can replace it.
         if (this.seerCasting) return;
