@@ -15,6 +15,7 @@
 </head>
 <body>
   <main class="screen">
+    <button id="game-info-button" class="game-info-button" type="button" aria-label="Game information" aria-haspopup="dialog" aria-controls="game-info-dialog" title="Game information" hidden>i</button>
     <section class="hero" aria-label="Werewolf">
       <div class="art" aria-hidden="true"><img src="./images/werewolf-night-dark.png" alt=""></div>
       <p id="edition-kicker" class="edition-kicker" hidden>PRIDE AFTER DARK</p>
@@ -175,5 +176,24 @@
     <footer class="site-footer"><a id="game-footer" href="./" hidden>New Game</a><span class="version-label">Version __BUILD_VERSION__</span></footer>
     <p id="connection-error" class="error" role="alert" hidden></p>
   </main>
+  <dialog id="game-info-dialog" class="game-info-dialog" aria-labelledby="game-info-title">
+    <div class="game-info-header">
+      <h2 id="game-info-title">Village information</h2>
+      <button id="game-info-close" type="button" aria-label="Close game information">×</button>
+    </div>
+    <section class="game-info-section" aria-labelledby="game-info-roles-title">
+      <h3 id="game-info-roles-title">At the start</h3>
+      <p id="game-info-total" class="game-info-total"></p>
+      <ul id="game-info-roles" class="game-info-roles"></ul>
+    </section>
+    <section class="game-info-section" aria-labelledby="game-info-banished-title">
+      <h3 id="game-info-banished-title">Banished</h3>
+      <ul id="game-info-banished" class="game-info-names"></ul>
+    </section>
+    <section class="game-info-section" aria-labelledby="game-info-murdered-title">
+      <h3 id="game-info-murdered-title">Murdered</h3>
+      <ul id="game-info-murdered" class="game-info-names"></ul>
+    </section>
+  </dialog>
 </body>
 </html>
