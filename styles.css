@@ -636,3 +636,40 @@ body.light-screen #seer-result-screen #seer-result-verdict{
 body.light-screen #seer-result-screen #seer-result-verdict.not-werewolf{
   color:#d7e1de;
 }
+
+/* Persistent game information: distinct from primary gameplay actions. */
+.game-info-button{
+  position:fixed;top:calc(env(safe-area-inset-top) + 12px);
+  right:max(12px,calc((100vw - 460px)/2 + 12px));
+  z-index:12;width:40px;min-height:40px;height:40px;padding:0;
+  border:1px solid var(--lobby-line);border-radius:50%;
+  background:var(--lobby-panel);color:var(--lobby-ink);
+  box-shadow:0 2px 12px #1017232b;
+  font:700 1.1rem Georgia,serif;
+}
+.game-info-dialog{
+  width:min(400px,calc(100vw - 32px));max-height:85dvh;
+  margin:auto;padding:22px 24px 26px;overflow-y:auto;
+  border:1px solid var(--lobby-line);border-radius:16px;
+  background:var(--lobby-panel);color:var(--lobby-ink);
+  box-shadow:0 16px 60px #0005;
+  font-family:Arial,Helvetica,sans-serif;
+}
+.game-info-dialog::backdrop{background:#0b1421b8}
+.game-info-header{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.game-info-header h2{margin:0;font-size:1.4rem;line-height:1.2}
+.game-info-header button{
+  flex:none;width:36px;min-height:36px;height:36px;padding:0;
+  border:1px solid var(--lobby-line);border-radius:50%;
+  background:transparent;color:var(--lobby-ink);font-size:1.5rem;font-weight:400;
+}
+.game-info-section{margin-top:22px;padding-top:17px;border-top:1px solid var(--lobby-line)}
+.game-info-section h3{margin:0 0 10px;font-size:.86rem;text-transform:uppercase;letter-spacing:.1em}
+.game-info-total{margin:0 0 10px;color:var(--lobby-muted);font-size:.9rem}
+.game-info-roles,.game-info-names{list-style:none;margin:0;padding:0}
+.game-info-roles{display:grid;gap:9px}
+.game-info-roles li{display:flex;justify-content:space-between;gap:12px;font-size:1rem}
+.game-info-roles strong{font-variant-numeric:tabular-nums}
+.game-info-names{display:flex;flex-wrap:wrap;gap:8px}
+.game-info-names li{max-width:100%;overflow-wrap:anywhere;padding:7px 11px;border-radius:9px;background:var(--lobby-bg);font-size:.94rem}
+.game-info-names .game-info-empty{padding:0;background:transparent;color:var(--lobby-muted);font-style:italic}
