@@ -154,7 +154,7 @@ export class Screens {
     $('invite-link').value = inviteUrl;
   }
 
-  renderLobby(state, { isHost, playerId, starting, canStart }) {
+  renderLobby(state, { isHost, playerId, starting, canStart, savingReveal = false }) {
     const list = $('player-list');
     list.replaceChildren();
     state.players.forEach((player, index) => {
@@ -172,12 +172,14 @@ export class Screens {
     $('lobby-message').textContent = count + (count === 1 ? ' player joined' : ' players joined');
     $('werewolf-count').textContent = state.werewolfCount;
     $('seer-count').textContent = state.seerCount ?? 0;
+    $('reveal-banished-role').checked = !!state.revealBanishedRole;
+    $('reveal-banished-role').disabled = !isHost || starting || savingReveal || state.status !== 'lobby';
     $('minimum-label').textContent = 'Minimum ' + Math.max(3, state.werewolfCount + (state.seerCount ?? 0) + 1);
     $('wolf-minus').disabled = starting || state.werewolfCount <= 1 || state.status !== 'lobby';
     $('wolf-plus').disabled = starting || state.werewolfCount >= 50 || state.status !== 'lobby';
     $('seer-minus').disabled = starting || (state.seerCount ?? 0) <= 0 || state.status !== 'lobby';
     $('seer-plus').disabled = starting || (state.seerCount ?? 0) >= 50 || state.status !== 'lobby';
-    $('start-game').disabled = !isHost || !canStart || starting;
+    $('start-game').disabled = !isHost || !canStart || starting || savingReveal;
     $('start-game').textContent = starting ? 'Assigning roles…' : 'Start Game';
   }
 
@@ -210,6 +212,8 @@ export class Screens {
     $('elimination-heading').textContent = murdered ? 'MURDERED' : 'BANISHED';
     $('banished-name').textContent = murdered ? 'You were murdered' : 'You have been banished';
     $('banishment-description').textContent = 'You are out of the game.' + (newHostName ? ' ' + newHostName + ' is now the host.' : '');
+    $('banishment-role').hidden = true;
+    $('banishment-role').textContent = '';
     $('banishment-screen').querySelector('.presentation-progress').hidden = true;
   }
 
@@ -489,7 +493,7 @@ export class Screens {
     $('finish-voting').textContent = finishing ? 'Finishing…' : 'All Done';
   }
 
-  renderBanishment(name, step = null) {
+  renderBanishment(name, step = null, role = null) {
     this.showScreen('banishment-screen');
     const screen = $('banishment-screen');
     screen.classList.remove('murdered-screen');
@@ -498,6 +502,9 @@ export class Screens {
     screen.querySelector('.presentation-progress').hidden = false;
     $('elimination-heading').textContent = 'BANISHED';
     $('banished-name').textContent = name;
+    const roleLabel = $('banishment-role');
+    roleLabel.hidden = !role;
+    roleLabel.textContent = role ? 'Revealed as ' + ROLES.label(role) : '';
     $('banishment-description').textContent = name + ' has been eliminated from the game.';
     this.updateTimedProgress('banishment-screen', step || {
       durationMs: 1, elapsedMs: 1, progress: 1
@@ -526,6 +533,9 @@ export class Screens {
     $('wolf-plus').addEventListener('click', () => { void handlers.onWerewolves(1); });
     $('seer-minus').addEventListener('click', () => { void handlers.onSeers(-1); });
     $('seer-plus').addEventListener('click', () => { void handlers.onSeers(1); });
+    $('reveal-banished-role').addEventListener('change', event => {
+      void handlers.onRevealBanishedRole(event.target.checked);
+    });
     $('start-game').addEventListener('click', () => { void handlers.onStart(); });
     const reveal = $('role-reveal');
     const setRevealed = visible => {
