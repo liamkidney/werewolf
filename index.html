@@ -51,6 +51,13 @@
           <div class="role-row"><label for="werewolf-count">Werewolves</label><div class="stepper"><button id="wolf-minus" type="button" aria-label="Fewer werewolves">−</button><output id="werewolf-count" aria-live="polite">2</output><button id="wolf-plus" type="button" aria-label="More werewolves">+</button></div></div>
           <div class="role-row"><label for="seer-count">Seers</label><div class="stepper"><button id="seer-minus" type="button" aria-label="Fewer seers">−</button><output id="seer-count" aria-live="polite">1</output><button id="seer-plus" type="button" aria-label="More seers">+</button></div></div>
         </div>
+        <label class="reveal-role-setting" for="reveal-banished-role">
+          <span class="reveal-role-copy">
+            <strong>Reveal banished roles</strong>
+            <small>Show each banished player's role to everyone.</small>
+          </span>
+          <input id="reveal-banished-role" type="checkbox">
+        </label>
         <button id="start-game" type="button" disabled>Start Game</button>
       </div>
     </section>
@@ -168,6 +175,7 @@
       <div class="phase-art phase-art-night murder-art" aria-hidden="true" hidden><img src="./images/werewolf-night-dark.png" alt=""></div>
       <p id="elimination-heading" class="lobby-eyebrow">BANISHED</p>
       <h2 id="banished-name"></h2>
+      <p id="banishment-role" class="banishment-role" hidden></p>
       <p id="banishment-description"></p>
       <div class="presentation-progress" role="progressbar" aria-label="Time until night begins" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
         <div class="presentation-progress-fill"></div>
