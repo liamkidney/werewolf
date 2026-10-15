@@ -328,7 +328,8 @@ export class GameController {
           state.decoyQuestion, this.decoyPack?.results || [], state.players, currentStep);
       } else if (currentStep.screen === 'banishment-screen') {
         const banished = this.state.players.find(player => player.id === this.state.lastBanishedId);
-        this.screens.renderBanishment(banished?.name || 'A player', currentStep,
+        if (!banished) this.screens.renderNoBanishment(currentStep);
+        else this.screens.renderBanishment(banished.name, currentStep,
           this.state.revealBanishedRole ? this.state.lastBanishedRole : null);
       } else {
         this.screens.renderTimedPresentation(currentStep);
@@ -477,7 +478,8 @@ export class GameController {
     }
     if (view.stage === 'results.complete') {
       const banished = state.players.find(player => player.id === state.lastBanishedId);
-      this.screens.renderBanishment(banished?.name || 'A player', null,
+      if (!banished) this.screens.renderNoBanishment();
+      else this.screens.renderBanishment(banished.name, null,
         state.revealBanishedRole ? state.lastBanishedRole : null);
       void this.phaseAdvancer.advance();
       return;
@@ -501,16 +503,18 @@ export class GameController {
     if (seconds === 0 && state.step === 'discussion' && !this.openingVoting) void this.openDayVoting();
     const voting = this.stateEngine.stage(state, this.playerId) === 'day.voting';
     const active = state.players.filter(player => !player.eliminated_at);
-    const votes = state.votes.filter(vote => vote.round_number === state.roundNumber);
+    const runoff = state.runoffEnabled && state.voteStage === 'runoff';
+    const votes = (runoff ? state.runoffVotes : state.votes)
+      .filter(vote => vote.round_number === state.roundNumber);
     const myVote = votes.find(vote => vote.voter_id === this.playerId);
     if (voting && votes.length === active.length) {
       this.stopDayTimer();
       const target = state.players.find(player => player.id === myVote?.target_id);
-      this.screens.renderMarquee(target?.name || (this.isHost ? 'Votes in' : 'Spectating'), this.isHost, this.finishing);
+      this.screens.renderMarquee(target?.name || 'Votes in', this.isHost && !runoff, this.finishing);
       return;
     }
     // Avoid rebuilding the select list on every clock tick.
-    const signature = state.roundNumber + ':' + votes.length + ':' + Boolean(myVote);
+    const signature = state.roundNumber + ':' + state.voteStage + ':' + votes.length + ':' + Boolean(myVote);
     if (this.dayVotingOpen !== voting || this.dayVoteSignature !== signature || document.getElementById('day-screen').hidden) {
       this.screens.renderDay(state, { playerId: this.playerId, isHost: this.isHost, voting, myVote, casting: this.casting, endingDiscussion: this.endingDiscussion });
       this.dayVotingOpen = voting;
@@ -556,7 +560,11 @@ export class GameController {
     this.casting = true;
     this.showActionError('');
     try {
-      await this.repository.castVote(this.state.id, this.state.roundNumber, this.playerId, targetId);
+      if (this.state.runoffEnabled && this.state.voteStage === 'runoff') {
+        await this.repository.castRunoffVote(this.state.id, this.state.roundNumber, this.playerId, targetId);
+      } else {
+        await this.repository.castVote(this.state.id, this.state.roundNumber, this.playerId, targetId);
+      }
       this.requestRefresh();
     } catch (error) {
       this.showActionError(error.message || 'Could not cast vote.');
