@@ -29,6 +29,7 @@ export class GameController {
     this.eliminated = false;
     this.starting = false;
     this.revealBanishedRoleSaving = false;
+    this.pendingBanishedRoleReveal = null;
     this.advancing = false;
     this.casting = false;
     this.nightCasting = false;
@@ -69,7 +70,9 @@ export class GameController {
 
   renderLobby() {
     this.screens.renderWorkflow(this.state, { playerId: this.playerId, isHost: this.isHost });
-    this.screens.renderLobby(this.state, {
+    const displayState = this.pendingBanishedRoleReveal === null
+      ? this.state : this.state.with({ revealBanishedRole: this.pendingBanishedRoleReveal });
+    this.screens.renderLobby(displayState, {
       isHost: this.isHost,
       playerId: this.playerId,
       starting: this.starting,
@@ -606,6 +609,7 @@ export class GameController {
     if (this.eliminated || !this.isHost || this.starting || this.revealBanishedRoleSaving
         || this.state.status !== 'lobby' || enabled === this.state.revealBanishedRole) return;
     this.revealBanishedRoleSaving = true;
+    this.pendingBanishedRoleReveal = enabled;
     this.renderLobby();
     this.showActionError('');
     try {
@@ -620,6 +624,7 @@ export class GameController {
       this.requestRefresh();
     } finally {
       this.revealBanishedRoleSaving = false;
+      this.pendingBanishedRoleReveal = null;
       if (this.state.status === 'lobby') this.renderLobby();
     }
   }
