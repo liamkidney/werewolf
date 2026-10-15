@@ -69,3 +69,42 @@ test('information panel stays understated and uses the gothic game palette', () 
   assert.ok(screens.includes("role === 'werewolf' ? 'Werewolves'"));
   assert.ok(screens.includes("item.append(icon, name, number)"));
 });
+
+test('every banished player retains their publicly revealed role in the information card', () => {
+  const info = getGameInfo({
+    revealBanishedRole: true,
+    werewolfCount: 2,
+    seerCount: 1,
+    players: [
+      { id: 'a', name: 'Fiona', eliminated_at: '2026-10-15', elimination_reason: 'banished', revealed_banished_role: 'villager' },
+      { id: 'b', name: 'Alice', eliminated_at: '2026-10-16', elimination_reason: 'banished', revealed_banished_role: 'werewolf' },
+      { id: 'c', name: 'Zara', eliminated_at: '2026-10-17', elimination_reason: 'murdered', revealed_banished_role: null },
+      { id: 'd', name: 'Tom', eliminated_at: null, elimination_reason: null }
+    ]
+  });
+  assert.deepEqual(info.banished, ['Alice - werewolf', 'Fiona - villager']);
+  assert.deepEqual(info.murdered, ['Zara']);
+});
+
+test('hidden role games never disclose identities even if public-role fields are present', () => {
+  const players = [
+    { name: 'Fiona', eliminated_at: 'now', elimination_reason: 'banished',
+      revealed_banished_role: 'villager', role: 'werewolf' },
+    { name: 'Anna', eliminated_at: 'now', elimination_reason: 'murdered',
+      revealed_banished_role: 'seer', role: 'seer' }
+  ];
+  assert.deepEqual(getGameInfo({ players, revealBanishedRole: false }).banished, ['Fiona']);
+  assert.deepEqual(getGameInfo({ players, revealBanishedRole: true }).murdered, ['Anna']);
+  assert.deepEqual(getGameInfo({ players, revealBanishedRole: true }).banished, ['Fiona - villager']);
+  assert.deepEqual(getGameInfo({ players: [{ ...players[0], revealed_banished_role: null }], revealBanishedRole: true }).banished, ['Fiona']);
+});
+
+test('the banishment history is read from persisted public columns, not private assignments', () => {
+  const repository = readFileSync(new URL('../src/game-repository.js', import.meta.url), 'utf8');
+  const migration = readFileSync(new URL('../supabase/migrations/20261015_public_banishment_history.sql', import.meta.url), 'utf8');
+  assert.match(repository, /elimination_reason,revealed_banished_role/);
+  assert.match(migration, /add column if not exists revealed_banished_role/);
+  assert.match(migration, /after update of last_banished_id on public\.games/);
+  assert.match(migration, /if new\.reveal_banished_role/);
+  assert.match(migration, /p\.elimination_reason = 'banished'/);
+});
