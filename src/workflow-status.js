@@ -11,10 +11,16 @@ export function workflowStatus(state, { role, playerId, isHost = false, pack = n
   if (stage === 'reveal' || stage === 'reveal.reveal') return { label: 'ROLE REVEAL', title: 'Discover your secret role', ...waiting(isHost ? 'Reveal your role, then start the first day.' : 'Reveal your role. Waiting for the host to begin.', 'Day 1 · Discussion') };
   if (stage.startsWith('day.')) {
     const active = state.players.filter(p => !p.eliminated_at);
-    const votes = state.votes.filter(v => v.round_number === round);
+    const runoff = state.runoffEnabled && state.voteStage === 'runoff';
+    const votes = (runoff ? state.runoffVotes : state.votes).filter(v => v.round_number === round);
     const mine = votes.some(v => v.voter_id === playerId);
     const voting = stage === 'day.voting';
     if (!voting) return { label: 'DAY ' + round + ' · DISCUSSION', title: 'Discuss your suspects', ...waiting('Talk with the village. No vote is needed yet.', 'Vote to banish a player') };
+    if (runoff) return {
+      label: 'DAY ' + round + ' · RUNOFF', title: mine ? 'Your runoff vote is locked' : 'Break the tie',
+      ...waiting(mine ? 'Waiting for the remaining runoff votes.' : 'Vote for one of the tied candidates.', 'Banishment decision'),
+      progress: votes.length + ' of ' + active.length + ' runoff votes cast'
+    };
     return { label: 'DAY ' + round + ' · VOTING', title: mine ? 'Your vote is locked' : 'Choose a player to banish', ...waiting(mine ? 'Waiting for the remaining players.' : 'Cast your final vote.', 'Banishment result'), progress: votes.length + ' of ' + active.length + ' votes cast' };
   }
   if (stage === 'night') {
@@ -39,7 +45,7 @@ export function workflowStatus(state, { role, playerId, isHost = false, pack = n
   if (stage === 'dawn.suspense' || stage === 'dawn.reveal' || stage === 'dawn.complete') return { label: 'DAY ' + round + ' · DAWN', title: 'The night is over', ...waiting('Discover what happened overnight.', 'Discussion') };
   if (stage === 'results.reveal' || stage === 'results.complete') return {
     label: 'DAY ' + round + ' · BANISHMENT',
-    title: 'A player has been banished',
+    title: state.lastBanishedId ? 'A player has been banished' : 'Nobody was banished',
     ...waiting('The result is being revealed.', 'Night ' + round)
   };
   return null;
