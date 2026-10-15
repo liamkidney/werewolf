@@ -6,6 +6,12 @@ import QRCode from 'qrcode';
 
 const $ = id => document.getElementById(id);
 
+const GAME_INFO_ICONS = {
+  villager: '<circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2"/><path d="M17 5a3 3 0 0 1 0 6M17 14a5 5 0 0 1 4 5v1"/>',
+  seer: '<path d="M2 12s3.7-6 10-6 10 6 10 6-3.7 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
+  werewolf: '<path d="m4 3 5 4h6l5-4-1 11-3 5-4 3-4-3-3-5Z"/><path d="m8 13 2 1m6-1-2 1m-4 4 2 1 2-1"/>'
+};
+
 export class Screens {
   constructor() {
     this.form = $('new-game');
@@ -65,6 +71,16 @@ export class Screens {
     rolesList.replaceChildren();
     for (const { role, count } of info.roles) {
       const item = document.createElement('li');
+      const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      icon.classList.add('game-info-role-icon');
+      icon.setAttribute('viewBox', '0 0 24 24');
+      icon.setAttribute('fill', 'none');
+      icon.setAttribute('stroke', 'currentColor');
+      icon.setAttribute('stroke-width', '1.7');
+      icon.setAttribute('stroke-linejoin', 'round');
+      icon.setAttribute('stroke-linecap', 'round');
+      icon.setAttribute('aria-hidden', 'true');
+      icon.innerHTML = GAME_INFO_ICONS[role] || '';
       const name = document.createElement('span');
       const number = document.createElement('strong');
       const singular = ROLES.label(role);
@@ -72,7 +88,7 @@ export class Screens {
       name.textContent = count === 1 ? singular
         : role === 'werewolf' ? 'Werewolves' : singular + 's';
       number.textContent = String(count);
-      item.append(name, number);
+      item.append(icon, name, number);
       rolesList.append(item);
     }
 
