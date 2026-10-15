@@ -12,11 +12,11 @@ export class GameRepository {
   }
 
   async createGame() {
-    return unwrap(await this.db.from('games').insert({ seer_count: 1 }).select('id').single()).id;
+    return unwrap(await this.db.from('games').insert({ seer_count: 1, runoff_enabled: true }).select('id').single()).id;
   }
 
   async getGame(gameId) {
-    return unwrap(await this.db.from('games').select('id,status,werewolf_count,seer_count,reveal_banished_role,last_banished_role,phase,step,round_number,phase_started_at,day_duration_seconds,discussion_ended_at,last_banished_id,last_banished_round,last_murdered_id,last_murdered_round,host_player_id,decoy_question,winner').eq('id', gameId).maybeSingle());
+    return unwrap(await this.db.from('games').select('id,status,werewolf_count,seer_count,runoff_enabled,vote_stage,runoff_candidates,reveal_banished_role,last_banished_role,phase,step,round_number,phase_started_at,day_duration_seconds,discussion_ended_at,last_banished_id,last_banished_round,last_murdered_id,last_murdered_round,host_player_id,decoy_question,winner').eq('id', gameId).maybeSingle());
   }
 
   async hasPlayer(gameId, playerId) {
@@ -34,14 +34,15 @@ export class GameRepository {
   }
 
   async getState(gameId) {
-    const [game, players, votes] = await Promise.all([
+    const [game, players, votes, runoffVotes] = await Promise.all([
       this.getGame(gameId),
       this.db.from('players').select('id,name,eliminated_at,elimination_reason,revealed_banished_role').eq('game_id', gameId).order('joined_at').then(unwrap),
-      this.db.from('day_votes').select('voter_id,target_id,round_number').eq('game_id', gameId).then(unwrap)
+      this.db.from('day_votes').select('voter_id,target_id,round_number').eq('game_id', gameId).then(unwrap),
+      this.db.from('day_runoff_votes').select('voter_id,target_id,round_number').eq('game_id', gameId).then(unwrap)
     ]);
     if (!game) throw new Error('Game not found.');
     return new GameState({
-      id: game.id, status: game.status, phase: game.phase, step: game.step, roundNumber: game.round_number, werewolfCount: game.werewolf_count, seerCount: game.seer_count ?? 0, revealBanishedRole: game.reveal_banished_role ?? false, lastBanishedRole: game.last_banished_role ?? null, players, votes,
+      id: game.id, status: game.status, phase: game.phase, step: game.step, roundNumber: game.round_number, werewolfCount: game.werewolf_count, seerCount: game.seer_count ?? 0, runoffEnabled: game.runoff_enabled ?? false, voteStage: game.vote_stage ?? 'initial', runoffCandidates: game.runoff_candidates ?? [], runoffVotes, revealBanishedRole: game.reveal_banished_role ?? false, lastBanishedRole: game.last_banished_role ?? null, players, votes,
       phaseStartedAt: game.phase_started_at, dayDurationSeconds: game.day_duration_seconds, discussionEndedAt: game.discussion_ended_at, lastBanishedId: game.last_banished_id, lastBanishedRound: game.last_banished_round,
       lastMurderedId: game.last_murdered_id, lastMurderedRound: game.last_murdered_round, hostPlayerId: game.host_player_id, decoyQuestion: game.decoy_question, winner: game.winner
     });
@@ -109,6 +110,12 @@ export class GameRepository {
     }));
   }
 
+  async castRunoffVote(gameId, round, voterId, targetId) {
+    unwrap(await this.db.rpc('cast_runoff_vote', {
+      p_game_id: gameId, p_round: round, p_voter: voterId, p_target: targetId
+    }));
+  }
+
   async finishDay(gameId, round) {
     return unwrap(await this.db.rpc('finish_day_vote', { p_game_id: gameId, p_round: round }));
   }
@@ -166,6 +173,9 @@ export class GameRepository {
       }, onChange)
       .on('postgres_changes', {
         event: 'INSERT', schema: 'public', table: 'day_votes', filter: 'game_id=eq.' + gameId
+      }, onChange)
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'day_runoff_votes', filter: 'game_id=eq.' + gameId
       }, onChange);
   }
 
