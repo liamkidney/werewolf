@@ -380,6 +380,14 @@ body.light-screen:has(#role-screen:not([hidden])){
 body.light-screen,body.light-screen .screen{background:var(--phase-bg);color:var(--phase-ink)}
 body.light-screen .lobby-eyebrow{color:var(--phase-muted);font-size:.76rem;letter-spacing:.2em}
 body.light-screen .day-screen h2,
+/* Optional public identity announcement when the host enables role reveals. */
+body.light-screen #banishment-screen .banishment-role{
+  margin:-6px 0 0;
+  color:var(--phase-accent);
+  font:600 clamp(1.35rem,5.5vw,1.8rem)/1.2 'Cormorant Garamond',Georgia,serif;
+  letter-spacing:.02em;
+  text-align:center;
+}
 body.light-screen .banishment-screen h2,
 body.light-screen .guest-intro h2,
 body.light-screen .join-heading{
@@ -465,6 +473,39 @@ body.light-screen .lobby .player-list li+li{
 body.light-screen .lobby .player-list .player-dot{display:none}
 body.light-screen .lobby #host-controls{gap:12px;margin-top:0}
 body.light-screen .lobby .role-config{border-top:1px solid var(--phase-line);padding-top:12px}
+body.light-screen .lobby .reveal-role-setting{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding:12px 0;
+  border-top:1px solid var(--phase-line);
+  cursor:pointer;
+  color:var(--phase-ink);
+}
+body.light-screen .lobby .reveal-role-copy{display:grid;gap:4px;min-width:0}
+body.light-screen .lobby .reveal-role-copy strong{font-size:.94rem;font-weight:700}
+body.light-screen .lobby .reveal-role-copy small{
+  color:var(--phase-muted);
+  font-size:.78rem;
+  line-height:1.4;
+  font-weight:400;
+}
+body.light-screen .lobby .reveal-role-setting input[type="checkbox"]{
+  flex:none;
+  width:23px;
+  height:23px;
+  min-height:23px;
+  margin:0;
+  padding:0;
+  border:0;
+  border-radius:4px;
+  accent-color:var(--action-primary);
+  cursor:pointer;
+}
+body.light-screen .lobby .reveal-role-setting input:disabled{cursor:not-allowed}
+body.light-screen .lobby .reveal-role-setting:focus-within{outline:2px solid var(--action-primary);outline-offset:4px}
+
 body.light-screen .lobby .stepper{background:transparent;border:1px solid var(--phase-line)}
 body.light-screen .lobby .stepper button{width:40px;min-height:40px}
 body.light-screen .lobby .stepper output{min-width:34px;padding:8px 4px}
