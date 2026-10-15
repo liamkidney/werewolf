@@ -38,7 +38,7 @@ begin
   new.step:='voting';
  end if;
  return new;
-end $function$
+end $function$;
 
 
 -- Reject stale original-ballot submissions after runoff has started.
@@ -61,7 +61,7 @@ begin
  then raise exception 'Only active players may vote for active players'; end if;
  insert into public.day_votes(game_id,round_number,voter_id,target_id) values(p_game_id,p_round,p_voter,p_target);
 end;
-$function$
+$function$;
 
 
 -- Resolve ties deterministically from counted ballots, never by random
@@ -159,7 +159,7 @@ begin
   update public.games set status='finished' where id=p_game_id and winner is not null;
   return v_winner;
 end;
-$function$
+$function$;
 
 
 -- Atomic runoff ballot acceptance and immediate result on the last vote.
