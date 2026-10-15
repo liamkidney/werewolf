@@ -435,28 +435,36 @@ export class Screens {
   renderDay(state, { playerId, isHost, voting, myVote, casting, endingDiscussion }) {
     this.showScreen('day-screen');
     $('day-round').textContent = state.roundNumber;
-    $('day-heading').textContent = this.edition === EDITION_PRIDE
+    const runoff = state.runoffEnabled && state.voteStage === 'runoff';
+    $('day-heading').textContent = runoff ? 'Runoff vote' : this.edition === EDITION_PRIDE
       ? (voting ? PRIDE_COPY.dayVote : PRIDE_COPY.dayDiscussion)
       : (voting ? 'Vote to banish' : 'Discuss');
     $('day-clock').hidden = voting;
     $('end-discussion').hidden = voting || !isHost;
     $('end-discussion').disabled = endingDiscussion;
-    $('day-instruction').textContent = this.edition === EDITION_PRIDE
-      ? (voting ? PRIDE_COPY.votingInstruction : PRIDE_COPY.dayInstruction)
-      : (voting ? 'Choose one player. Your vote is final.'
-        : 'Discuss who should be banished. Voting opens when the timer ends.');
+    $('day-instruction').textContent = runoff
+      ? 'The vote was tied. Choose among the leading candidates. Your vote is final.'
+      : this.edition === EDITION_PRIDE
+        ? (voting ? PRIDE_COPY.votingInstruction : PRIDE_COPY.dayInstruction)
+        : (voting ? 'Choose one player. Your vote is final.'
+          : 'Discuss who should be banished. Voting opens when the timer ends.');
     const active = state.players.filter(player => !player.eliminated_at);
-    const voted = state.votes.filter(vote => vote.round_number === state.roundNumber).length;
+    const voted = (runoff ? state.runoffVotes : state.votes)
+      .filter(vote => vote.round_number === state.roundNumber).length;
     $('vote-controls').hidden = !voting || !!myVote || !active.some(player => player.id === playerId);
     const choices = $('vote-targets');
     // Preserve a pending selection only within the same round. The DOM is
     // reused between rounds, so a previous round's checked radio is stale.
-    const selected = this.dayVoteRound === state.roundNumber
+    const voteKey = state.roundNumber + ':' + (runoff ? 'runoff' : 'initial');
+    const selected = this.dayVoteRound === voteKey
       ? choices.querySelector('input[name="vote-target"]:checked')?.value
       : null;
-    this.dayVoteRound = state.roundNumber;
+    this.dayVoteRound = voteKey;
     choices.replaceChildren();
-    for (const player of active.filter(player => player.id !== playerId)) {
+    const eligible = runoff
+      ? active.filter(player => state.runoffCandidates.includes(player.id))
+      : active;
+    for (const player of eligible.filter(player => player.id !== playerId)) {
       const label = document.createElement('label');
       label.className = 'night-choice';
       const radio = document.createElement('input');
@@ -509,6 +517,12 @@ export class Screens {
     this.updateTimedProgress('banishment-screen', step || {
       durationMs: 1, elapsedMs: 1, progress: 1
     });
+  }
+
+  renderNoBanishment(step = null) {
+    this.renderBanishment('The village is divided', step);
+    $('elimination-heading').textContent = 'NO BANISHMENT';
+    $('banishment-description').textContent = 'The runoff ended in a tie. Nobody is banished.';
   }
 
   async renderQr(inviteUrl) {
