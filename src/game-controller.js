@@ -28,6 +28,7 @@ export class GameController {
     this.wasHost = false;
     this.eliminated = false;
     this.starting = false;
+    this.revealBanishedRoleSaving = false;
     this.advancing = false;
     this.casting = false;
     this.nightCasting = false;
@@ -72,6 +73,7 @@ export class GameController {
       isHost: this.isHost,
       playerId: this.playerId,
       starting: this.starting,
+      savingReveal: this.revealBanishedRoleSaving,
       canStart: this.engine.canStart(this.state)
     });
   }
@@ -86,6 +88,7 @@ export class GameController {
       onJoin: () => this.joinFromForm(),
       onWerewolves: delta => this.changeWerewolves(delta),
       onSeers: delta => this.changeSeers(delta),
+      onRevealBanishedRole: enabled => this.changeRevealBanishedRole(enabled),
       onStart: () => this.startGame(),
       onAdvance: () => this.advancePhase(),
       onVote: target => this.castVote(target),
@@ -322,7 +325,8 @@ export class GameController {
           state.decoyQuestion, this.decoyPack?.results || [], state.players, currentStep);
       } else if (currentStep.screen === 'banishment-screen') {
         const banished = this.state.players.find(player => player.id === this.state.lastBanishedId);
-        this.screens.renderBanishment(banished?.name || 'A player', currentStep);
+        this.screens.renderBanishment(banished?.name || 'A player', currentStep,
+          this.state.revealBanishedRole ? this.state.lastBanishedRole : null);
       } else {
         this.screens.renderTimedPresentation(currentStep);
       }
@@ -368,7 +372,8 @@ export class GameController {
       } else {
         const banished = state.players.find(player => player.id === state.lastBanishedId);
         if (banished?.id === this.playerId) this.screens.showEliminated(false, this.wasHost ? state.players.find(p => p.id === state.hostPlayerId)?.name : null);
-        else this.screens.renderBanishment(banished?.name || 'A player');
+        else this.screens.renderBanishment(banished?.name || 'A player', null,
+          state.revealBanishedRole ? state.lastBanishedRole : null);
       }
       this.presentations.hold(remaining);
       return;
@@ -469,7 +474,8 @@ export class GameController {
     }
     if (view.stage === 'results.complete') {
       const banished = state.players.find(player => player.id === state.lastBanishedId);
-      this.screens.renderBanishment(banished?.name || 'A player');
+      this.screens.renderBanishment(banished?.name || 'A player', null,
+        state.revealBanishedRole ? state.lastBanishedRole : null);
       void this.phaseAdvancer.advance();
       return;
     }
@@ -593,6 +599,28 @@ export class GameController {
       this.requestRefresh();
     } catch (error) {
       this.showActionError(error.message || 'Could not change the Seer count.');
+    }
+  }
+
+  async changeRevealBanishedRole(enabled) {
+    if (this.eliminated || !this.isHost || this.starting || this.revealBanishedRoleSaving
+        || this.state.status !== 'lobby' || enabled === this.state.revealBanishedRole) return;
+    this.revealBanishedRoleSaving = true;
+    this.renderLobby();
+    this.showActionError('');
+    try {
+      await this.repository.setRevealBanishedRole(this.state.id, this.playerId, enabled);
+      // Reflect the confirmed setting immediately; Realtime will also refresh it.
+      if (this.state.status === 'lobby') {
+        this.state = this.state.with({ revealBanishedRole: enabled });
+      }
+      this.requestRefresh();
+    } catch (error) {
+      this.showActionError(error.message || 'Could not update the role reveal setting.');
+      this.requestRefresh();
+    } finally {
+      this.revealBanishedRoleSaving = false;
+      if (this.state.status === 'lobby') this.renderLobby();
     }
   }
 
