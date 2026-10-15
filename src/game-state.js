@@ -1,6 +1,6 @@
 // Immutable snapshot of persisted game data. No browser or database dependencies.
 export class GameState {
-  constructor({ id = null, status = 'lobby', phase = 'reveal', step = null, roundNumber = 1, werewolfCount = 1, seerCount = 0, revealBanishedRole = false, lastBanishedRole = null, players = [], phaseStartedAt = null, dayDurationSeconds = 120, discussionEndedAt = null, lastBanishedId = null, lastBanishedRound = null, lastMurderedId = null, lastMurderedRound = null, hostPlayerId = null, decoyQuestion = null, winner = null, votes = [] } = {}) {
+  constructor({ id = null, status = 'lobby', phase = 'reveal', step = null, roundNumber = 1, werewolfCount = 1, seerCount = 0, runoffEnabled = false, voteStage = 'initial', runoffCandidates = [], runoffVotes = [], revealBanishedRole = false, lastBanishedRole = null, players = [], phaseStartedAt = null, dayDurationSeconds = 120, discussionEndedAt = null, lastBanishedId = null, lastBanishedRound = null, lastMurderedId = null, lastMurderedRound = null, hostPlayerId = null, decoyQuestion = null, winner = null, votes = [] } = {}) {
     this.id = id;
     this.status = status;
     this.phase = phase;
@@ -8,6 +8,10 @@ export class GameState {
     this.roundNumber = roundNumber;
     this.werewolfCount = werewolfCount;
     this.seerCount = seerCount;
+    this.runoffEnabled = runoffEnabled;
+    this.voteStage = voteStage;
+    this.runoffCandidates = Object.freeze([...runoffCandidates]);
+    this.runoffVotes = Object.freeze(runoffVotes.map(vote => Object.freeze({ ...vote })));
     this.revealBanishedRole = revealBanishedRole;
     this.lastBanishedRole = lastBanishedRole;
     this.phaseStartedAt = phaseStartedAt;
