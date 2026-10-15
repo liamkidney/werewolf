@@ -1,4 +1,5 @@
 import { ROLES } from './role-registry.js';
+import { getGameInfo } from './game-info.js';
 import { EDITION_PRIDE, PRIDE_COPY } from './edition.js';
 import { workflowStatus } from './workflow-status.js';
 import QRCode from 'qrcode';
@@ -46,6 +47,51 @@ export class Screens {
     $('role-reveal').classList.remove('revealed');
     $('role-reveal').querySelector('.role-secret').setAttribute('aria-hidden', 'true');
     for (const screen of ['lobby', 'role-screen', 'day-screen', 'night-screen', 'dawn-screen', 'endgame-screen', 'suspense-screen', 'seer-result-screen', 'marquee-screen', 'banishment-screen']) $(screen).hidden = screen !== id;
+  }
+
+  renderGameInfo(state) {
+    const button = $('game-info-button');
+    const dialog = $('game-info-dialog');
+    button.hidden = state.status !== 'playing' && state.status !== 'finished';
+    if (button.hidden) {
+      if (dialog.open) dialog.close();
+      return;
+    }
+
+    const info = getGameInfo(state);
+    $('game-info-total').textContent = info.total + (info.total === 1 ? ' player' : ' players');
+
+    const rolesList = $('game-info-roles');
+    rolesList.replaceChildren();
+    for (const { role, count } of info.roles) {
+      const item = document.createElement('li');
+      const name = document.createElement('span');
+      const number = document.createElement('strong');
+      name.textContent = ROLES.label(role) + (count === 1 ? '' : 's');
+      number.textContent = String(count);
+      item.append(name, number);
+      rolesList.append(item);
+    }
+
+    const renderNames = (id, titleId, title, names) => {
+      $(titleId).textContent = title + ' (' + names.length + ')';
+      const list = $(id);
+      list.replaceChildren();
+      if (!names.length) {
+        const empty = document.createElement('li');
+        empty.className = 'game-info-empty';
+        empty.textContent = 'None yet';
+        list.append(empty);
+        return;
+      }
+      for (const name of names) {
+        const item = document.createElement('li');
+        item.textContent = name;
+        list.append(item);
+      }
+    };
+    renderNames('game-info-banished', 'game-info-banished-title', 'Banished', info.banished);
+    renderNames('game-info-murdered', 'game-info-murdered-title', 'Murdered', info.murdered);
   }
 
   renderWorkflow(state, context = {}) {
@@ -451,6 +497,12 @@ export class Screens {
       void handlers.onJoin();
     });
     this.nameInput.addEventListener('input', () => { $('name-error').hidden = true; });
+    const infoDialog = $('game-info-dialog');
+    $('game-info-button').addEventListener('click', () => infoDialog.showModal());
+    $('game-info-close').addEventListener('click', () => infoDialog.close());
+    infoDialog.addEventListener('click', event => {
+      if (event.target === infoDialog) infoDialog.close();
+    });
     $('wolf-minus').addEventListener('click', () => { void handlers.onWerewolves(-1); });
     $('wolf-plus').addEventListener('click', () => { void handlers.onWerewolves(1); });
     $('seer-minus').addEventListener('click', () => { void handlers.onSeers(-1); });
