@@ -24,7 +24,7 @@ test('entry pages use a smaller title, concise introduction and accessible form'
 test('invitation entry retains the arrow and marks the join intent explicitly', () => {
   assert.match(html, /id="entry-context" class="entry-context" hidden>JOIN THE VILLAGE/);
   assert.match(controller, /getElementById\('entry-context'\)\.hidden = false/);
-  assert.match(controller, /this\.session\.edition === 'pride' \? 'Join the party ' : 'Join Game '/);
+  assert.match(controller, /firstChild\.textContent = 'Join Game '/);
   assert.match(html, /<button type="submit">Let's Play <span aria-hidden="true">→<\/span><\/button>/);
 });
 
