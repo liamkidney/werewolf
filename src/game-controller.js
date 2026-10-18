@@ -27,6 +27,8 @@ export class GameController {
     this.isHost = false;
     this.wasHost = false;
     this.eliminated = false;
+    this.staleSession = false;
+    this.recoverySaving = false;
     this.starting = false;
     this.revealBanishedRoleSaving = false;
     this.pendingBanishedRoleReveal = null;
@@ -63,7 +65,7 @@ export class GameController {
   }
 
   can(command) {
-    return this.stateEngine.can(this.state, command, {
+    return !this.staleSession && this.stateEngine.can(this.state, command, {
       playerId: this.playerId, isHost: this.isHost, role: this.playerRole
     });
   }
@@ -99,11 +101,31 @@ export class GameController {
       onSeerInvestigation: target => this.castSeerInvestigation(target),
       onDecoyVote: target => this.castDecoyVote(target),
       onEndDiscussion: () => this.endDiscussion(),
-      onFinishVoting: () => this.finishVoting()
+      onFinishVoting: () => this.finishVoting(),
+      onOpenRecovery: () => this.openRecovery(),
+      onIssueRecovery: targetId => this.issueRecovery(targetId)
     });
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden && this.state.id) this.requestRefresh();
     });
+    if (this.session.recoveryToken && !this.session.testFrame) {
+      // Recovery is independent of the old browser's localStorage, and
+      // works for hosts as well as ordinary players.
+      try {
+        const recovered = await this.repository.redeemRejoinTicket(this.session.recoveryToken);
+        if (!recovered?.game_id || !recovered?.player_id
+          || !Number.isSafeInteger(recovered.session_generation)) {
+          throw new Error('Invalid recovery response.');
+        }
+        this.session.savePlayer(recovered.game_id, recovered.player_id, recovered.session_generation);
+        this.session.name = recovered.name;
+        await this.enterGame(recovered.game_id, recovered.player_id);
+      } catch (error) {
+        this.session.clearRecoveryUrl();
+        this.showActionError('This rejoin QR code is invalid, expired, or already used. Ask another player to generate a new one.');
+      }
+      return;
+    }
     if (this.requestedGame) {
       // Show join intent immediately, before any asynchronous game lookup.
       document.getElementById('entry-context').hidden = false;
@@ -170,10 +192,12 @@ export class GameController {
       } else {
         gameId = await this.repository.createGame();
       }
-      const playerId = this.session.playerId(gameId) || crypto.randomUUID();
+      const savedPlayerId = this.session.playerId(gameId);
+      const playerId = savedPlayerId || crypto.randomUUID();
       await this.repository.joinGame(gameId, playerId, name);
       if (host) await this.repository.claimHost(gameId, playerId);
-      this.session.savePlayer(gameId, playerId);
+      this.session.savePlayer(gameId, playerId,
+        savedPlayerId ? this.session.playerGeneration(gameId) : 0);
       this.session.name = name;
       await this.enterGame(gameId, playerId);
     } catch (error) {
@@ -189,6 +213,7 @@ export class GameController {
     this.playerRole = null;
     this.werewolfPackmates = null;
     this.eliminated = false;
+    this.staleSession = false;
     this.finalCreditsGameId = null;
     this.stopDayTimer();
     this.stopNightPoll();
@@ -224,8 +249,19 @@ export class GameController {
         const id = this.state.id;
         const state = await this.repository.getState(id);
         if (id !== this.state.id) return;
-        if (!state.players.some(player => player.id === this.playerId)) {
+        const member = state.players.find(player => player.id === this.playerId);
+        if (!member) {
           this.screens.showConnectionError('Your player membership could not be found.');
+          return;
+        }
+        if (!this.session.testFrame &&
+            member.session_generation !== this.session.playerGeneration(id)) {
+          this.staleSession = true;
+          this.stopDayTimer();
+          this.stopNightPoll();
+          this.presentations.reset();
+          this.phaseAdvancer.reset();
+          this.screens.showSessionTransferred();
           return;
         }
         this.state = state;
@@ -288,6 +324,31 @@ export class GameController {
     } finally {
       this.refreshRunning = false;
       if (this.refreshPending) this.requestRefresh();
+    }
+  }
+
+  openRecovery() {
+    if (!this.state.id || this.state.status !== 'playing' || this.staleSession) return;
+    this.screens.openRecovery(this.state);
+  }
+
+  async issueRecovery(targetId) {
+    if (this.recoverySaving || !this.state.id || this.state.status !== 'playing'
+      || this.staleSession || !this.state.players.some(player => player.id === targetId)) return;
+    this.recoverySaving = true;
+    this.screens.setRecoveryBusy(true);
+    this.screens.showRecoveryError('');
+    try {
+      const gameId = this.state.id;
+      const token = await this.repository.issueRejoinTicket(gameId, this.playerId, targetId);
+      if (this.state.id !== gameId) return;
+      const target = this.state.players.find(player => player.id === targetId);
+      await this.screens.renderRecoveryQr(this.session.recoveryLink(token), target?.name || 'Player');
+    } catch (error) {
+      this.screens.showRecoveryError(error.message || 'Could not generate a rejoin code.');
+    } finally {
+      this.recoverySaving = false;
+      this.screens.setRecoveryBusy(false);
     }
   }
 

@@ -829,3 +829,30 @@ body.light-screen #seer-result-screen #seer-result-verdict.not-werewolf{
   color:var(--info-faint);
   font-style:italic;
 }
+
+/* Rejoin identity transfer uses the existing restrained game-info dialogue. */
+.rejoin-action{margin-top:24px;padding-top:18px;border-top:1px solid var(--info-line)}
+.game-info-dialog .rejoin-action button,
+.game-info-dialog #recovery-generate{
+  min-height:48px;width:100%;border:1px solid var(--info-accent);
+  border-radius:8px;background:#54242c;color:var(--info-ink);
+  font:600 1rem Arial,Helvetica,sans-serif;
+}
+.recovery-description{color:var(--info-secondary);line-height:1.5;margin:0 0 22px}
+.recovery-dialog label{display:block;font-size:.8rem;font-weight:700;letter-spacing:.12em;
+  color:var(--info-secondary);text-transform:uppercase;margin-bottom:9px}
+.recovery-dialog select{
+  display:block;width:100%;min-height:50px;padding:10px 13px;margin-bottom:14px;
+  border:1px solid #78646a;border-radius:8px;
+  background:var(--info-bg);color:var(--info-ink);font-size:1rem;
+}
+.recovery-qr-wrap{display:grid;place-items:center;width:max-content;max-width:100%;
+  margin:20px auto 12px;padding:12px;border-radius:8px;background:#fff}
+.recovery-qr-wrap canvas{display:block;max-width:100%;height:auto}
+#recovery-result-name{text-align:center;font-size:1.1rem;color:var(--info-ink)}
+.recovery-expires{text-align:center;color:var(--info-secondary);font-size:.82rem}
+.recovery-dialog .error{margin-top:15px}
+.session-transferred{text-align:center;display:grid;gap:14px;margin-top:14vh;color:#e9e6dd}
+.session-transferred h2{font:600 2rem/1.1 'Cormorant Garamond',Georgia,serif}
+.session-transferred p{line-height:1.45}
+.session-transferred a{color:inherit;text-decoration:underline}

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0B1926">
   <meta name="description" content="Werewolf — a party game of deception and deduction.">
+  <meta name="referrer" content="no-referrer">
   <title>Werewolf</title>
   <link rel="icon" href="./favicon.ico" sizes="any">
   <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png">
@@ -181,6 +182,12 @@
         <div class="presentation-progress-fill"></div>
       </div>
     </section>
+    <section id="session-transferred" class="session-transferred" hidden>
+      <p class="lobby-eyebrow">SESSION MOVED</p>
+      <h2>This player rejoined on another device.</h2>
+      <p>This phone can no longer play as that person.</p>
+      <a href="./">Return home</a>
+    </section>
     <footer class="site-footer"><a id="game-footer" href="./" hidden>New Game</a><span class="version-label">Version __BUILD_VERSION__</span></footer>
     <p id="connection-error" class="error" role="alert" hidden></p>
   </main>
@@ -202,6 +209,23 @@
       <h3 id="game-info-murdered-title">Murdered</h3>
       <ul id="game-info-murdered" class="game-info-names"></ul>
     </section>
+    <div class="rejoin-action"><button id="help-rejoin" type="button" hidden>Help a player rejoin</button></div>
+  </dialog>
+  <dialog id="recovery-dialog" class="game-info-dialog recovery-dialog" aria-labelledby="recovery-title">
+    <div class="game-info-header">
+      <h2 id="recovery-title">Help player rejoin</h2>
+      <button id="recovery-close" type="button" aria-label="Close rejoin code">×</button>
+    </div>
+    <p class="recovery-description">Choose the player whose phone is unavailable, then let them scan the code on their new phone.</p>
+    <label for="recovery-player">Player</label>
+    <select id="recovery-player"></select>
+    <button id="recovery-generate" type="button" disabled>Generate QR code</button>
+    <p id="recovery-error" class="error" role="alert" hidden></p>
+    <div id="recovery-result" hidden>
+      <div class="recovery-qr-wrap"><canvas id="recovery-qr" role="img" aria-label="QR code to recover this player's game identity"></canvas></div>
+      <p id="recovery-result-name"></p>
+      <p class="recovery-expires">Single-use · Expires after 2 minutes</p>
+    </div>
   </dialog>
 </body>
 </html>

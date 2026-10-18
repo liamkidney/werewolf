@@ -29,6 +29,16 @@ export class GameRepository {
     ));
   }
 
+  async issueRejoinTicket(gameId, issuerId, targetId) {
+    return unwrap(await this.db.rpc('issue_player_rejoin_ticket', {
+      p_game_id: gameId, p_issuer_id: issuerId, p_target_id: targetId
+    }));
+  }
+
+  async redeemRejoinTicket(token) {
+    return unwrap(await this.db.rpc('redeem_player_rejoin_ticket', { p_token: token }));
+  }
+
   async claimHost(gameId, playerId) {
     return unwrap(await this.db.rpc('claim_game_host', { p_game_id: gameId, p_player_id: playerId }));
   }
@@ -36,7 +46,7 @@ export class GameRepository {
   async getState(gameId) {
     const [game, players, votes, runoffVotes] = await Promise.all([
       this.getGame(gameId),
-      this.db.from('players').select('id,name,eliminated_at,elimination_reason,revealed_banished_role').eq('game_id', gameId).order('joined_at').then(unwrap),
+      this.db.from('players').select('id,name,eliminated_at,elimination_reason,revealed_banished_role,session_generation').eq('game_id', gameId).order('joined_at').then(unwrap),
       this.db.from('day_votes').select('voter_id,target_id,round_number').eq('game_id', gameId).then(unwrap),
       this.db.from('day_runoff_votes').select('voter_id,target_id,round_number').eq('game_id', gameId).then(unwrap)
     ]);

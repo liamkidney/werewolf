@@ -52,13 +52,61 @@ export class Screens {
     $('game-footer').hidden = false;
     $('role-reveal').classList.remove('revealed');
     $('role-reveal').querySelector('.role-secret').setAttribute('aria-hidden', 'true');
-    for (const screen of ['lobby', 'role-screen', 'day-screen', 'night-screen', 'dawn-screen', 'endgame-screen', 'suspense-screen', 'seer-result-screen', 'marquee-screen', 'banishment-screen']) $(screen).hidden = screen !== id;
+    for (const screen of ['lobby', 'role-screen', 'day-screen', 'night-screen', 'dawn-screen', 'endgame-screen', 'suspense-screen', 'seer-result-screen', 'marquee-screen', 'banishment-screen', 'session-transferred']) $(screen).hidden = screen !== id;
+  }
+
+  showSessionTransferred() {
+    this.showScreen('session-transferred');
+    $('game-info-button').hidden = true;
+    const infoDialog = $('game-info-dialog');
+    if (infoDialog.open) infoDialog.close();
+    const recoveryDialog = $('recovery-dialog');
+    if (recoveryDialog.open) recoveryDialog.close();
+  }
+
+  openRecovery(state) {
+    const picker = $('recovery-player');
+    picker.replaceChildren();
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Choose a player';
+    picker.append(placeholder);
+    for (const player of state.players) {
+      const option = document.createElement('option');
+      option.value = player.id;
+      option.textContent = player.name;
+      picker.append(option);
+    }
+    picker.value = '';
+    $('recovery-result').hidden = true;
+    $('recovery-generate').disabled = true;
+    this.showRecoveryError('');
+    $('recovery-dialog').showModal();
+  }
+
+  setRecoveryBusy(busy) {
+    $('recovery-generate').disabled = busy || !$('recovery-player').value;
+    $('recovery-generate').textContent = busy ? 'Generating…' : 'Generate QR code';
+  }
+
+  showRecoveryError(message) {
+    $('recovery-error').textContent = message;
+    $('recovery-error').hidden = !message;
+  }
+
+  async renderRecoveryQr(url, name) {
+    await QRCode.toCanvas($('recovery-qr'), url, {
+      width: 240, margin: 2, color: { dark: '#111d2c', light: '#ffffff' }
+    });
+    $('recovery-result-name').textContent = 'Scan to rejoin as ' + name;
+    $('recovery-result').hidden = false;
   }
 
   renderGameInfo(state) {
     const button = $('game-info-button');
     const dialog = $('game-info-dialog');
     button.hidden = state.status !== 'playing' && state.status !== 'finished';
+    $('help-rejoin').hidden = state.status !== 'playing';
     if (button.hidden) {
       if (dialog.open) dialog.close();
       return;
@@ -542,6 +590,24 @@ export class Screens {
     $('game-info-close').addEventListener('click', () => infoDialog.close());
     infoDialog.addEventListener('click', event => {
       if (event.target === infoDialog) infoDialog.close();
+    });
+    const recoveryDialog = $('recovery-dialog');
+    $('help-rejoin').addEventListener('click', () => {
+      infoDialog.close();
+      handlers.onOpenRecovery();
+    });
+    $('recovery-close').addEventListener('click', () => recoveryDialog.close());
+    recoveryDialog.addEventListener('click', event => {
+      if (event.target === recoveryDialog) recoveryDialog.close();
+    });
+    $('recovery-player').addEventListener('change', () => {
+      $('recovery-result').hidden = true;
+      this.showRecoveryError('');
+      this.setRecoveryBusy(false);
+    });
+    $('recovery-generate').addEventListener('click', () => {
+      const targetId = $('recovery-player').value;
+      if (targetId) void handlers.onIssueRecovery(targetId);
     });
     $('wolf-minus').addEventListener('click', () => { void handlers.onWerewolves(-1); });
     $('wolf-plus').addEventListener('click', () => { void handlers.onWerewolves(1); });

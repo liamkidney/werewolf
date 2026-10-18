@@ -22,14 +22,32 @@ export class GameSession {
     return params.get('game') || (params.has('resume') && !this.testFrame ? this.activeGame : null);
   }
   playerId(gameId) { return this.storage.getItem(this.key('player:' + gameId)); }
-  savePlayer(gameId, playerId) {
+  playerGeneration(gameId) {
+    const value = Number(this.storage.getItem(this.key('generation:' + gameId)) || 0);
+    return Number.isSafeInteger(value) && value >= 0 ? value : 0;
+  }
+  savePlayer(gameId, playerId, generation = 0) {
     this.storage.setItem(this.key('player:' + gameId), playerId);
+    this.storage.setItem(this.key('generation:' + gameId), String(generation));
+  }
+  get recoveryToken() {
+    return new URLSearchParams(this.url.search).get('recover');
+  }
+  cleanUrl() {
+    const editionParam = this.edition === EDITION_PRIDE ? '?theme=pride' : '';
+    return this.url.pathname + editionParam + this.url.hash;
+  }
+  clearRecoveryUrl() { this.browserHistory.replaceState(null, '', this.cleanUrl()); }
+  recoveryLink(token) {
+    const url = new URL(this.url.pathname, this.url.href);
+    if (this.edition === EDITION_PRIDE) url.searchParams.set('theme', EDITION_PRIDE);
+    url.searchParams.set('recover', token);
+    return url.href;
   }
   enter(gameId) {
     if (this.testFrame) return;
     this.storage.setItem(this.key('active-game'), gameId);
-    const editionParam = this.edition === EDITION_PRIDE ? '?theme=pride' : '';
-    this.browserHistory.replaceState(null, '', this.url.pathname + editionParam + this.url.hash);
+    this.browserHistory.replaceState(null, '', this.cleanUrl());
   }
   clearActive(gameId) {
     if (this.activeGame === gameId) this.storage.removeItem(this.key('active-game'));
