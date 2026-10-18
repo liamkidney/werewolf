@@ -1,5 +1,3 @@
-import { editionFromSearch, EDITION_PRIDE } from './edition.js';
-
 /** Browser identity and navigation only. Game authority remains in Supabase. */
 export class GameSession {
   constructor({ storage = localStorage, url = location, browserHistory = history } = {}) {
@@ -7,10 +5,8 @@ export class GameSession {
     this.url = url;
     this.browserHistory = browserHistory;
     this.testFrame = new URLSearchParams(url.search).has('test_player');
-    this.edition = editionFromSearch(url.search);
     const environment = url.pathname.includes('/dev/') ? 'dev' : 'production';
-    // Different editions share the backend, not stored player identities.
-    this.prefix = 'werewolf:' + environment + ':' + (this.edition === EDITION_PRIDE ? 'pride:' : '');
+    this.prefix = 'werewolf:' + environment + ':';
   }
 
   key(suffix) { return this.prefix + suffix; }
@@ -34,13 +30,11 @@ export class GameSession {
     return new URLSearchParams(this.url.search).get('recover');
   }
   cleanUrl() {
-    const editionParam = this.edition === EDITION_PRIDE ? '?theme=pride' : '';
-    return this.url.pathname + editionParam + this.url.hash;
+    return this.url.pathname + this.url.hash;
   }
   clearRecoveryUrl() { this.browserHistory.replaceState(null, '', this.cleanUrl()); }
   recoveryLink(token) {
     const url = new URL(this.url.pathname, this.url.href);
-    if (this.edition === EDITION_PRIDE) url.searchParams.set('theme', EDITION_PRIDE);
     url.searchParams.set('recover', token);
     return url.href;
   }
@@ -54,7 +48,6 @@ export class GameSession {
   }
   invitation(gameId) {
     const url = new URL(this.url.pathname, this.url.href);
-    if (this.edition === EDITION_PRIDE) url.searchParams.set('theme', EDITION_PRIDE);
     url.searchParams.set('game', gameId);
     return url.href;
   }

@@ -1,10 +1,6 @@
 import { GameController } from './src/game-controller.js';
 import { GameRepository } from './src/game-repository.js';
 import { supabaseClient } from './src/supabase-client.js';
-import { applyEdition, editionFromSearch } from './src/edition.js';
-
-applyEdition(document, editionFromSearch(location.search));
-
 const game = new GameController({
   repository: new GameRepository(supabaseClient)
 });

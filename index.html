@@ -11,7 +11,6 @@
   <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png">
   <link rel="stylesheet" href="./styles.css">
-  <link rel="stylesheet" href="./pride.css">
   <script type="module" src="./app.js"></script>
 </head>
 <body>
@@ -19,7 +18,6 @@
     <button id="game-info-button" class="game-info-button" type="button" aria-label="Game information" aria-haspopup="dialog" aria-controls="game-info-dialog" title="Game information" hidden>i</button>
     <section class="hero" aria-label="Werewolf">
       <div class="art" aria-hidden="true"><img src="./images/werewolf-night-dark.png" alt=""></div>
-      <p id="edition-kicker" class="edition-kicker" hidden>PRIDE AFTER DARK</p>
       <h1>WEREWOLF</h1>
       <p class="tagline">A game of deception and deduction</p>
     </section>
@@ -30,7 +28,6 @@
       <p class="error" id="name-error" role="alert" hidden>Please enter your name.</p>
       <button type="submit">Let's Play <span aria-hidden="true">→</span></button>
       <a id="resume-game" class="resume-game" href="./?resume=1" hidden>Resume previous game →</a>
-      <a id="edition-switch" class="edition-switch" href="./?theme=pride">✦ Try Queerwolf — Pride edition</a>
     </form>
     <p id="app-error" class="error" role="alert" hidden></p>
     <section id="lobby" class="lobby" hidden aria-live="polite">
