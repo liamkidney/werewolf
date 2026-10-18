@@ -8,6 +8,7 @@ const $ = id => document.getElementById(id);
 const GAME_INFO_ICONS = {
   villager: '<circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2"/><path d="M17 5a3 3 0 0 1 0 6M17 14a5 5 0 0 1 4 5v1"/>',
   seer: '<path d="M2 12s3.7-6 10-6 10 6 10 6-3.7 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
+  bodyguard: '<path d="M12 2 4 5v6c0 5 3 9 8 11 5-2 8-6 8-11V5l-8-3Z"/><path d="m8 12 3 3 5-6"/>',
   werewolf: '<path d="m4 3 5 4h6l5-4-1 11-3 5-4 3-4-3-3-5Z"/><path d="m8 13 2 1m6-1-2 1m-4 4 2 1 2-1"/>'
 };
 
@@ -218,13 +219,16 @@ export class Screens {
     $('lobby-message').textContent = count + (count === 1 ? ' player joined' : ' players joined');
     $('werewolf-count').textContent = state.werewolfCount;
     $('seer-count').textContent = state.seerCount ?? 0;
+    $('bodyguard-count').textContent = state.bodyguardCount ?? 0;
     $('reveal-banished-role').checked = !!state.revealBanishedRole;
     $('reveal-banished-role').disabled = !isHost || starting || savingReveal || state.status !== 'lobby';
-    $('minimum-label').textContent = 'Minimum ' + Math.max(3, state.werewolfCount + (state.seerCount ?? 0) + 1);
+    $('minimum-label').textContent = 'Minimum ' + Math.max(3, state.werewolfCount + (state.seerCount ?? 0) + (state.bodyguardCount ?? 0) + 1);
     $('wolf-minus').disabled = starting || state.werewolfCount <= 1 || state.status !== 'lobby';
     $('wolf-plus').disabled = starting || state.werewolfCount >= 50 || state.status !== 'lobby';
     $('seer-minus').disabled = starting || (state.seerCount ?? 0) <= 0 || state.status !== 'lobby';
     $('seer-plus').disabled = starting || (state.seerCount ?? 0) >= 50 || state.status !== 'lobby';
+    $('bodyguard-minus').disabled = starting || (state.bodyguardCount ?? 0) <= 0 || state.status !== 'lobby';
+    $('bodyguard-plus').disabled = starting || (state.bodyguardCount ?? 0) >= 50 || state.status !== 'lobby';
     $('start-game').disabled = !isHost || !canStart || starting || savingReveal;
     $('start-game').textContent = starting ? 'Assigning roles…' : 'Start Game';
   }

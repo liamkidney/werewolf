@@ -48,6 +48,7 @@
         <div class="role-config">
           <div class="role-row"><label for="werewolf-count">Werewolves</label><div class="stepper"><button id="wolf-minus" type="button" aria-label="Fewer werewolves">−</button><output id="werewolf-count" aria-live="polite">2</output><button id="wolf-plus" type="button" aria-label="More werewolves">+</button></div></div>
           <div class="role-row"><label for="seer-count">Seers</label><div class="stepper"><button id="seer-minus" type="button" aria-label="Fewer seers">−</button><output id="seer-count" aria-live="polite">1</output><button id="seer-plus" type="button" aria-label="More seers">+</button></div></div>
+          <div class="role-row"><label for="bodyguard-count">Bodyguards</label><div class="stepper"><button id="bodyguard-minus" type="button" aria-label="Fewer bodyguards">−</button><output id="bodyguard-count" aria-live="polite">0</output><button id="bodyguard-plus" type="button" aria-label="More bodyguards">+</button></div></div>
         </div>
         <label class="reveal-role-setting" for="reveal-banished-role">
           <span class="reveal-role-copy">
@@ -97,6 +98,11 @@
           <ul id="seer-history-list"></ul>
         </div>
       </div>
+      <div id="night-bodyguard-controls" class="night-action-controls" hidden>
+        <h3>Choose someone to protect</h3>
+        <div id="bodyguard-targets" class="night-targets" role="radiogroup" aria-label="Choose a player to protect"></div>
+        <p id="bodyguard-progress" class="muted"></p>
+      </div>
       <div id="night-wolf-controls" class="night-action-controls" hidden>
         <div id="night-wolf-roster">
           <h3>Werewolves</h3>
@@ -110,7 +116,7 @@
     <section id="suspense-screen" class="banishment-screen timed-presentation-screen" hidden aria-live="polite">
       <div class="phase-art phase-art-night" aria-hidden="true"><img src="./images/werewolf-night-dark.png" alt=""></div>
       <p class="lobby-eyebrow">NIGHT HAS ENDED</p>
-      <h2>The werewolves have struck</h2>
+      <h2 id="dawn-suspense-heading">The werewolves have struck</h2>
       <div class="presentation-progress" role="progressbar" aria-label="Time until next screen" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
         <div class="presentation-progress-fill"></div>
       </div>
@@ -128,7 +134,7 @@
       <div class="phase-art phase-art-day" aria-hidden="true"><img src="./images/werewolf-day.png" alt=""></div>
       <p class="lobby-eyebrow">DAWN</p>
       <h2 id="dawn-victim"></h2>
-      <p>Was murdered during the night.</p>
+      <p id="dawn-outcome-detail">Was murdered during the night.</p>
       <div id="dawn-decoy" class="decoy-results" hidden>
         <p class="lobby-eyebrow">VILLAGERS' VOTE</p>
         <h3 id="dawn-decoy-question"></h3>

@@ -1,9 +1,10 @@
 // Pure rules: no Supabase, DOM, localStorage or network calls.
 export class GameEngine {
   canStart(state) {
-    return state.status === 'lobby' && state.players.length >= 3 && state.players.length > state.werewolfCount + (state.seerCount ?? 0)
+    return state.status === 'lobby' && state.players.length >= 3 && state.players.length > state.werewolfCount + (state.seerCount ?? 0) + (state.bodyguardCount ?? 0)
       && state.werewolfCount >= 1 && state.werewolfCount <= 50
-      && (state.seerCount ?? 0) >= 0 && (state.seerCount ?? 0) <= 50;
+      && (state.seerCount ?? 0) >= 0 && (state.seerCount ?? 0) <= 50
+      && (state.bodyguardCount ?? 0) >= 0 && (state.bodyguardCount ?? 0) <= 50;
   }
 
   nextWerewolfCount(state, delta) {
@@ -12,6 +13,10 @@ export class GameEngine {
 
   nextSeerCount(state, delta) {
     return Math.max(0, Math.min(50, (state.seerCount ?? 0) + delta));
+  }
+
+  nextBodyguardCount(state, delta) {
+    return Math.max(0, Math.min(50, (state.bodyguardCount ?? 0) + delta));
   }
 
   assignRoles(state, randomInt) {
@@ -26,7 +31,8 @@ export class GameEngine {
       player_id: player.id,
       game_id: state.id,
       role: index < state.werewolfCount ? 'werewolf'
-        : index < state.werewolfCount + (state.seerCount ?? 0) ? 'seer' : 'villager'
+        : index < state.werewolfCount + (state.seerCount ?? 0) ? 'seer'
+        : index < state.werewolfCount + (state.seerCount ?? 0) + (state.bodyguardCount ?? 0) ? 'bodyguard' : 'villager'
     }));
   }
 }

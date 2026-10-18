@@ -87,6 +87,7 @@ export class StateEngine {
       case 'CAST_NIGHT_VOTE': return stage === 'night' && this.roles.hasAction(role, 'kill');
       case 'CAST_DECOY_VOTE': return stage === 'night' && this.roles.hasAction(role, 'decoy');
       case 'CAST_SEER_INVESTIGATION': return stage === 'night' && this.roles.hasAction(role, 'inspect');
+      case 'CAST_PROTECTION': return stage === 'night' && this.roles.hasAction(role, 'protect');
       default: return false;
     }
   }
