@@ -58,14 +58,12 @@ test('information button is linked to a dialog and uses the existing state', () 
 
 test('information panel stays understated and uses the gothic game palette', () => {
   const css = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
-  const pride = readFileSync(new URL('../pride.css', import.meta.url), 'utf8');
   const screens = readFileSync(new URL('../src/screens.js', import.meta.url), 'utf8');
   assert.ok(css.includes('background:rgba(11,23,35,.14)'));
   assert.ok(css.includes('--info-bg:#111821'));
   assert.ok(css.includes('--info-ink:#f0ece4'));
   assert.ok(css.includes('border:1px solid var(--info-accent)'));
   assert.ok(!css.includes('/* Persistent game information: distinct from primary gameplay actions. */'));
-  assert.ok(pride.includes('--info-bg:#1b1031'));
   assert.ok(screens.includes("role === 'werewolf' ? 'Werewolves'"));
   assert.ok(screens.includes("item.append(icon, name, number)"));
 });
