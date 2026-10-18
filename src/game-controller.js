@@ -30,6 +30,8 @@ export class GameController {
     this.staleSession = false;
     this.recoverySaving = false;
     this.starting = false;
+    this.rematchStarting = false;
+    this.rematchJoining = false;
     this.revealBanishedRoleSaving = false;
     this.pendingBanishedRoleReveal = null;
     this.advancing = false;
@@ -98,6 +100,7 @@ export class GameController {
       onBodyguards: delta => this.changeBodyguards(delta),
       onRevealBanishedRole: enabled => this.changeRevealBanishedRole(enabled),
       onStart: () => this.startGame(),
+      onRematch: () => this.startRematch(),
       onAdvance: () => this.advancePhase(),
       onVote: target => this.castVote(target),
       onNightVote: target => this.castNightVote(target),
@@ -218,6 +221,7 @@ export class GameController {
     this.eliminated = false;
     this.staleSession = false;
     this.finalCreditsGameId = null;
+    this.rematchStarting = false;
     this.stopDayTimer();
     this.stopNightPoll();
     this.presentations.reset();
@@ -270,6 +274,12 @@ export class GameController {
           return;
         }
         this.state = state;
+        // Follow the rematch before eliminated/finished presentation branches.
+        // Dead players retain their subscription for precisely this transition.
+        if (state.status === 'finished' && state.rematchGameId) {
+          await this.followRematch(state);
+          return;
+        }
         // Eliminated players keep the last information available to them.
         if (!this.eliminated) this.screens.renderGameInfo(state);
         // A submitted investigation gets its private response before any
@@ -285,9 +295,6 @@ export class GameController {
           if (!this.eliminated && this.showVictimPresentation(state)) return;
           this.enterEliminatedState(me, state);
           if (state.status !== 'finished') return;
-        }
-        if (state.status === 'finished' && !this.session.testFrame && this.session.activeGame === id) {
-          this.session.clearActive(id);
         }
         if (state.status === 'finished') {
           if (me.eliminated_at) {
@@ -330,6 +337,50 @@ export class GameController {
     } finally {
       this.refreshRunning = false;
       if (this.refreshPending) this.requestRefresh();
+    }
+  }
+
+  async followRematch(finishedState) {
+    if (this.rematchJoining || this.state.id !== finishedState.id
+        || !finishedState.rematchGameId) return;
+    this.rematchJoining = true;
+    try {
+      const next = await this.repository.getRematchIdentity(finishedState.id, this.playerId);
+      if (!next || next.game_id !== finishedState.rematchGameId
+          || !next.player_id || !Number.isSafeInteger(next.session_generation)) {
+        throw new Error('The new game could not restore your player identity.');
+      }
+      if (this.state.id !== finishedState.id) return;
+      // Multiple test-harness frames share storage; don't overwrite each other.
+      if (!this.session.testFrame) {
+        this.session.savePlayer(next.game_id, next.player_id, next.session_generation);
+        this.session.name = next.name;
+      }
+      await this.enterGame(next.game_id, next.player_id);
+    } finally {
+      this.rematchJoining = false;
+    }
+  }
+
+  async startRematch() {
+    if (this.rematchStarting || !this.can('START_REMATCH')) return;
+    this.rematchStarting = true;
+    this.screens.setRematchBusy(true);
+    this.showActionError('');
+    const oldGameId = this.state.id;
+    try {
+      await this.repository.startRematch(oldGameId, this.playerId);
+      // The Realtime update also prompts all other devices to follow the lobby.
+      if (this.state.id === oldGameId) {
+        const finished = await this.repository.getState(oldGameId);
+        await this.followRematch(finished);
+      }
+    } catch (error) {
+      this.showActionError(error.message || 'Could not start a new game.');
+      this.requestRefresh();
+    } finally {
+      this.rematchStarting = false;
+      if (this.state.id === oldGameId) this.screens.setRematchBusy(false);
     }
   }
 
@@ -379,7 +430,9 @@ export class GameController {
     this.finalCreditsGameId = state.id;
     void this.repository.getFinalRoles(state.id).then(roles => {
       if (this.state.id === state.id && this.state.status === 'finished') {
-        this.screens.renderEndgame(state.winner, roles);
+        this.screens.renderEndgame(state.winner, roles, {
+          isHost: state.hostPlayerId === this.playerId
+        });
       }
     }).catch(error => this.showActionError(error.message || 'Could not load final roles.'));
   }

@@ -48,7 +48,7 @@ export class Screens {
     document.querySelector('.hero').hidden = true;
     this.form.hidden = true;
     $('resume-game').hidden = true;
-    $('game-footer').hidden = false;
+    $('game-footer').hidden = id === 'endgame-screen';
     $('role-reveal').classList.remove('revealed');
     $('role-reveal').querySelector('.role-secret').setAttribute('aria-hidden', 'true');
     for (const screen of ['lobby', 'role-screen', 'day-screen', 'night-screen', 'dawn-screen', 'endgame-screen', 'suspense-screen', 'seer-result-screen', 'marquee-screen', 'banishment-screen', 'session-transferred']) $(screen).hidden = screen !== id;
@@ -316,13 +316,16 @@ export class Screens {
     this.updateTimedProgress('dawn-screen', step);
   }
 
-  renderEndgame(winner, roles) {
+  renderEndgame(winner, roles, { isHost = false } = {}) {
     this.showScreen('endgame-screen');
     const wolvesWon = winner !== 'village';
     $('endgame-screen').classList.toggle('wolves-won', wolvesWon);
     $('endgame-screen').querySelector('.endgame-day-art').hidden = wolvesWon;
     $('endgame-screen').querySelector('.endgame-night-art').hidden = !wolvesWon;
     $('endgame-winner').textContent = wolvesWon ? 'The Werewolves Win' : 'The Villagers Win';
+    $('start-rematch').hidden = !isHost;
+    $('rematch-waiting').hidden = isHost;
+    this.setRematchBusy(false);
     const list = $('endgame-roles');
     list.replaceChildren();
     const victorious = player => ROLES.isOnTeam(player.role, wolvesWon ? 'werewolves' : 'village');
@@ -362,6 +365,11 @@ export class Screens {
     void roll.offsetWidth;
     roll.style.animation = '';
 
+  }
+
+  setRematchBusy(busy) {
+    $('start-rematch').disabled = busy;
+    $('start-rematch').textContent = busy ? 'Preparing new game…' : 'New Game';
   }
 
   renderNight(state, { playerId, role, pack, casting, decoyPack, seerPack, bodyguardPack }) {
@@ -643,6 +651,7 @@ export class Screens {
       void handlers.onRevealBanishedRole(event.target.checked);
     });
     $('start-game').addEventListener('click', () => { void handlers.onStart(); });
+    $('start-rematch').addEventListener('click', () => { void handlers.onRematch(); });
     const reveal = $('role-reveal');
     const setRevealed = visible => {
       reveal.classList.toggle('revealed', visible);

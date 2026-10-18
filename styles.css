@@ -856,3 +856,15 @@ body.light-screen #seer-result-screen #seer-result-verdict.not-werewolf{
 .session-transferred h2{font:600 2rem/1.1 'Cormorant Garamond',Georgia,serif}
 .session-transferred p{line-height:1.45}
 .session-transferred a{color:inherit;text-decoration:underline}
+
+/* Host starts the rematch after endgame credits; everyone else waits. */
+body.light-screen #endgame-screen .rematch-actions{
+  width:100%;display:flex;justify-content:center;align-items:center;
+  flex-direction:column;gap:12px;padding:8px 0 20px;text-align:center;
+}
+body.light-screen #endgame-screen .rematch-actions button{
+  width:min(100%,320px);min-height:52px;border-radius:10px;
+}
+body.light-screen #endgame-screen .rematch-actions .muted{
+  max-width:340px;line-height:1.45;
+}
