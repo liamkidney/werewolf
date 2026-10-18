@@ -120,3 +120,16 @@ test('migration provides a new game and maps exactly one identity per old player
   assert.match(sql,/old\.rematch_game_id|v_old\.rematch_game_id/);
   assert.match(sql,/session_generation/);
 });
+
+test('a host appointed by the final elimination may start the rematch immediately', () => {
+  const controller=Object.create(GameController.prototype);
+  controller.state=finished();
+  controller.playerId='host';
+  controller.isHost=false; // stale cached ownership from before final elimination
+  controller.staleSession=false;
+  controller.stateEngine=new StateEngine();
+  assert.equal(controller.can('START_REMATCH'),true);
+  controller.playerId='out';
+  controller.isHost=true; // an eliminated former host has lost authority
+  assert.equal(controller.can('START_REMATCH'),false);
+});

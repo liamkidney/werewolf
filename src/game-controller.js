@@ -70,7 +70,12 @@ export class GameController {
 
   can(command) {
     return !this.staleSession && this.stateEngine.can(this.state, command, {
-      playerId: this.playerId, isHost: this.isHost, role: this.playerRole
+      playerId: this.playerId,
+      // On the final elimination, the DB may reassign the host in the same
+      // transaction that finishes the game. Trust the fresh persisted host.
+      isHost: this.state.status === 'finished'
+        ? this.state.hostPlayerId === this.playerId : this.isHost,
+      role: this.playerRole
     });
   }
 
