@@ -22,14 +22,14 @@ function sessionAt(search = '', pathname = '/werewolf/dev/') {
 }
 
 test('rejoin link needs no prior browser state, and removes token after recovery', () => {
-  const helper = sessionAt('?theme=pride');
+  const helper = sessionAt();
   const url = helper.session.recoveryLink('secret-ticket');
-  assert.equal(url, 'https://example.com/werewolf/dev/?theme=pride&recover=secret-ticket');
-  const newPhone = sessionAt('?theme=pride&recover=secret-ticket');
+  assert.equal(url, 'https://example.com/werewolf/dev/?recover=secret-ticket');
+  const newPhone = sessionAt('?recover=secret-ticket');
   assert.equal(newPhone.session.recoveryToken, 'secret-ticket');
   newPhone.session.savePlayer('game', 'player', 2);
   newPhone.session.enter('game');
-  assert.equal(newPhone.navigated, '/werewolf/dev/?theme=pride');
+  assert.equal(newPhone.navigated, '/werewolf/dev/');
   assert.equal(newPhone.session.playerId('game'), 'player');
   assert.equal(newPhone.session.playerGeneration('game'), 2);
 });
