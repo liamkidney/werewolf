@@ -273,6 +273,12 @@ export class Screens {
 
   // Any timed presentation substate uses this same progress indicator.
   // Changing the screen within the sequence requires no controller changes.
+  renderDawnSuspense(step, outcome) {
+    $('dawn-suspense-heading').textContent = outcome === 'protected'
+      ? 'The werewolves have been thwarted' : 'The werewolves have struck';
+    this.renderTimedPresentation(step);
+  }
+
   renderTimedPresentation(step) {
     this.showScreen(step.screen);
     this.updateTimedProgress(step.screen, step);
@@ -296,9 +302,12 @@ export class Screens {
     $('seer-result-verdict').classList.toggle('not-werewolf', !investigation.isWerewolf);
   }
 
-  renderMurderReveal(name, question = null, results = [], players = [], timedStep = null) {
+  renderMurderReveal(name, question = null, results = [], players = [], timedStep = null, outcome = null) {
     this.showScreen('dawn-screen');
-    $('dawn-victim').textContent = name;
+    const protectedNight = outcome === 'protected';
+    $('dawn-victim').textContent = protectedNight ? 'Nobody was murdered' : name;
+    $('dawn-outcome-detail').textContent = protectedNight
+      ? "The werewolves' attack was thwarted." : 'Was murdered during the night.';
     $('dawn-decoy').hidden = !question;
     $('dawn-decoy-question').textContent = question || '';
     const max = Math.max(0, ...results.map(item => item.votes));
@@ -360,17 +369,19 @@ export class Screens {
 
   }
 
-  renderNight(state, { playerId, role, pack, casting, decoyPack, seerPack }) {
+  renderNight(state, { playerId, role, pack, casting, decoyPack, seerPack, bodyguardPack }) {
     this.showScreen('night-screen');
     $('night-round').textContent = state.roundNumber;
     $('night-heading').textContent = 'Night has fallen';
     const wolf = role === 'werewolf';
     const seer = role === 'seer';
+    const bodyguard = role === 'bodyguard';
     const loneWolf = wolf && pack?.wolves?.length === 1;
     $('night-instruction').textContent = wolf
       ? loneWolf ? 'You are the only werewolf! Pick a villager to eliminate.'
         : 'Agree on one villager to eliminate.'
       : seer ? 'Investigate one player. Your choice is final.'
+      : bodyguard ? 'Choose someone to protect tonight.'
       : 'Cast your vote. The results will be revealed at dawn.';
     $('night-villager-controls').hidden = role !== 'villager';
     if (role === 'villager') {
@@ -388,6 +399,30 @@ export class Screens {
         label.append(radio, name); choices.append(label);
       }
       $('decoy-progress').textContent = decoyPack?.myVote ? 'Vote recorded. You can change it until dawn.' : 'Choose another player.';
+    }
+    $('night-bodyguard-controls').hidden = !bodyguard;
+    if (bodyguard) {
+      const choices = $('bodyguard-targets');
+      choices.replaceChildren();
+      for (const player of state.players.filter(p => !p.eliminated_at)) {
+        const label = document.createElement('label');
+        label.className = 'night-choice';
+        const radio = document.createElement('input');
+        radio.type = 'radio';
+        radio.name = 'bodyguard-target';
+        radio.value = player.id;
+        radio.checked = bodyguardPack?.myProtection === player.id;
+        radio.disabled = casting || bodyguardPack?.lastProtectionTargetId === player.id;
+        const name = document.createElement('span');
+        name.className = 'night-name';
+        name.textContent = player.name + (player.id === playerId ? ' (you)' : '')
+          + (bodyguardPack?.lastProtectionTargetId === player.id ? ' — Protected last night' : '');
+        label.append(radio, name);
+        choices.append(label);
+      }
+      $('bodyguard-progress').textContent = bodyguardPack?.myProtection
+        ? 'Protection recorded. You can change it until the night ends.'
+        : 'Choose a player, including yourself. No consecutive protection of the same person.';
     }
     $('night-seer-controls').hidden = !seer;
     if (seer) {
@@ -607,6 +642,8 @@ export class Screens {
     $('wolf-plus').addEventListener('click', () => { void handlers.onWerewolves(1); });
     $('seer-minus').addEventListener('click', () => { void handlers.onSeers(-1); });
     $('seer-plus').addEventListener('click', () => { void handlers.onSeers(1); });
+    $('bodyguard-minus').addEventListener('click', () => { void handlers.onBodyguards(-1); });
+    $('bodyguard-plus').addEventListener('click', () => { void handlers.onBodyguards(1); });
     $('reveal-banished-role').addEventListener('change', event => {
       void handlers.onRevealBanishedRole(event.target.checked);
     });
@@ -645,6 +682,9 @@ export class Screens {
     });
     $('night-targets').addEventListener('change', event => {
       if (event.target.matches('input[name="night-target"]')) void handlers.onNightVote(event.target.value);
+    });
+    $('bodyguard-targets').addEventListener('change', event => {
+      if (event.target.matches('input[name="bodyguard-target"]')) void handlers.onProtection(event.target.value);
     });
     $('seer-targets').addEventListener('change', event => {
       if (event.target.matches('input[name="seer-target"]')) void handlers.onSeerInvestigation(event.target.value);

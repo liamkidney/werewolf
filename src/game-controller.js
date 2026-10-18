@@ -40,6 +40,8 @@ export class GameController {
     this.decoyCasting = false;
     this.seerPack = null;
     this.seerCasting = false;
+    this.bodyguardPack = null;
+    this.protectionCasting = false;
     this.finalCreditsGameId = null;
     this.nightPoll = null;
     this.finishing = false;
@@ -93,12 +95,14 @@ export class GameController {
       onJoin: () => this.joinFromForm(),
       onWerewolves: delta => this.changeWerewolves(delta),
       onSeers: delta => this.changeSeers(delta),
+      onBodyguards: delta => this.changeBodyguards(delta),
       onRevealBanishedRole: enabled => this.changeRevealBanishedRole(enabled),
       onStart: () => this.startGame(),
       onAdvance: () => this.advancePhase(),
       onVote: target => this.castVote(target),
       onNightVote: target => this.castNightVote(target),
       onSeerInvestigation: target => this.castSeerInvestigation(target),
+      onProtection: target => this.castProtection(target),
       onDecoyVote: target => this.castDecoyVote(target),
       onEndDiscussion: () => this.endDiscussion(),
       onFinishVoting: () => this.finishVoting(),
@@ -221,6 +225,8 @@ export class GameController {
     this.decoyPack = null;
     this.seerPack = null;
     this.seerCasting = false;
+    this.bodyguardPack = null;
+    this.protectionCasting = false;
     this.isHost = false;
     this.wasHost = false;
     this.state = new GameState({ id: gameId });
@@ -268,7 +274,7 @@ export class GameController {
         if (!this.eliminated) this.screens.renderGameInfo(state);
         // A submitted investigation gets its private response before any
         // simultaneous night-resolution or elimination screen can replace it.
-        if (this.seerCasting) return;
+        if (this.seerCasting || this.protectionCasting) return;
         if (this.showSeerResultIfActive()) return;
         const me = state.players.find(player => player.id === this.playerId);
         // Elimination is a permanent player state, independent of the current
@@ -307,6 +313,7 @@ export class GameController {
         if (state.phase === 'night' && this.playerRole === 'werewolf') this.nightPack = await this.repository.getNightPack(id, this.playerId);
         if (state.phase === 'night' && this.playerRole === 'villager') this.decoyPack = await this.repository.getDecoyPack(id, this.playerId);
         if (state.phase === 'night' && this.playerRole === 'seer') this.seerPack = await this.repository.getSeerPack(id, this.playerId);
+        if (state.phase === 'night' && this.playerRole === 'bodyguard') this.bodyguardPack = await this.repository.getBodyguardPack(id, this.playerId);
         if (state.phase === 'dawn') this.decoyPack = await this.repository.getDecoyPack(id, this.playerId);
         const previousHost = this.isHost;
         this.isHost = state.hostPlayerId === this.playerId;
@@ -379,13 +386,15 @@ export class GameController {
 
   renderTimedPresentation(step) {
     this.presentations.show(step, currentStep => {
-      if (currentStep.screen === 'seer-result-screen' && this.presentations.seerResult) {
+      if (currentStep.screen === 'suspense-screen') {
+        this.screens.renderDawnSuspense(currentStep, this.state.lastNightOutcome);
+      } else if (currentStep.screen === 'seer-result-screen' && this.presentations.seerResult) {
         this.screens.renderSeerResult(this.presentations.seerResult, currentStep);
       } else if (currentStep.screen === 'dawn-screen') {
         const state = this.state;
         const victim = state.players.find(player => player.id === state.lastMurderedId);
         this.screens.renderMurderReveal(victim?.name || 'A villager',
-          state.decoyQuestion, this.decoyPack?.results || [], state.players, currentStep);
+          state.decoyQuestion, this.decoyPack?.results || [], state.players, currentStep, state.lastNightOutcome);
       } else if (currentStep.screen === 'banishment-screen') {
         const banished = this.state.players.find(player => player.id === this.state.lastBanishedId);
         if (!banished) this.screens.renderNoBanishment(currentStep);
@@ -432,7 +441,7 @@ export class GameController {
         const victim = state.players.find(player => player.id === state.lastMurderedId);
         if (victim?.id === this.playerId) this.screens.showEliminated(true, this.wasHost ? state.players.find(p => p.id === state.hostPlayerId)?.name : null);
         else this.screens.renderMurderReveal(victim?.name || 'A villager',
-          state.decoyQuestion, this.decoyPack?.results || [], state.players);
+          state.decoyQuestion, this.decoyPack?.results || [], state.players, null, state.lastNightOutcome);
       } else {
         const banished = state.players.find(player => player.id === state.lastBanishedId);
         if (banished?.id === this.playerId) this.screens.showEliminated(false, this.wasHost ? state.players.find(p => p.id === state.hostPlayerId)?.name : null);
@@ -464,6 +473,22 @@ export class GameController {
     } finally {
       this.seerCasting = false;
       this.requestRefresh();
+    }
+  }
+
+  async castProtection(targetId) {
+    if (this.protectionCasting || !targetId || !this.can('CAST_PROTECTION')
+      || this.bodyguardPack?.lastProtectionTargetId === targetId) return;
+    this.protectionCasting = true;
+    this.showActionError('');
+    try {
+      await this.repository.castProtection(this.state.id, this.state.roundNumber, this.playerId, targetId);
+      this.requestRefresh();
+    } catch (error) {
+      this.showActionError(error.message || 'Could not protect that player.');
+    } finally {
+      this.protectionCasting = false;
+      if (this.state.phase === 'night') this.requestRefresh();
     }
   }
 
@@ -524,15 +549,15 @@ export class GameController {
       return;
     }
     if (view.stage === 'night') {
-      this.screens.renderNight(state, { playerId: this.playerId, role: this.playerRole, pack: this.nightPack, casting: this.nightCasting || this.decoyCasting || this.seerCasting, decoyPack: this.decoyPack, seerPack: this.seerPack });
-      this.screens.renderWorkflow(state, { playerId: this.playerId, role: this.playerRole, isHost: this.isHost, pack: this.nightPack, decoyPack: this.decoyPack, seerPack: this.seerPack });
+      this.screens.renderNight(state, { playerId: this.playerId, role: this.playerRole, pack: this.nightPack, casting: this.nightCasting || this.decoyCasting || this.seerCasting || this.protectionCasting, decoyPack: this.decoyPack, seerPack: this.seerPack, bodyguardPack: this.bodyguardPack });
+      this.screens.renderWorkflow(state, { playerId: this.playerId, role: this.playerRole, isHost: this.isHost, pack: this.nightPack, decoyPack: this.decoyPack, seerPack: this.seerPack, bodyguardPack: this.bodyguardPack });
       if (this.nightPoll === null) this.nightPoll = setInterval(() => this.requestRefresh(), 1500);
       return;
     }
     if (view.stage === 'dawn.complete') {
       const victim = state.players.find(player => player.id === state.lastMurderedId);
       this.screens.renderMurderReveal(victim?.name || 'A villager',
-        state.decoyQuestion, this.decoyPack?.results || [], state.players);
+        state.decoyQuestion, this.decoyPack?.results || [], state.players, null, state.lastNightOutcome);
       void this.phaseAdvancer.advance();
       return;
     }
@@ -670,6 +695,18 @@ export class GameController {
       this.requestRefresh();
     } catch (error) {
       this.showActionError(error.message || 'Could not change the Seer count.');
+    }
+  }
+
+  async changeBodyguards(delta) {
+    if (this.eliminated || !this.isHost || this.starting || this.state.status !== 'lobby') return;
+    const next = this.engine.nextBodyguardCount(this.state, delta);
+    if (next === this.state.bodyguardCount) return;
+    try {
+      await this.repository.setBodyguardCount(this.state.id, this.playerId, next);
+      this.requestRefresh();
+    } catch (error) {
+      this.showActionError(error.message || 'Could not change the Bodyguard count.');
     }
   }
 
