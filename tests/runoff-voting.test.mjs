@@ -133,7 +133,7 @@ test('the migration isolates the feature to new dev games and blocks double runo
   const sql = read('supabase/migrations/20261015_runoff_vote.sql');
   const repository = read('src/game-repository.js');
   assert.match(sql, /runoff_enabled boolean not null default false/);
-  assert.match(repository, /insert\(\{ seer_count: 1, runoff_enabled: true \}\)/);
+  assert.match(repository, /insert\(\{ seer_count: 1, bodyguard_count: 0, runoff_enabled: true \}\)/);
   assert.match(sql, /cardinality\(v_candidates\)>1/);
   assert.match(sql, /v_vote_stage = 'runoff'/);
   assert.match(sql, /v_winner := case when cardinality\(v_candidates\)=1 then v_candidates\[1\] else null end/);
