@@ -21,6 +21,7 @@ test('initial role counts include all starting players, even the eliminated', ()
   assert.deepEqual(info.roles, [
     { role: 'villager', count: 3 },
     { role: 'seer', count: 1 },
+    { role: 'bodyguard', count: 0 },
     { role: 'werewolf', count: 2 }
   ]);
   assert.deepEqual(info.banished, ['Chris']);
@@ -38,7 +39,7 @@ test('summary never exposes individual player roles', () => {
 test('no eliminations and no seers have sensible results', () => {
   const info = getGameInfo({ werewolfCount: 1, seerCount: 0,
     players: [{ name: 'A' }, { name: 'B' }, { name: 'C' }] });
-  assert.deepEqual(info.roles.map(role => role.count), [2, 0, 1]);
+  assert.deepEqual(info.roles.map(role => role.count), [2, 0, 0, 1]);
   assert.deepEqual(info.banished, []);
   assert.deepEqual(info.murdered, []);
 });
@@ -105,4 +106,18 @@ test('the banishment history is read from persisted public columns, not private 
   assert.match(migration, /after update of last_banished_id on public\.games/);
   assert.match(migration, /if new\.reveal_banished_role/);
   assert.match(migration, /p\.elimination_reason = 'banished'/);
+});
+
+test('Bodyguard counts include village-aligned special roles without revealing identities', () => {
+  const info = getGameInfo({
+    status: 'playing', werewolfCount: 1, seerCount: 1, bodyguardCount: 2,
+    players: Array.from({ length: 7 }, (_, i) => ({ id: String(i), name: 'P' + i }))
+  });
+  assert.deepEqual(info.roles, [
+    { role: 'villager', count: 3 },
+    { role: 'seer', count: 1 },
+    { role: 'bodyguard', count: 2 },
+    { role: 'werewolf', count: 1 }
+  ]);
+  assert.deepEqual(info.murdered, []);
 });
