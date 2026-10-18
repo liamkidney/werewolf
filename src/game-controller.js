@@ -27,7 +27,13 @@ export class GameController {
     this.isHost = false;
     this.wasHost = false;
     this.eliminated = false;
+    this.staleSession = false;
+    this.recoverySaving = false;
     this.starting = false;
+    this.rematchStarting = false;
+    this.rematchJoining = false;
+    this.revealBanishedRoleSaving = false;
+    this.pendingBanishedRoleReveal = null;
     this.advancing = false;
     this.casting = false;
     this.nightCasting = false;
@@ -36,6 +42,8 @@ export class GameController {
     this.decoyCasting = false;
     this.seerPack = null;
     this.seerCasting = false;
+    this.bodyguardPack = null;
+    this.protectionCasting = false;
     this.finalCreditsGameId = null;
     this.nightPoll = null;
     this.finishing = false;
@@ -61,17 +69,25 @@ export class GameController {
   }
 
   can(command) {
-    return this.stateEngine.can(this.state, command, {
-      playerId: this.playerId, isHost: this.isHost, role: this.playerRole
+    return !this.staleSession && this.stateEngine.can(this.state, command, {
+      playerId: this.playerId,
+      // On the final elimination, the DB may reassign the host in the same
+      // transaction that finishes the game. Trust the fresh persisted host.
+      isHost: this.state.status === 'finished'
+        ? this.state.hostPlayerId === this.playerId : this.isHost,
+      role: this.playerRole
     });
   }
 
   renderLobby() {
     this.screens.renderWorkflow(this.state, { playerId: this.playerId, isHost: this.isHost });
-    this.screens.renderLobby(this.state, {
+    const displayState = this.pendingBanishedRoleReveal === null
+      ? this.state : this.state.with({ revealBanishedRole: this.pendingBanishedRoleReveal });
+    this.screens.renderLobby(displayState, {
       isHost: this.isHost,
       playerId: this.playerId,
       starting: this.starting,
+      savingReveal: this.revealBanishedRoleSaving,
       canStart: this.engine.canStart(this.state)
     });
   }
@@ -86,18 +102,42 @@ export class GameController {
       onJoin: () => this.joinFromForm(),
       onWerewolves: delta => this.changeWerewolves(delta),
       onSeers: delta => this.changeSeers(delta),
+      onBodyguards: delta => this.changeBodyguards(delta),
+      onRevealBanishedRole: enabled => this.changeRevealBanishedRole(enabled),
       onStart: () => this.startGame(),
+      onRematch: () => this.startRematch(),
       onAdvance: () => this.advancePhase(),
       onVote: target => this.castVote(target),
       onNightVote: target => this.castNightVote(target),
       onSeerInvestigation: target => this.castSeerInvestigation(target),
+      onProtection: target => this.castProtection(target),
       onDecoyVote: target => this.castDecoyVote(target),
       onEndDiscussion: () => this.endDiscussion(),
-      onFinishVoting: () => this.finishVoting()
+      onFinishVoting: () => this.finishVoting(),
+      onOpenRecovery: () => this.openRecovery(),
+      onIssueRecovery: targetId => this.issueRecovery(targetId)
     });
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden && this.state.id) this.requestRefresh();
     });
+    if (this.session.recoveryToken && !this.session.testFrame) {
+      // Recovery is independent of the old browser's localStorage, and
+      // works for hosts as well as ordinary players.
+      try {
+        const recovered = await this.repository.redeemRejoinTicket(this.session.recoveryToken);
+        if (!recovered?.game_id || !recovered?.player_id
+          || !Number.isSafeInteger(recovered.session_generation)) {
+          throw new Error('Invalid recovery response.');
+        }
+        this.session.savePlayer(recovered.game_id, recovered.player_id, recovered.session_generation);
+        this.session.name = recovered.name;
+        await this.enterGame(recovered.game_id, recovered.player_id);
+      } catch (error) {
+        this.session.clearRecoveryUrl();
+        this.showActionError('This rejoin QR code is invalid, expired, or already used. Ask another player to generate a new one.');
+      }
+      return;
+    }
     if (this.requestedGame) {
       // Show join intent immediately, before any asynchronous game lookup.
       document.getElementById('entry-context').hidden = false;
@@ -163,10 +203,12 @@ export class GameController {
       } else {
         gameId = await this.repository.createGame();
       }
-      const playerId = this.session.playerId(gameId) || crypto.randomUUID();
+      const savedPlayerId = this.session.playerId(gameId);
+      const playerId = savedPlayerId || crypto.randomUUID();
       await this.repository.joinGame(gameId, playerId, name);
       if (host) await this.repository.claimHost(gameId, playerId);
-      this.session.savePlayer(gameId, playerId);
+      this.session.savePlayer(gameId, playerId,
+        savedPlayerId ? this.session.playerGeneration(gameId) : 0);
       this.session.name = name;
       await this.enterGame(gameId, playerId);
     } catch (error) {
@@ -182,7 +224,9 @@ export class GameController {
     this.playerRole = null;
     this.werewolfPackmates = null;
     this.eliminated = false;
+    this.staleSession = false;
     this.finalCreditsGameId = null;
+    this.rematchStarting = false;
     this.stopDayTimer();
     this.stopNightPoll();
     this.presentations.reset();
@@ -190,6 +234,8 @@ export class GameController {
     this.decoyPack = null;
     this.seerPack = null;
     this.seerCasting = false;
+    this.bodyguardPack = null;
+    this.protectionCasting = false;
     this.isHost = false;
     this.wasHost = false;
     this.state = new GameState({ id: gameId });
@@ -217,14 +263,33 @@ export class GameController {
         const id = this.state.id;
         const state = await this.repository.getState(id);
         if (id !== this.state.id) return;
-        if (!state.players.some(player => player.id === this.playerId)) {
+        const member = state.players.find(player => player.id === this.playerId);
+        if (!member) {
           this.screens.showConnectionError('Your player membership could not be found.');
           return;
         }
+        if (!this.session.testFrame &&
+            member.session_generation !== this.session.playerGeneration(id)) {
+          this.staleSession = true;
+          this.stopDayTimer();
+          this.stopNightPoll();
+          this.presentations.reset();
+          this.phaseAdvancer.reset();
+          this.screens.showSessionTransferred();
+          return;
+        }
         this.state = state;
+        // Follow the rematch before eliminated/finished presentation branches.
+        // Dead players retain their subscription for precisely this transition.
+        if (state.status === 'finished' && state.rematchGameId) {
+          await this.followRematch(state);
+          return;
+        }
+        // Eliminated players keep the last information available to them.
+        if (!this.eliminated) this.screens.renderGameInfo(state);
         // A submitted investigation gets its private response before any
         // simultaneous night-resolution or elimination screen can replace it.
-        if (this.seerCasting) return;
+        if (this.seerCasting || this.protectionCasting) return;
         if (this.showSeerResultIfActive()) return;
         const me = state.players.find(player => player.id === this.playerId);
         // Elimination is a permanent player state, independent of the current
@@ -235,9 +300,6 @@ export class GameController {
           if (!this.eliminated && this.showVictimPresentation(state)) return;
           this.enterEliminatedState(me, state);
           if (state.status !== 'finished') return;
-        }
-        if (state.status === 'finished' && !this.session.testFrame && this.session.activeGame === id) {
-          this.session.clearActive(id);
         }
         if (state.status === 'finished') {
           if (me.eliminated_at) {
@@ -263,6 +325,7 @@ export class GameController {
         if (state.phase === 'night' && this.playerRole === 'werewolf') this.nightPack = await this.repository.getNightPack(id, this.playerId);
         if (state.phase === 'night' && this.playerRole === 'villager') this.decoyPack = await this.repository.getDecoyPack(id, this.playerId);
         if (state.phase === 'night' && this.playerRole === 'seer') this.seerPack = await this.repository.getSeerPack(id, this.playerId);
+        if (state.phase === 'night' && this.playerRole === 'bodyguard') this.bodyguardPack = await this.repository.getBodyguardPack(id, this.playerId);
         if (state.phase === 'dawn') this.decoyPack = await this.repository.getDecoyPack(id, this.playerId);
         const previousHost = this.isHost;
         this.isHost = state.hostPlayerId === this.playerId;
@@ -279,6 +342,75 @@ export class GameController {
     } finally {
       this.refreshRunning = false;
       if (this.refreshPending) this.requestRefresh();
+    }
+  }
+
+  async followRematch(finishedState) {
+    if (this.rematchJoining || this.state.id !== finishedState.id
+        || !finishedState.rematchGameId) return;
+    this.rematchJoining = true;
+    try {
+      const next = await this.repository.getRematchIdentity(finishedState.id, this.playerId);
+      if (!next || next.game_id !== finishedState.rematchGameId
+          || !next.player_id || !Number.isSafeInteger(next.session_generation)) {
+        throw new Error('The new game could not restore your player identity.');
+      }
+      if (this.state.id !== finishedState.id) return;
+      // Multiple test-harness frames share storage; don't overwrite each other.
+      if (!this.session.testFrame) {
+        this.session.savePlayer(next.game_id, next.player_id, next.session_generation);
+        this.session.name = next.name;
+      }
+      await this.enterGame(next.game_id, next.player_id);
+    } finally {
+      this.rematchJoining = false;
+    }
+  }
+
+  async startRematch() {
+    if (this.rematchStarting || !this.can('START_REMATCH')) return;
+    this.rematchStarting = true;
+    this.screens.setRematchBusy(true);
+    this.showActionError('');
+    const oldGameId = this.state.id;
+    try {
+      await this.repository.startRematch(oldGameId, this.playerId);
+      // The Realtime update also prompts all other devices to follow the lobby.
+      if (this.state.id === oldGameId) {
+        const finished = await this.repository.getState(oldGameId);
+        await this.followRematch(finished);
+      }
+    } catch (error) {
+      this.showActionError(error.message || 'Could not start a new game.');
+      this.requestRefresh();
+    } finally {
+      this.rematchStarting = false;
+      if (this.state.id === oldGameId) this.screens.setRematchBusy(false);
+    }
+  }
+
+  openRecovery() {
+    if (!this.state.id || this.state.status !== 'playing' || this.staleSession) return;
+    this.screens.openRecovery(this.state);
+  }
+
+  async issueRecovery(targetId) {
+    if (this.recoverySaving || !this.state.id || this.state.status !== 'playing'
+      || this.staleSession || !this.state.players.some(player => player.id === targetId)) return;
+    this.recoverySaving = true;
+    this.screens.setRecoveryBusy(true);
+    this.screens.showRecoveryError('');
+    try {
+      const gameId = this.state.id;
+      const token = await this.repository.issueRejoinTicket(gameId, this.playerId, targetId);
+      if (this.state.id !== gameId) return;
+      const target = this.state.players.find(player => player.id === targetId);
+      await this.screens.renderRecoveryQr(this.session.recoveryLink(token), target?.name || 'Player');
+    } catch (error) {
+      this.screens.showRecoveryError(error.message || 'Could not generate a rejoin code.');
+    } finally {
+      this.recoverySaving = false;
+      this.screens.setRecoveryBusy(false);
     }
   }
 
@@ -303,7 +435,9 @@ export class GameController {
     this.finalCreditsGameId = state.id;
     void this.repository.getFinalRoles(state.id).then(roles => {
       if (this.state.id === state.id && this.state.status === 'finished') {
-        this.screens.renderEndgame(state.winner, roles);
+        this.screens.renderEndgame(state.winner, roles, {
+          isHost: state.hostPlayerId === this.playerId
+        });
       }
     }).catch(error => this.showActionError(error.message || 'Could not load final roles.'));
   }
@@ -316,10 +450,12 @@ export class GameController {
         const state = this.state;
         const victim = state.players.find(player => player.id === state.lastMurderedId);
         this.screens.renderMurderReveal(victim?.name || 'A villager',
-          state.decoyQuestion, this.decoyPack?.results || [], state.players, currentStep);
+          state.decoyQuestion, this.decoyPack?.results || [], state.players, currentStep, state.lastNightOutcome);
       } else if (currentStep.screen === 'banishment-screen') {
         const banished = this.state.players.find(player => player.id === this.state.lastBanishedId);
-        this.screens.renderBanishment(banished?.name || 'A player', currentStep);
+        if (!banished) this.screens.renderNoBanishment(currentStep);
+        else this.screens.renderBanishment(banished.name, currentStep,
+          this.state.revealBanishedRole ? this.state.lastBanishedRole : null);
       } else {
         this.screens.renderTimedPresentation(currentStep);
       }
@@ -361,11 +497,12 @@ export class GameController {
         const victim = state.players.find(player => player.id === state.lastMurderedId);
         if (victim?.id === this.playerId) this.screens.showEliminated(true, this.wasHost ? state.players.find(p => p.id === state.hostPlayerId)?.name : null);
         else this.screens.renderMurderReveal(victim?.name || 'A villager',
-          state.decoyQuestion, this.decoyPack?.results || [], state.players);
+          state.decoyQuestion, this.decoyPack?.results || [], state.players, null, state.lastNightOutcome);
       } else {
         const banished = state.players.find(player => player.id === state.lastBanishedId);
         if (banished?.id === this.playerId) this.screens.showEliminated(false, this.wasHost ? state.players.find(p => p.id === state.hostPlayerId)?.name : null);
-        else this.screens.renderBanishment(banished?.name || 'A player');
+        else this.screens.renderBanishment(banished?.name || 'A player', null,
+          state.revealBanishedRole ? state.lastBanishedRole : null);
       }
       this.presentations.hold(remaining);
       return;
@@ -392,6 +529,22 @@ export class GameController {
     } finally {
       this.seerCasting = false;
       this.requestRefresh();
+    }
+  }
+
+  async castProtection(targetId) {
+    if (this.protectionCasting || !targetId || !this.can('CAST_PROTECTION')
+      || this.bodyguardPack?.lastProtectionTargetId === targetId) return;
+    this.protectionCasting = true;
+    this.showActionError('');
+    try {
+      await this.repository.castProtection(this.state.id, this.state.roundNumber, this.playerId, targetId);
+      this.requestRefresh();
+    } catch (error) {
+      this.showActionError(error.message || 'Could not protect that player.');
+    } finally {
+      this.protectionCasting = false;
+      if (this.state.phase === 'night') this.requestRefresh();
     }
   }
 
@@ -452,21 +605,23 @@ export class GameController {
       return;
     }
     if (view.stage === 'night') {
-      this.screens.renderNight(state, { playerId: this.playerId, role: this.playerRole, pack: this.nightPack, casting: this.nightCasting || this.decoyCasting || this.seerCasting, decoyPack: this.decoyPack, seerPack: this.seerPack });
-      this.screens.renderWorkflow(state, { playerId: this.playerId, role: this.playerRole, isHost: this.isHost, pack: this.nightPack, decoyPack: this.decoyPack, seerPack: this.seerPack });
+      this.screens.renderNight(state, { playerId: this.playerId, role: this.playerRole, pack: this.nightPack, casting: this.nightCasting || this.decoyCasting || this.seerCasting || this.protectionCasting, decoyPack: this.decoyPack, seerPack: this.seerPack, bodyguardPack: this.bodyguardPack });
+      this.screens.renderWorkflow(state, { playerId: this.playerId, role: this.playerRole, isHost: this.isHost, pack: this.nightPack, decoyPack: this.decoyPack, seerPack: this.seerPack, bodyguardPack: this.bodyguardPack });
       if (this.nightPoll === null) this.nightPoll = setInterval(() => this.requestRefresh(), 1500);
       return;
     }
     if (view.stage === 'dawn.complete') {
       const victim = state.players.find(player => player.id === state.lastMurderedId);
       this.screens.renderMurderReveal(victim?.name || 'A villager',
-        state.decoyQuestion, this.decoyPack?.results || [], state.players);
+        state.decoyQuestion, this.decoyPack?.results || [], state.players, null, state.lastNightOutcome);
       void this.phaseAdvancer.advance();
       return;
     }
     if (view.stage === 'results.complete') {
       const banished = state.players.find(player => player.id === state.lastBanishedId);
-      this.screens.renderBanishment(banished?.name || 'A player');
+      if (!banished) this.screens.renderNoBanishment();
+      else this.screens.renderBanishment(banished.name, null,
+        state.revealBanishedRole ? state.lastBanishedRole : null);
       void this.phaseAdvancer.advance();
       return;
     }
@@ -489,16 +644,18 @@ export class GameController {
     if (seconds === 0 && state.step === 'discussion' && !this.openingVoting) void this.openDayVoting();
     const voting = this.stateEngine.stage(state, this.playerId) === 'day.voting';
     const active = state.players.filter(player => !player.eliminated_at);
-    const votes = state.votes.filter(vote => vote.round_number === state.roundNumber);
+    const runoff = state.runoffEnabled && state.voteStage === 'runoff';
+    const votes = (runoff ? state.runoffVotes : state.votes)
+      .filter(vote => vote.round_number === state.roundNumber);
     const myVote = votes.find(vote => vote.voter_id === this.playerId);
     if (voting && votes.length === active.length) {
       this.stopDayTimer();
       const target = state.players.find(player => player.id === myVote?.target_id);
-      this.screens.renderMarquee(target?.name || (this.isHost ? 'Votes in' : 'Spectating'), this.isHost, this.finishing);
+      this.screens.renderMarquee(target?.name || 'Votes in', this.isHost && !runoff, this.finishing);
       return;
     }
     // Avoid rebuilding the select list on every clock tick.
-    const signature = state.roundNumber + ':' + votes.length + ':' + Boolean(myVote);
+    const signature = state.roundNumber + ':' + state.voteStage + ':' + votes.length + ':' + Boolean(myVote);
     if (this.dayVotingOpen !== voting || this.dayVoteSignature !== signature || document.getElementById('day-screen').hidden) {
       this.screens.renderDay(state, { playerId: this.playerId, isHost: this.isHost, voting, myVote, casting: this.casting, endingDiscussion: this.endingDiscussion });
       this.dayVotingOpen = voting;
@@ -544,7 +701,11 @@ export class GameController {
     this.casting = true;
     this.showActionError('');
     try {
-      await this.repository.castVote(this.state.id, this.state.roundNumber, this.playerId, targetId);
+      if (this.state.runoffEnabled && this.state.voteStage === 'runoff') {
+        await this.repository.castRunoffVote(this.state.id, this.state.roundNumber, this.playerId, targetId);
+      } else {
+        await this.repository.castVote(this.state.id, this.state.roundNumber, this.playerId, targetId);
+      }
       this.requestRefresh();
     } catch (error) {
       this.showActionError(error.message || 'Could not cast vote.');
@@ -590,6 +751,42 @@ export class GameController {
       this.requestRefresh();
     } catch (error) {
       this.showActionError(error.message || 'Could not change the Seer count.');
+    }
+  }
+
+  async changeBodyguards(delta) {
+    if (this.eliminated || !this.isHost || this.starting || this.state.status !== 'lobby') return;
+    const next = this.engine.nextBodyguardCount(this.state, delta);
+    if (next === this.state.bodyguardCount) return;
+    try {
+      await this.repository.setBodyguardCount(this.state.id, this.playerId, next);
+      this.requestRefresh();
+    } catch (error) {
+      this.showActionError(error.message || 'Could not change the Bodyguard count.');
+    }
+  }
+
+  async changeRevealBanishedRole(enabled) {
+    if (this.eliminated || !this.isHost || this.starting || this.revealBanishedRoleSaving
+        || this.state.status !== 'lobby' || enabled === this.state.revealBanishedRole) return;
+    this.revealBanishedRoleSaving = true;
+    this.pendingBanishedRoleReveal = enabled;
+    this.renderLobby();
+    this.showActionError('');
+    try {
+      await this.repository.setRevealBanishedRole(this.state.id, this.playerId, enabled);
+      // Reflect the confirmed setting immediately; Realtime will also refresh it.
+      if (this.state.status === 'lobby') {
+        this.state = this.state.with({ revealBanishedRole: enabled });
+      }
+      this.requestRefresh();
+    } catch (error) {
+      this.showActionError(error.message || 'Could not update the role reveal setting.');
+      this.requestRefresh();
+    } finally {
+      this.revealBanishedRoleSaving = false;
+      this.pendingBanishedRoleReveal = null;
+      if (this.state.status === 'lobby') this.renderLobby();
     }
   }
 

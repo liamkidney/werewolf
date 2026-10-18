@@ -69,6 +69,11 @@ export class StateEngine {
   // Command eligibility is evaluated in one place; the repository remains
   // responsible for transactional enforcement against concurrent clients.
   can(state, command, { playerId = null, isHost = false, role = null, now = Date.now() } = {}) {
+    // Rematches create a fresh game without altering the finished phase.
+    if (command === 'START_REMATCH') {
+      return state.status === 'finished' && isHost
+        && state.hostPlayerId === playerId && !state.rematchGameId;
+    }
     const stage = this.stage(state, playerId, now);
     if (stage === 'finished' || stage === 'eliminated') return false;
     switch (command) {
@@ -87,6 +92,7 @@ export class StateEngine {
       case 'CAST_NIGHT_VOTE': return stage === 'night' && this.roles.hasAction(role, 'kill');
       case 'CAST_DECOY_VOTE': return stage === 'night' && this.roles.hasAction(role, 'decoy');
       case 'CAST_SEER_INVESTIGATION': return stage === 'night' && this.roles.hasAction(role, 'inspect');
+      case 'CAST_PROTECTION': return stage === 'night' && this.roles.hasAction(role, 'protect');
       default: return false;
     }
   }

@@ -1,7 +1,6 @@
 import { GameController } from './src/game-controller.js';
 import { GameRepository } from './src/game-repository.js';
 import { supabaseClient } from './src/supabase-client.js';
-
 const game = new GameController({
   repository: new GameRepository(supabaseClient)
 });

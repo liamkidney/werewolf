@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0B1926">
   <meta name="description" content="Werewolf — a party game of deception and deduction.">
+  <meta name="referrer" content="no-referrer">
   <title>Werewolf</title>
   <link rel="icon" href="./favicon.ico" sizes="any">
   <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png">
@@ -14,6 +15,7 @@
 </head>
 <body>
   <main class="screen">
+    <button id="game-info-button" class="game-info-button" type="button" aria-label="Game information" aria-haspopup="dialog" aria-controls="game-info-dialog" title="Game information" hidden>i</button>
     <section class="hero" aria-label="Werewolf">
       <div class="art" aria-hidden="true"><img src="./images/werewolf-night-dark.png" alt=""></div>
       <h1>WEREWOLF</h1>
@@ -46,7 +48,15 @@
         <div class="role-config">
           <div class="role-row"><label for="werewolf-count">Werewolves</label><div class="stepper"><button id="wolf-minus" type="button" aria-label="Fewer werewolves">−</button><output id="werewolf-count" aria-live="polite">2</output><button id="wolf-plus" type="button" aria-label="More werewolves">+</button></div></div>
           <div class="role-row"><label for="seer-count">Seers</label><div class="stepper"><button id="seer-minus" type="button" aria-label="Fewer seers">−</button><output id="seer-count" aria-live="polite">1</output><button id="seer-plus" type="button" aria-label="More seers">+</button></div></div>
+          <div class="role-row"><label for="bodyguard-count">Bodyguards</label><div class="stepper"><button id="bodyguard-minus" type="button" aria-label="Fewer bodyguards">−</button><output id="bodyguard-count" aria-live="polite">0</output><button id="bodyguard-plus" type="button" aria-label="More bodyguards">+</button></div></div>
         </div>
+        <label class="reveal-role-setting" for="reveal-banished-role">
+          <span class="reveal-role-copy">
+            <strong>Reveal banished roles</strong>
+            <small>Show each banished player's role to everyone.</small>
+          </span>
+          <input id="reveal-banished-role" type="checkbox">
+        </label>
         <button id="start-game" type="button" disabled>Start Game</button>
       </div>
     </section>
@@ -88,6 +98,11 @@
           <ul id="seer-history-list"></ul>
         </div>
       </div>
+      <div id="night-bodyguard-controls" class="night-action-controls" hidden>
+        <h3>Choose someone to protect</h3>
+        <div id="bodyguard-targets" class="night-targets" role="radiogroup" aria-label="Choose a player to protect"></div>
+        <p id="bodyguard-progress" class="muted"></p>
+      </div>
       <div id="night-wolf-controls" class="night-action-controls" hidden>
         <div id="night-wolf-roster">
           <h3>Werewolves</h3>
@@ -101,7 +116,7 @@
     <section id="suspense-screen" class="banishment-screen timed-presentation-screen" hidden aria-live="polite">
       <div class="phase-art phase-art-night" aria-hidden="true"><img src="./images/werewolf-night-dark.png" alt=""></div>
       <p class="lobby-eyebrow">NIGHT HAS ENDED</p>
-      <h2>The werewolves have struck</h2>
+      <h2 id="dawn-suspense-heading">Dawn approaches</h2>
       <div class="presentation-progress" role="progressbar" aria-label="Time until next screen" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
         <div class="presentation-progress-fill"></div>
       </div>
@@ -119,7 +134,7 @@
       <div class="phase-art phase-art-day" aria-hidden="true"><img src="./images/werewolf-day.png" alt=""></div>
       <p class="lobby-eyebrow">DAWN</p>
       <h2 id="dawn-victim"></h2>
-      <p>Was murdered during the night.</p>
+      <p id="dawn-outcome-detail">Was murdered during the night.</p>
       <div id="dawn-decoy" class="decoy-results" hidden>
         <p class="lobby-eyebrow">VILLAGERS' VOTE</p>
         <h3 id="dawn-decoy-question"></h3>
@@ -139,6 +154,10 @@
           <p class="endgame-credits-intro">STARRING</p>
           <div id="endgame-roles" class="endgame-credits-list"></div>
         </div>
+      </div>
+      <div class="rematch-actions">
+        <button id="start-rematch" type="button" hidden>New Game</button>
+        <p id="rematch-waiting" class="muted" hidden>Waiting for the host to start a new game…</p>
       </div>
     </section>
     <section id="day-screen" class="day-screen" hidden>
@@ -164,13 +183,56 @@
       <div class="phase-art phase-art-night murder-art" aria-hidden="true" hidden><img src="./images/werewolf-night-dark.png" alt=""></div>
       <p id="elimination-heading" class="lobby-eyebrow">BANISHED</p>
       <h2 id="banished-name"></h2>
+      <p id="banishment-role" class="banishment-role" hidden></p>
       <p id="banishment-description"></p>
       <div class="presentation-progress" role="progressbar" aria-label="Time until night begins" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
         <div class="presentation-progress-fill"></div>
       </div>
     </section>
+    <section id="session-transferred" class="session-transferred" hidden>
+      <p class="lobby-eyebrow">SESSION MOVED</p>
+      <h2>This player rejoined on another device.</h2>
+      <p>This phone can no longer play as that person.</p>
+      <a href="./">Return home</a>
+    </section>
     <footer class="site-footer"><a id="game-footer" href="./" hidden>New Game</a><span class="version-label">Version __BUILD_VERSION__</span></footer>
     <p id="connection-error" class="error" role="alert" hidden></p>
   </main>
+  <dialog id="game-info-dialog" class="game-info-dialog" aria-labelledby="game-info-title">
+    <div class="game-info-header">
+      <h2 id="game-info-title">Village information</h2>
+      <button id="game-info-close" type="button" aria-label="Close game information">×</button>
+    </div>
+    <section class="game-info-section" aria-labelledby="game-info-roles-title">
+      <h3 id="game-info-roles-title">At the start</h3>
+      <p id="game-info-total" class="game-info-total"></p>
+      <ul id="game-info-roles" class="game-info-roles"></ul>
+    </section>
+    <section class="game-info-section" aria-labelledby="game-info-banished-title">
+      <h3 id="game-info-banished-title">Banished</h3>
+      <ul id="game-info-banished" class="game-info-names"></ul>
+    </section>
+    <section class="game-info-section" aria-labelledby="game-info-murdered-title">
+      <h3 id="game-info-murdered-title">Murdered</h3>
+      <ul id="game-info-murdered" class="game-info-names"></ul>
+    </section>
+    <div class="rejoin-action"><button id="help-rejoin" type="button" hidden>Help a player rejoin</button></div>
+  </dialog>
+  <dialog id="recovery-dialog" class="game-info-dialog recovery-dialog" aria-labelledby="recovery-title">
+    <div class="game-info-header">
+      <h2 id="recovery-title">Help player rejoin</h2>
+      <button id="recovery-close" type="button" aria-label="Close rejoin code">×</button>
+    </div>
+    <p class="recovery-description">Choose the player whose phone is unavailable, then let them scan the code on their new phone.</p>
+    <label for="recovery-player">Player</label>
+    <select id="recovery-player"></select>
+    <button id="recovery-generate" type="button" disabled>Generate QR code</button>
+    <p id="recovery-error" class="error" role="alert" hidden></p>
+    <div id="recovery-result" hidden>
+      <div class="recovery-qr-wrap"><canvas id="recovery-qr" role="img" aria-label="QR code to recover this player's game identity"></canvas></div>
+      <p id="recovery-result-name"></p>
+      <p class="recovery-expires">Single-use · Expires after 2 minutes</p>
+    </div>
+  </dialog>
 </body>
 </html>

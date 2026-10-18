@@ -14,6 +14,12 @@ export const DEFAULT_RULES = Object.freeze({
       team: 'village',
       actions: Object.freeze(['inspect'])
     }),
+    bodyguard: Object.freeze({
+      label: 'Bodyguard',
+      description: 'You are the Bodyguard. Protect one living player each night, but not the same player on consecutive nights.',
+      team: 'village',
+      actions: Object.freeze(['protect'])
+    }),
     werewolf: Object.freeze({
       label: 'Werewolf',
       description: 'You are a werewolf. Keep your identity hidden.',
@@ -24,6 +30,7 @@ export const DEFAULT_RULES = Object.freeze({
   nightActions: Object.freeze({
     kill: Object.freeze({ role: 'werewolf', targetRole: 'village', consensus: 'unanimous', effect: 'eliminate' }),
     decoy: Object.freeze({ role: 'villager', targetRole: 'any', consensus: 'individual', effect: 'answer_question' }),
-    inspect: Object.freeze({ role: 'seer', targetRole: 'any', consensus: 'individual', effect: 'reveal_team' })
+    inspect: Object.freeze({ role: 'seer', targetRole: 'any', consensus: 'individual', effect: 'reveal_team' }),
+    protect: Object.freeze({ role: 'bodyguard', targetRole: 'any', consensus: 'individual', effect: 'prevent_elimination' })
   })
 });

@@ -380,6 +380,14 @@ body.light-screen:has(#role-screen:not([hidden])){
 body.light-screen,body.light-screen .screen{background:var(--phase-bg);color:var(--phase-ink)}
 body.light-screen .lobby-eyebrow{color:var(--phase-muted);font-size:.76rem;letter-spacing:.2em}
 body.light-screen .day-screen h2,
+/* Optional public identity announcement when the host enables role reveals. */
+body.light-screen #banishment-screen .banishment-role{
+  margin:-6px 0 0;
+  color:var(--phase-accent);
+  font:600 clamp(1.35rem,5.5vw,1.8rem)/1.2 'Cormorant Garamond',Georgia,serif;
+  letter-spacing:.02em;
+  text-align:center;
+}
 body.light-screen .banishment-screen h2,
 body.light-screen .guest-intro h2,
 body.light-screen .join-heading{
@@ -465,6 +473,39 @@ body.light-screen .lobby .player-list li+li{
 body.light-screen .lobby .player-list .player-dot{display:none}
 body.light-screen .lobby #host-controls{gap:12px;margin-top:0}
 body.light-screen .lobby .role-config{border-top:1px solid var(--phase-line);padding-top:12px}
+body.light-screen .lobby .reveal-role-setting{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding:12px 0;
+  border-top:1px solid var(--phase-line);
+  cursor:pointer;
+  color:var(--phase-ink);
+}
+body.light-screen .lobby .reveal-role-copy{display:grid;gap:4px;min-width:0}
+body.light-screen .lobby .reveal-role-copy strong{font-size:.94rem;font-weight:700}
+body.light-screen .lobby .reveal-role-copy small{
+  color:var(--phase-muted);
+  font-size:.78rem;
+  line-height:1.4;
+  font-weight:400;
+}
+body.light-screen .lobby .reveal-role-setting input[type="checkbox"]{
+  flex:none;
+  width:23px;
+  height:23px;
+  min-height:23px;
+  margin:0;
+  padding:0;
+  border:0;
+  border-radius:4px;
+  accent-color:var(--action-primary);
+  cursor:pointer;
+}
+body.light-screen .lobby .reveal-role-setting input:disabled{cursor:not-allowed}
+body.light-screen .lobby .reveal-role-setting:focus-within{outline:2px solid var(--action-primary);outline-offset:4px}
+
 body.light-screen .lobby .stepper{background:transparent;border:1px solid var(--phase-line)}
 body.light-screen .lobby .stepper button{width:40px;min-height:40px}
 body.light-screen .lobby .stepper output{min-width:34px;padding:8px 4px}
@@ -635,4 +676,195 @@ body.light-screen #seer-result-screen #seer-result-verdict{
 }
 body.light-screen #seer-result-screen #seer-result-verdict.not-werewolf{
   color:#d7e1de;
+}
+
+/* Public game information: the same restrained gothic palette as role reveal.
+   Keep the control subdued; its hit area remains comfortable on touch screens. */
+.game-info-button{
+  position:fixed;
+  top:calc(env(safe-area-inset-top) + 12px);
+  right:max(12px,calc((100vw - 460px)/2 + 12px));
+  z-index:12;
+  display:grid;
+  place-items:center;
+  width:40px;
+  height:40px;
+  min-height:40px;
+  padding:0;
+  border:1px solid rgba(232,229,221,.25);
+  border-radius:50%;
+  background:rgba(11,23,35,.14);
+  color:rgba(232,229,221,.84);
+  box-shadow:none;
+  font:600 1.25rem 'Cormorant Garamond',Georgia,serif;
+  backdrop-filter:blur(3px);
+  -webkit-backdrop-filter:blur(3px);
+}
+@media(hover:hover){
+  .game-info-button:not(:disabled):hover{
+    background:rgba(11,23,35,.28);
+    border-color:rgba(232,229,221,.45);
+    filter:none;
+  }
+}
+.game-info-button:focus-visible{
+  outline:2px solid rgba(232,229,221,.7);
+  outline-offset:3px;
+}
+
+.game-info-dialog{
+  --info-bg:#111821;
+  --info-ink:#f0ece4;
+  --info-secondary:#b8b1a7;
+  --info-faint:#9c978f;
+  --info-accent:#a64150;
+  --info-line:rgba(166,65,80,.76);
+  width:min(420px,calc(100vw - 32px));
+  max-height:min(85dvh,720px);
+  margin:auto;
+  padding:24px 28px 28px;
+  overflow-y:auto;
+  border:1px solid var(--info-accent);
+  border-radius:17px;
+  background:var(--info-bg);
+  color:var(--info-ink);
+  box-shadow:0 20px 60px rgba(0,0,0,.5);
+  font-family:Arial,Helvetica,sans-serif;
+}
+.game-info-dialog::backdrop{background:rgba(7,12,19,.62)}
+.game-info-header{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:8px;
+  padding-bottom:22px;
+}
+.game-info-header h2{
+  min-width:0;
+  margin:0;
+  font:600 clamp(2rem,7vw,2.65rem)/1.02 'Cormorant Garamond',Georgia,serif;
+  letter-spacing:.01em;
+  color:var(--info-ink);
+}
+.game-info-header button{
+  flex:none;
+  width:40px;
+  height:40px;
+  min-height:40px;
+  padding:0;
+  border:0;
+  border-radius:50%;
+  background:transparent;
+  color:var(--info-ink);
+  box-shadow:none;
+  font:400 2rem/1 Arial,Helvetica,sans-serif;
+}
+@media(hover:hover){
+  .game-info-header button:not(:disabled):hover{
+    background:rgba(255,255,255,.05);
+    filter:none;
+  }
+}
+.game-info-header button:focus-visible{
+  outline:2px solid var(--info-secondary);
+  outline-offset:2px;
+}
+.game-info-section{
+  margin:0;
+  padding:22px 0 0;
+  border-top:1px solid var(--info-line);
+}
+.game-info-section + .game-info-section{
+  margin-top:23px;
+}
+.game-info-section h3{
+  margin:0 0 13px;
+  color:var(--info-accent);
+  font-size:.82rem;
+  font-weight:700;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+}
+.game-info-total{
+  margin:0 0 15px;
+  color:var(--info-secondary);
+  font:500 1.25rem/1.2 'Cormorant Garamond',Georgia,serif;
+}
+.game-info-roles,.game-info-names{
+  list-style:none;
+  margin:0;
+  padding:0;
+}
+.game-info-roles{display:grid;gap:9px}
+.game-info-roles li{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  color:var(--info-ink);
+  font:500 1.5rem/1.15 'Cormorant Garamond',Georgia,serif;
+}
+.game-info-role-icon{
+  width:21px;
+  height:21px;
+  flex:none;
+  color:var(--info-secondary);
+}
+.game-info-role-label{flex:1}
+.game-info-roles strong{
+  margin-left:auto;
+  font-weight:600;
+  font-variant-numeric:tabular-nums;
+}
+.game-info-names{display:grid;gap:8px}
+.game-info-names li{
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:none;
+  color:var(--info-ink);
+  font:500 1.32rem/1.22 'Cormorant Garamond',Georgia,serif;
+  overflow-wrap:anywhere;
+}
+.game-info-names .game-info-empty{
+  color:var(--info-faint);
+  font-style:italic;
+}
+
+/* Rejoin identity transfer uses the existing restrained game-info dialogue. */
+.rejoin-action{margin-top:24px;padding-top:18px;border-top:1px solid var(--info-line)}
+.game-info-dialog .rejoin-action button,
+.game-info-dialog #recovery-generate{
+  min-height:48px;width:100%;border:1px solid var(--info-accent);
+  border-radius:8px;background:#54242c;color:var(--info-ink);
+  font:600 1rem Arial,Helvetica,sans-serif;
+}
+.recovery-description{color:var(--info-secondary);line-height:1.5;margin:0 0 22px}
+.recovery-dialog label{display:block;font-size:.8rem;font-weight:700;letter-spacing:.12em;
+  color:var(--info-secondary);text-transform:uppercase;margin-bottom:9px}
+.recovery-dialog select{
+  display:block;width:100%;min-height:50px;padding:10px 13px;margin-bottom:14px;
+  border:1px solid #78646a;border-radius:8px;
+  background:var(--info-bg);color:var(--info-ink);font-size:1rem;
+}
+.recovery-qr-wrap{display:grid;place-items:center;width:max-content;max-width:100%;
+  margin:20px auto 12px;padding:12px;border-radius:8px;background:#fff}
+.recovery-qr-wrap canvas{display:block;max-width:100%;height:auto}
+#recovery-result-name{text-align:center;font-size:1.1rem;color:var(--info-ink)}
+.recovery-expires{text-align:center;color:var(--info-secondary);font-size:.82rem}
+.recovery-dialog .error{margin-top:15px}
+.session-transferred{text-align:center;display:grid;gap:14px;margin-top:14vh;color:#e9e6dd}
+.session-transferred h2{font:600 2rem/1.1 'Cormorant Garamond',Georgia,serif}
+.session-transferred p{line-height:1.45}
+.session-transferred a{color:inherit;text-decoration:underline}
+
+/* Host starts the rematch after endgame credits; everyone else waits. */
+body.light-screen #endgame-screen .rematch-actions{
+  width:100%;display:flex;justify-content:center;align-items:center;
+  flex-direction:column;gap:12px;padding:8px 0 20px;text-align:center;
+}
+body.light-screen #endgame-screen .rematch-actions button{
+  width:min(100%,320px);min-height:52px;border-radius:10px;
+}
+body.light-screen #endgame-screen .rematch-actions .muted{
+  max-width:340px;line-height:1.45;
 }

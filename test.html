@@ -8,12 +8,13 @@
 </style>
 </head>
 <body>
-<header><div><h1>Werewolf · Test console</h1><p>Six independent players, one real Supabase game. Development only.</p></div><div class="tools"><button id="create">Create six-player game</button><a href="./">Normal game ↗</a></div></header>
+<header><div><h1>Werewolf · Test console</h1><p>Six independent players, one real Supabase game. Development only.</p></div><div class="tools"><button id="create">Create six-player game</button><a id="normal-game" href="./">Normal game ↗</a></div></header>
 <div id="status" role="status">Create a game to begin.</div><div id="game-link"></div>
 <div id="grid" class="grid"></div>
 <script type="module">
 import { GameRepository } from './src/game-repository.js';
 import { supabaseClient } from './src/supabase-client.js';
+import { gameUrl } from './src/test-console-urls.js';
 const names=['Alice','Ben','Charlie','Diana','Ethan','Fiona'];
 const repo=new GameRepository(supabaseClient);
 const grid=document.getElementById('grid'),status=document.getElementById('status'),button=document.getElementById('create'),link=document.getElementById('game-link');
@@ -29,7 +30,7 @@ async function create(){
   await repo.claimHost(gameId,ids[0]);
   // Two wolves by default; use the host's ordinary controls to adjust.
   const gameLink=document.createElement('a');
-  gameLink.href='./?game='+encodeURIComponent(gameId);
+  gameLink.href=gameUrl({gameId});
   gameLink.textContent='Game '+gameId+' · open separately';
   gameLink.target='_blank';gameLink.rel='noopener';
   link.append(gameLink);
@@ -42,7 +43,7 @@ async function create(){
    const frame=document.createElement('iframe');
    frame.title=names[i]+' game screen';
    frame.loading='eager';
-   frame.src='./?game='+encodeURIComponent(gameId)+'&test_player='+encodeURIComponent(ids[i])+'&test_host='+(i===0?'1':'0');
+   frame.src=gameUrl({gameId,playerId:ids[i],isHost:i===0});
    card.append(head,frame);grid.append(card);
   }
   setStatus('Ready. Use Alice’s screen to start the game; all six screens are interactive. New game resets the console.');

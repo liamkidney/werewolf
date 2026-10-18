@@ -1,6 +1,6 @@
 // Immutable snapshot of persisted game data. No browser or database dependencies.
 export class GameState {
-  constructor({ id = null, status = 'lobby', phase = 'reveal', step = null, roundNumber = 1, werewolfCount = 1, seerCount = 0, players = [], phaseStartedAt = null, dayDurationSeconds = 120, discussionEndedAt = null, lastBanishedId = null, lastBanishedRound = null, lastMurderedId = null, lastMurderedRound = null, hostPlayerId = null, decoyQuestion = null, winner = null, votes = [] } = {}) {
+  constructor({ id = null, status = 'lobby', phase = 'reveal', step = null, roundNumber = 1, werewolfCount = 1, seerCount = 0, bodyguardCount = 0, runoffEnabled = false, voteStage = 'initial', runoffCandidates = [], runoffVotes = [], revealBanishedRole = false, lastBanishedRole = null, players = [], phaseStartedAt = null, dayDurationSeconds = 120, discussionEndedAt = null, lastBanishedId = null, lastBanishedRound = null, lastMurderedId = null, lastMurderedRound = null, lastNightOutcome = null, hostPlayerId = null, decoyQuestion = null, winner = null, rematchGameId = null, votes = [] } = {}) {
     this.id = id;
     this.status = status;
     this.phase = phase;
@@ -8,6 +8,13 @@ export class GameState {
     this.roundNumber = roundNumber;
     this.werewolfCount = werewolfCount;
     this.seerCount = seerCount;
+    this.bodyguardCount = bodyguardCount;
+    this.runoffEnabled = runoffEnabled;
+    this.voteStage = voteStage;
+    this.runoffCandidates = Object.freeze([...runoffCandidates]);
+    this.runoffVotes = Object.freeze(runoffVotes.map(vote => Object.freeze({ ...vote })));
+    this.revealBanishedRole = revealBanishedRole;
+    this.lastBanishedRole = lastBanishedRole;
     this.phaseStartedAt = phaseStartedAt;
     this.dayDurationSeconds = dayDurationSeconds;
     this.discussionEndedAt = discussionEndedAt;
@@ -15,9 +22,11 @@ export class GameState {
     this.lastBanishedRound = lastBanishedRound;
     this.lastMurderedId = lastMurderedId;
     this.lastMurderedRound = lastMurderedRound;
+    this.lastNightOutcome = lastNightOutcome;
     this.hostPlayerId = hostPlayerId;
     this.decoyQuestion = decoyQuestion;
     this.winner = winner;
+    this.rematchGameId = rematchGameId;
     this.votes = Object.freeze(votes.map(vote => Object.freeze({ ...vote })));
     this.players = Object.freeze(players.map(player => Object.freeze({ ...player })));
     Object.freeze(this);

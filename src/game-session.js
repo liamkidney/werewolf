@@ -5,7 +5,8 @@ export class GameSession {
     this.url = url;
     this.browserHistory = browserHistory;
     this.testFrame = new URLSearchParams(url.search).has('test_player');
-    this.prefix = 'werewolf:' + (url.pathname.includes('/dev/') ? 'dev' : 'production') + ':';
+    const environment = url.pathname.includes('/dev/') ? 'dev' : 'production';
+    this.prefix = 'werewolf:' + environment + ':';
   }
 
   key(suffix) { return this.prefix + suffix; }
@@ -17,13 +18,30 @@ export class GameSession {
     return params.get('game') || (params.has('resume') && !this.testFrame ? this.activeGame : null);
   }
   playerId(gameId) { return this.storage.getItem(this.key('player:' + gameId)); }
-  savePlayer(gameId, playerId) {
+  playerGeneration(gameId) {
+    const value = Number(this.storage.getItem(this.key('generation:' + gameId)) || 0);
+    return Number.isSafeInteger(value) && value >= 0 ? value : 0;
+  }
+  savePlayer(gameId, playerId, generation = 0) {
     this.storage.setItem(this.key('player:' + gameId), playerId);
+    this.storage.setItem(this.key('generation:' + gameId), String(generation));
+  }
+  get recoveryToken() {
+    return new URLSearchParams(this.url.search).get('recover');
+  }
+  cleanUrl() {
+    return this.url.pathname + this.url.hash;
+  }
+  clearRecoveryUrl() { this.browserHistory.replaceState(null, '', this.cleanUrl()); }
+  recoveryLink(token) {
+    const url = new URL(this.url.pathname, this.url.href);
+    url.searchParams.set('recover', token);
+    return url.href;
   }
   enter(gameId) {
     if (this.testFrame) return;
     this.storage.setItem(this.key('active-game'), gameId);
-    this.browserHistory.replaceState(null, '', this.url.pathname + this.url.hash);
+    this.browserHistory.replaceState(null, '', this.cleanUrl());
   }
   clearActive(gameId) {
     if (this.activeGame === gameId) this.storage.removeItem(this.key('active-game'));

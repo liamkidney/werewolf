@@ -55,3 +55,12 @@ test('clearing a finished game does not remove another active game', () => {
   session.clearActive('abc');
   assert.equal(session.activeGame, null);
 });
+
+test('invitation ignores unrelated query parameters and keeps the game ID', () => {
+  const context = fixture('/werewolf/dev/', '?source=invite&game=abc');
+  assert.equal(context.session.requestedGame, 'abc');
+  assert.equal(context.session.invitation('xyz'),
+    'https://example.com/werewolf/dev/?game=xyz');
+  context.session.enter('abc');
+  assert.equal(context.navigation, '/werewolf/dev/');
+});

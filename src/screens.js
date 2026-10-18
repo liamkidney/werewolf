@@ -1,8 +1,16 @@
 import { ROLES } from './role-registry.js';
+import { getGameInfo } from './game-info.js';
 import { workflowStatus } from './workflow-status.js';
 import QRCode from 'qrcode';
 
 const $ = id => document.getElementById(id);
+
+const GAME_INFO_ICONS = {
+  villager: '<circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2"/><path d="M17 5a3 3 0 0 1 0 6M17 14a5 5 0 0 1 4 5v1"/>',
+  seer: '<path d="M2 12s3.7-6 10-6 10 6 10 6-3.7 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
+  bodyguard: '<path d="M12 2 4 5v6c0 5 3 9 8 11 5-2 8-6 8-11V5l-8-3Z"/><path d="m8 12 3 3 5-6"/>',
+  werewolf: '<path d="m4 3 5 4h6l5-4-1 11-3 5-4 3-4-3-3-5Z"/><path d="m8 13 2 1m6-1-2 1m-4 4 2 1 2-1"/>'
+};
 
 export class Screens {
   constructor() {
@@ -40,10 +48,116 @@ export class Screens {
     document.querySelector('.hero').hidden = true;
     this.form.hidden = true;
     $('resume-game').hidden = true;
-    $('game-footer').hidden = false;
+    $('game-footer').hidden = id === 'endgame-screen';
     $('role-reveal').classList.remove('revealed');
     $('role-reveal').querySelector('.role-secret').setAttribute('aria-hidden', 'true');
-    for (const screen of ['lobby', 'role-screen', 'day-screen', 'night-screen', 'dawn-screen', 'endgame-screen', 'suspense-screen', 'seer-result-screen', 'marquee-screen', 'banishment-screen']) $(screen).hidden = screen !== id;
+    for (const screen of ['lobby', 'role-screen', 'day-screen', 'night-screen', 'dawn-screen', 'endgame-screen', 'suspense-screen', 'seer-result-screen', 'marquee-screen', 'banishment-screen', 'session-transferred']) $(screen).hidden = screen !== id;
+  }
+
+  showSessionTransferred() {
+    this.showScreen('session-transferred');
+    $('game-info-button').hidden = true;
+    const infoDialog = $('game-info-dialog');
+    if (infoDialog.open) infoDialog.close();
+    const recoveryDialog = $('recovery-dialog');
+    if (recoveryDialog.open) recoveryDialog.close();
+  }
+
+  openRecovery(state) {
+    const picker = $('recovery-player');
+    picker.replaceChildren();
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Choose a player';
+    picker.append(placeholder);
+    for (const player of state.players) {
+      const option = document.createElement('option');
+      option.value = player.id;
+      option.textContent = player.name;
+      picker.append(option);
+    }
+    picker.value = '';
+    $('recovery-result').hidden = true;
+    $('recovery-generate').disabled = true;
+    this.showRecoveryError('');
+    $('recovery-dialog').showModal();
+  }
+
+  setRecoveryBusy(busy) {
+    $('recovery-generate').disabled = busy || !$('recovery-player').value;
+    $('recovery-generate').textContent = busy ? 'Generating…' : 'Generate QR code';
+  }
+
+  showRecoveryError(message) {
+    $('recovery-error').textContent = message;
+    $('recovery-error').hidden = !message;
+  }
+
+  async renderRecoveryQr(url, name) {
+    await QRCode.toCanvas($('recovery-qr'), url, {
+      width: 240, margin: 2, color: { dark: '#111d2c', light: '#ffffff' }
+    });
+    $('recovery-result-name').textContent = 'Scan to rejoin as ' + name;
+    $('recovery-result').hidden = false;
+  }
+
+  renderGameInfo(state) {
+    const button = $('game-info-button');
+    const dialog = $('game-info-dialog');
+    button.hidden = state.status !== 'playing' && state.status !== 'finished';
+    $('help-rejoin').hidden = state.status !== 'playing';
+    if (button.hidden) {
+      if (dialog.open) dialog.close();
+      return;
+    }
+
+    const info = getGameInfo(state);
+    $('game-info-total').textContent = info.total + (info.total === 1 ? ' player' : ' players');
+
+    const rolesList = $('game-info-roles');
+    rolesList.replaceChildren();
+    for (const { role, count } of info.roles) {
+      const item = document.createElement('li');
+      const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      icon.classList.add('game-info-role-icon');
+      icon.setAttribute('viewBox', '0 0 24 24');
+      icon.setAttribute('fill', 'none');
+      icon.setAttribute('stroke', 'currentColor');
+      icon.setAttribute('stroke-width', '1.7');
+      icon.setAttribute('stroke-linejoin', 'round');
+      icon.setAttribute('stroke-linecap', 'round');
+      icon.setAttribute('aria-hidden', 'true');
+      icon.innerHTML = GAME_INFO_ICONS[role] || '';
+      const name = document.createElement('span');
+      const number = document.createElement('strong');
+      const singular = ROLES.label(role);
+      name.className = 'game-info-role-label';
+      name.textContent = count === 1 ? singular
+        : role === 'werewolf' ? 'Werewolves' : singular + 's';
+      number.textContent = String(count);
+      item.append(icon, name, number);
+      rolesList.append(item);
+    }
+
+    const renderNames = (id, titleId, title, names) => {
+      $(titleId).textContent = title + ' (' + names.length + ')';
+      const list = $(id);
+      list.replaceChildren();
+      if (!names.length) {
+        const empty = document.createElement('li');
+        empty.className = 'game-info-empty';
+        empty.textContent = 'None yet';
+        list.append(empty);
+        return;
+      }
+      for (const name of names) {
+        const item = document.createElement('li');
+        item.textContent = name;
+        list.append(item);
+      }
+    };
+    renderNames('game-info-banished', 'game-info-banished-title', 'Banished', info.banished);
+    renderNames('game-info-murdered', 'game-info-murdered-title', 'Murdered', info.murdered);
   }
 
   renderWorkflow(state, context = {}) {
@@ -87,7 +201,7 @@ export class Screens {
     $('invite-link').value = inviteUrl;
   }
 
-  renderLobby(state, { isHost, playerId, starting, canStart }) {
+  renderLobby(state, { isHost, playerId, starting, canStart, savingReveal = false }) {
     const list = $('player-list');
     list.replaceChildren();
     state.players.forEach((player, index) => {
@@ -105,12 +219,17 @@ export class Screens {
     $('lobby-message').textContent = count + (count === 1 ? ' player joined' : ' players joined');
     $('werewolf-count').textContent = state.werewolfCount;
     $('seer-count').textContent = state.seerCount ?? 0;
-    $('minimum-label').textContent = 'Minimum ' + Math.max(3, state.werewolfCount + (state.seerCount ?? 0) + 1);
+    $('bodyguard-count').textContent = state.bodyguardCount ?? 0;
+    $('reveal-banished-role').checked = !!state.revealBanishedRole;
+    $('reveal-banished-role').disabled = !isHost || starting || savingReveal || state.status !== 'lobby';
+    $('minimum-label').textContent = 'Minimum ' + Math.max(3, state.werewolfCount + (state.seerCount ?? 0) + (state.bodyguardCount ?? 0) + 1);
     $('wolf-minus').disabled = starting || state.werewolfCount <= 1 || state.status !== 'lobby';
     $('wolf-plus').disabled = starting || state.werewolfCount >= 50 || state.status !== 'lobby';
     $('seer-minus').disabled = starting || (state.seerCount ?? 0) <= 0 || state.status !== 'lobby';
     $('seer-plus').disabled = starting || (state.seerCount ?? 0) >= 50 || state.status !== 'lobby';
-    $('start-game').disabled = !isHost || !canStart || starting;
+    $('bodyguard-minus').disabled = starting || (state.bodyguardCount ?? 0) <= 0 || state.status !== 'lobby';
+    $('bodyguard-plus').disabled = starting || (state.bodyguardCount ?? 0) >= 50 || state.status !== 'lobby';
+    $('start-game').disabled = !isHost || !canStart || starting || savingReveal;
     $('start-game').textContent = starting ? 'Assigning roles…' : 'Start Game';
   }
 
@@ -141,6 +260,8 @@ export class Screens {
     $('elimination-heading').textContent = murdered ? 'MURDERED' : 'BANISHED';
     $('banished-name').textContent = murdered ? 'You were murdered' : 'You have been banished';
     $('banishment-description').textContent = 'You are out of the game.' + (newHostName ? ' ' + newHostName + ' is now the host.' : '');
+    $('banishment-role').hidden = true;
+    $('banishment-role').textContent = '';
     $('banishment-screen').querySelector('.presentation-progress').hidden = true;
   }
 
@@ -175,9 +296,13 @@ export class Screens {
     $('seer-result-verdict').classList.toggle('not-werewolf', !investigation.isWerewolf);
   }
 
-  renderMurderReveal(name, question = null, results = [], players = [], timedStep = null) {
+  renderMurderReveal(name, question = null, results = [], players = [], timedStep = null, outcome = null) {
     this.showScreen('dawn-screen');
-    $('dawn-victim').textContent = name;
+    const noMurder = outcome === 'no_murder';
+    $('dawn-victim').textContent = noMurder ? 'Nobody was murdered' : name;
+    // The public announcement must not imply why nobody died.
+    $('dawn-outcome-detail').hidden = noMurder;
+    $('dawn-outcome-detail').textContent = noMurder ? '' : 'Was murdered during the night.';
     $('dawn-decoy').hidden = !question;
     $('dawn-decoy-question').textContent = question || '';
     const max = Math.max(0, ...results.map(item => item.votes));
@@ -191,13 +316,16 @@ export class Screens {
     this.updateTimedProgress('dawn-screen', step);
   }
 
-  renderEndgame(winner, roles) {
+  renderEndgame(winner, roles, { isHost = false } = {}) {
     this.showScreen('endgame-screen');
     const wolvesWon = winner !== 'village';
     $('endgame-screen').classList.toggle('wolves-won', wolvesWon);
     $('endgame-screen').querySelector('.endgame-day-art').hidden = wolvesWon;
     $('endgame-screen').querySelector('.endgame-night-art').hidden = !wolvesWon;
     $('endgame-winner').textContent = wolvesWon ? 'The Werewolves Win' : 'The Villagers Win';
+    $('start-rematch').hidden = !isHost;
+    $('rematch-waiting').hidden = isHost;
+    this.setRematchBusy(false);
     const list = $('endgame-roles');
     list.replaceChildren();
     const victorious = player => ROLES.isOnTeam(player.role, wolvesWon ? 'werewolves' : 'village');
@@ -239,17 +367,24 @@ export class Screens {
 
   }
 
-  renderNight(state, { playerId, role, pack, casting, decoyPack, seerPack }) {
+  setRematchBusy(busy) {
+    $('start-rematch').disabled = busy;
+    $('start-rematch').textContent = busy ? 'Preparing new game…' : 'New Game';
+  }
+
+  renderNight(state, { playerId, role, pack, casting, decoyPack, seerPack, bodyguardPack }) {
     this.showScreen('night-screen');
     $('night-round').textContent = state.roundNumber;
     $('night-heading').textContent = 'Night has fallen';
     const wolf = role === 'werewolf';
     const seer = role === 'seer';
+    const bodyguard = role === 'bodyguard';
     const loneWolf = wolf && pack?.wolves?.length === 1;
     $('night-instruction').textContent = wolf
       ? loneWolf ? 'You are the only werewolf! Pick a villager to eliminate.'
         : 'Agree on one villager to eliminate.'
       : seer ? 'Investigate one player. Your choice is final.'
+      : bodyguard ? 'Choose someone to protect tonight.'
       : 'Cast your vote. The results will be revealed at dawn.';
     $('night-villager-controls').hidden = role !== 'villager';
     if (role === 'villager') {
@@ -267,6 +402,30 @@ export class Screens {
         label.append(radio, name); choices.append(label);
       }
       $('decoy-progress').textContent = decoyPack?.myVote ? 'Vote recorded. You can change it until dawn.' : 'Choose another player.';
+    }
+    $('night-bodyguard-controls').hidden = !bodyguard;
+    if (bodyguard) {
+      const choices = $('bodyguard-targets');
+      choices.replaceChildren();
+      for (const player of state.players.filter(p => !p.eliminated_at)) {
+        const label = document.createElement('label');
+        label.className = 'night-choice';
+        const radio = document.createElement('input');
+        radio.type = 'radio';
+        radio.name = 'bodyguard-target';
+        radio.value = player.id;
+        radio.checked = bodyguardPack?.myProtection === player.id;
+        radio.disabled = casting || bodyguardPack?.lastProtectionTargetId === player.id;
+        const name = document.createElement('span');
+        name.className = 'night-name';
+        name.textContent = player.name + (player.id === playerId ? ' (you)' : '')
+          + (bodyguardPack?.lastProtectionTargetId === player.id ? ' — Protected last night' : '');
+        label.append(radio, name);
+        choices.append(label);
+      }
+      $('bodyguard-progress').textContent = bodyguardPack?.myProtection
+        ? 'Protection recorded. You can change it until the night ends.'
+        : 'Choose a player, including yourself. You cannot protect the same person two nights in a row, even yourself.';
     }
     $('night-seer-controls').hidden = !seer;
     if (seer) {
@@ -360,25 +519,32 @@ export class Screens {
   renderDay(state, { playerId, isHost, voting, myVote, casting, endingDiscussion }) {
     this.showScreen('day-screen');
     $('day-round').textContent = state.roundNumber;
-    $('day-heading').textContent = voting ? 'Vote to banish' : 'Discuss';
+    const runoff = state.runoffEnabled && state.voteStage === 'runoff';
+    $('day-heading').textContent = runoff ? 'Runoff vote' : (voting ? 'Vote to banish' : 'Discuss');
     $('day-clock').hidden = voting;
     $('end-discussion').hidden = voting || !isHost;
     $('end-discussion').disabled = endingDiscussion;
-    $('day-instruction').textContent = voting
-      ? 'Choose one player. Your vote is final.'
-      : 'Discuss who should be banished. Voting opens when the timer ends.';
+    $('day-instruction').textContent = runoff
+      ? 'The vote was tied. Choose among the leading candidates. Your vote is final.'
+      : (voting ? 'Choose one player. Your vote is final.'
+        : 'Discuss who should be banished. Voting opens when the timer ends.');
     const active = state.players.filter(player => !player.eliminated_at);
-    const voted = state.votes.filter(vote => vote.round_number === state.roundNumber).length;
+    const voted = (runoff ? state.runoffVotes : state.votes)
+      .filter(vote => vote.round_number === state.roundNumber).length;
     $('vote-controls').hidden = !voting || !!myVote || !active.some(player => player.id === playerId);
     const choices = $('vote-targets');
     // Preserve a pending selection only within the same round. The DOM is
     // reused between rounds, so a previous round's checked radio is stale.
-    const selected = this.dayVoteRound === state.roundNumber
+    const voteKey = state.roundNumber + ':' + (runoff ? 'runoff' : 'initial');
+    const selected = this.dayVoteRound === voteKey
       ? choices.querySelector('input[name="vote-target"]:checked')?.value
       : null;
-    this.dayVoteRound = state.roundNumber;
+    this.dayVoteRound = voteKey;
     choices.replaceChildren();
-    for (const player of active.filter(player => player.id !== playerId)) {
+    const eligible = runoff
+      ? active.filter(player => state.runoffCandidates.includes(player.id))
+      : active;
+    for (const player of eligible.filter(player => player.id !== playerId)) {
       const label = document.createElement('label');
       label.className = 'night-choice';
       const radio = document.createElement('input');
@@ -415,7 +581,7 @@ export class Screens {
     $('finish-voting').textContent = finishing ? 'Finishing…' : 'All Done';
   }
 
-  renderBanishment(name, step = null) {
+  renderBanishment(name, step = null, role = null) {
     this.showScreen('banishment-screen');
     const screen = $('banishment-screen');
     screen.classList.remove('murdered-screen');
@@ -424,10 +590,19 @@ export class Screens {
     screen.querySelector('.presentation-progress').hidden = false;
     $('elimination-heading').textContent = 'BANISHED';
     $('banished-name').textContent = name;
+    const roleLabel = $('banishment-role');
+    roleLabel.hidden = !role;
+    roleLabel.textContent = role ? 'Revealed as ' + ROLES.label(role) : '';
     $('banishment-description').textContent = name + ' has been eliminated from the game.';
     this.updateTimedProgress('banishment-screen', step || {
       durationMs: 1, elapsedMs: 1, progress: 1
     });
+  }
+
+  renderNoBanishment(step = null) {
+    this.renderBanishment('The village is divided', step);
+    $('elimination-heading').textContent = 'NO BANISHMENT';
+    $('banishment-description').textContent = 'The runoff ended in a tie. Nobody is banished.';
   }
 
   async renderQr(inviteUrl) {
@@ -442,11 +617,41 @@ export class Screens {
       void handlers.onJoin();
     });
     this.nameInput.addEventListener('input', () => { $('name-error').hidden = true; });
+    const infoDialog = $('game-info-dialog');
+    $('game-info-button').addEventListener('click', () => infoDialog.showModal());
+    $('game-info-close').addEventListener('click', () => infoDialog.close());
+    infoDialog.addEventListener('click', event => {
+      if (event.target === infoDialog) infoDialog.close();
+    });
+    const recoveryDialog = $('recovery-dialog');
+    $('help-rejoin').addEventListener('click', () => {
+      infoDialog.close();
+      handlers.onOpenRecovery();
+    });
+    $('recovery-close').addEventListener('click', () => recoveryDialog.close());
+    recoveryDialog.addEventListener('click', event => {
+      if (event.target === recoveryDialog) recoveryDialog.close();
+    });
+    $('recovery-player').addEventListener('change', () => {
+      $('recovery-result').hidden = true;
+      this.showRecoveryError('');
+      this.setRecoveryBusy(false);
+    });
+    $('recovery-generate').addEventListener('click', () => {
+      const targetId = $('recovery-player').value;
+      if (targetId) void handlers.onIssueRecovery(targetId);
+    });
     $('wolf-minus').addEventListener('click', () => { void handlers.onWerewolves(-1); });
     $('wolf-plus').addEventListener('click', () => { void handlers.onWerewolves(1); });
     $('seer-minus').addEventListener('click', () => { void handlers.onSeers(-1); });
     $('seer-plus').addEventListener('click', () => { void handlers.onSeers(1); });
+    $('bodyguard-minus').addEventListener('click', () => { void handlers.onBodyguards(-1); });
+    $('bodyguard-plus').addEventListener('click', () => { void handlers.onBodyguards(1); });
+    $('reveal-banished-role').addEventListener('change', event => {
+      void handlers.onRevealBanishedRole(event.target.checked);
+    });
     $('start-game').addEventListener('click', () => { void handlers.onStart(); });
+    $('start-rematch').addEventListener('click', () => { void handlers.onRematch(); });
     const reveal = $('role-reveal');
     const setRevealed = visible => {
       reveal.classList.toggle('revealed', visible);
@@ -481,6 +686,9 @@ export class Screens {
     });
     $('night-targets').addEventListener('change', event => {
       if (event.target.matches('input[name="night-target"]')) void handlers.onNightVote(event.target.value);
+    });
+    $('bodyguard-targets').addEventListener('change', event => {
+      if (event.target.matches('input[name="bodyguard-target"]')) void handlers.onProtection(event.target.value);
     });
     $('seer-targets').addEventListener('change', event => {
       if (event.target.matches('input[name="seer-target"]')) void handlers.onSeerInvestigation(event.target.value);
