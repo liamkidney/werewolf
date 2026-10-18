@@ -273,12 +273,6 @@ export class Screens {
 
   // Any timed presentation substate uses this same progress indicator.
   // Changing the screen within the sequence requires no controller changes.
-  renderDawnSuspense(step, outcome) {
-    $('dawn-suspense-heading').textContent = outcome === 'protected'
-      ? 'The werewolves have been thwarted' : 'The werewolves have struck';
-    this.renderTimedPresentation(step);
-  }
-
   renderTimedPresentation(step) {
     this.showScreen(step.screen);
     this.updateTimedProgress(step.screen, step);
@@ -304,10 +298,11 @@ export class Screens {
 
   renderMurderReveal(name, question = null, results = [], players = [], timedStep = null, outcome = null) {
     this.showScreen('dawn-screen');
-    const protectedNight = outcome === 'protected';
-    $('dawn-victim').textContent = protectedNight ? 'Nobody was murdered' : name;
-    $('dawn-outcome-detail').textContent = protectedNight
-      ? "The werewolves' attack was thwarted." : 'Was murdered during the night.';
+    const noMurder = outcome === 'no_murder';
+    $('dawn-victim').textContent = noMurder ? 'Nobody was murdered' : name;
+    // The public announcement must not imply why nobody died.
+    $('dawn-outcome-detail').hidden = noMurder;
+    $('dawn-outcome-detail').textContent = noMurder ? '' : 'Was murdered during the night.';
     $('dawn-decoy').hidden = !question;
     $('dawn-decoy-question').textContent = question || '';
     const max = Math.max(0, ...results.map(item => item.votes));
@@ -422,7 +417,7 @@ export class Screens {
       }
       $('bodyguard-progress').textContent = bodyguardPack?.myProtection
         ? 'Protection recorded. You can change it until the night ends.'
-        : 'Choose a player, including yourself. No consecutive protection of the same person.';
+        : 'Choose a player, including yourself. You cannot protect the same person two nights in a row, even yourself.';
     }
     $('night-seer-controls').hidden = !seer;
     if (seer) {

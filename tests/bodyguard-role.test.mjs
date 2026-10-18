@@ -8,6 +8,7 @@ import { ROLES } from '../src/role-registry.js';
 import { DEFAULT_RULES } from '../src/game-rules.js';
 import { workflowStatus } from '../src/workflow-status.js';
 import { GameController } from '../src/game-controller.js';
+import { Screens } from '../src/screens.js';
 
 const engine = new GameEngine();
 const states = new StateEngine();
@@ -74,8 +75,8 @@ test('Bodyguard submission stays in controller orchestration, not game transitio
 });
 
 test('dawn without murder has an explicit outcome and never invents a victim', () => {
-  const state = new GameState({ lastNightOutcome: 'protected', lastMurderedId: null });
-  assert.equal(state.lastNightOutcome, 'protected');
+  const state = new GameState({ lastNightOutcome: 'no_murder', lastMurderedId: null });
+  assert.equal(state.lastNightOutcome, 'no_murder');
   const controllerSource = readFileSync(new URL('../src/game-controller.js', import.meta.url), 'utf8');
   const screensSource = readFileSync(new URL('../src/screens.js', import.meta.url), 'utf8');
   const migration = readFileSync(new URL('../supabase/migrations/20261018_add_bodyguard.sql', import.meta.url), 'utf8');
@@ -92,4 +93,80 @@ test('Bodyguard count and protection form are available in the lobby and at nigh
     'night-bodyguard-controls', 'bodyguard-targets', 'bodyguard-progress']) {
     assert.ok(html.includes('id="' + id + '"'));
   }
+});
+
+function withFakeScreen(run) {
+  const original = globalThis.document;
+  const elements = new Map();
+  const element = tag => ({
+    tag, children: [], textContent: '', hidden: false, style: {},
+    append(...children) { this.children.push(...children); },
+    replaceChildren(...children) { this.children = children; }
+  });
+  globalThis.document = {
+    getElementById(id) {
+      if (!elements.has(id)) elements.set(id, element(id));
+      return elements.get(id);
+    },
+    createElement: element
+  };
+  try {
+    const screen = Object.create(Screens.prototype);
+    screen.showScreen = () => {};
+    screen.updateTimedProgress = () => {};
+    run(screen, elements);
+  } finally {
+    globalThis.document = original;
+  }
+}
+
+test('Dawn presentation reveals only that nobody died, never the cause', () => {
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  assert.match(html, /id="dawn-suspense-heading">Dawn approaches/);
+  withFakeScreen((screens, elements) => {
+    screens.renderMurderReveal('Unknown', null, [], [], null, 'no_murder');
+    assert.equal(elements.get('dawn-victim').textContent, 'Nobody was murdered');
+    assert.equal(elements.get('dawn-outcome-detail').hidden, true);
+    assert.equal(elements.get('dawn-outcome-detail').textContent, '');
+    screens.renderMurderReveal('Alice', null, [], [], null, 'murdered');
+    assert.equal(elements.get('dawn-victim').textContent, 'Alice');
+    assert.equal(elements.get('dawn-outcome-detail').hidden, false);
+    assert.equal(elements.get('dawn-outcome-detail').textContent, 'Was murdered during the night.');
+  });
+});
+
+test('A Bodyguard who protected themselves cannot select themselves the following night', () => {
+  withFakeScreen((screens, elements) => {
+    const game = {
+      status: 'playing', phase: 'night', roundNumber: 2,
+      players: [
+        { id: 'guard', name: 'Guard', eliminated_at: null },
+        { id: 'other', name: 'Other player', eliminated_at: null }
+      ]
+    };
+    screens.renderNight(game, {
+      playerId: 'guard', role: 'bodyguard', casting: false,
+      bodyguardPack: { myProtection: null, lastProtectionTargetId: 'guard' }
+    });
+    const choices = elements.get('bodyguard-targets').children;
+    const inputs = choices.map(label => label.children[0]);
+    assert.deepEqual(inputs.map(input => input.value), ['guard', 'other']);
+    assert.deepEqual(inputs.map(input => input.disabled), [true, false]);
+    assert.match(choices[0].children[1].textContent, /Protected last night/);
+
+    // After protecting another player, self-protection is available again,
+    // while that other player becomes ineligible for a consecutive night.
+    screens.renderNight({ ...game, roundNumber: 3 }, {
+      playerId: 'guard', role: 'bodyguard', casting: false,
+      bodyguardPack: { myProtection: null, lastProtectionTargetId: 'other' }
+    });
+    assert.deepEqual(elements.get('bodyguard-targets').children
+      .map(label => label.children[0].disabled), [false, true]);
+  });
+});
+
+test('Current migration stores a neutral public no-murder outcome', () => {
+  const sql = readFileSync(new URL('../supabase/migrations/20261018_neutral_dawn_outcome.sql', import.meta.url), 'utf8');
+  assert.match(sql, /last_night_outcome=case when v_protected then 'no_murder'/);
+  assert.match(sql, /last_night_outcome='no_murder' where last_night_outcome='protected'/);
 });

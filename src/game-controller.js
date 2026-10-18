@@ -386,9 +386,7 @@ export class GameController {
 
   renderTimedPresentation(step) {
     this.presentations.show(step, currentStep => {
-      if (currentStep.screen === 'suspense-screen') {
-        this.screens.renderDawnSuspense(currentStep, this.state.lastNightOutcome);
-      } else if (currentStep.screen === 'seer-result-screen' && this.presentations.seerResult) {
+      if (currentStep.screen === 'seer-result-screen' && this.presentations.seerResult) {
         this.screens.renderSeerResult(this.presentations.seerResult, currentStep);
       } else if (currentStep.screen === 'dawn-screen') {
         const state = this.state;
