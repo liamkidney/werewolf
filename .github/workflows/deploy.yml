@@ -53,6 +53,21 @@ jobs:
       - name: Validate historical import script syntax
         run: bash -n development/scripts/migrate-werewolf-to-shared.sh
 
+      - name: Check shared Supabase Data API exposure
+        run: |
+          set -euo pipefail
+          RESPONSE=$(mktemp)
+          STATUS=$(curl -sS --max-time 12 -o "$RESPONSE" -w '%{http_code}' \
+            -H 'apikey: sb_publishable_z-Aumyx5v_WMPTbY77u88A_H3oEEzFH' \
+            -H 'Accept-Profile: werewolf' \
+            'https://psoncybkfsdmjksyrcvv.supabase.co/rest/v1/decoy_questions?select=id&limit=1') || STATUS="network-error"
+          if [ "$STATUS" = "200" ]; then
+            echo 'Shared werewolf schema is exposed and anonymously readable.'
+          else
+            echo "::warning::Shared werewolf Data API unavailable ($STATUS). Add werewolf to Exposed schemas in shared Supabase project."
+            head -c 300 "$RESPONSE" || true
+          fi
+
       - name: Build production
         run: |
           SITE_ROOT="$GITHUB_WORKSPACE/production" SITE_BASE="/werewolf/" SITE_OUT="$GITHUB_WORKSPACE/_site" npm run build --prefix production
