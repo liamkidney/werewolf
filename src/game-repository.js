@@ -199,19 +199,19 @@ export class GameRepository {
   subscribeToGame(gameId, onChange) {
     return this.db.channel('lobby-' + gameId)
       .on('postgres_changes', {
-        event: '*', schema: 'public', table: 'players', filter: 'game_id=eq.' + gameId
+        event: '*', schema: 'werewolf', table: 'players', filter: 'game_id=eq.' + gameId
       }, onChange)
       .on('postgres_changes', {
-        event: 'UPDATE', schema: 'public', table: 'games', filter: 'id=eq.' + gameId
+        event: 'UPDATE', schema: 'werewolf', table: 'games', filter: 'id=eq.' + gameId
       }, onChange)
       .on('postgres_changes', {
-        event: 'INSERT', schema: 'public', table: 'player_roles', filter: 'game_id=eq.' + gameId
+        event: 'INSERT', schema: 'werewolf', table: 'player_roles', filter: 'game_id=eq.' + gameId
       }, onChange)
       .on('postgres_changes', {
-        event: 'INSERT', schema: 'public', table: 'day_votes', filter: 'game_id=eq.' + gameId
+        event: 'INSERT', schema: 'werewolf', table: 'day_votes', filter: 'game_id=eq.' + gameId
       }, onChange)
       .on('postgres_changes', {
-        event: 'INSERT', schema: 'public', table: 'day_runoff_votes', filter: 'game_id=eq.' + gameId
+        event: 'INSERT', schema: 'werewolf', table: 'day_runoff_votes', filter: 'game_id=eq.' + gameId
       }, onChange);
   }
 
