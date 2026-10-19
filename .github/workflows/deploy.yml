@@ -50,6 +50,9 @@ jobs:
       - name: Test development
         run: npm test --prefix development
 
+      - name: Validate historical import script syntax
+        run: bash -n development/scripts/migrate-werewolf-to-shared.sh
+
       - name: Build production
         run: |
           SITE_ROOT="$GITHUB_WORKSPACE/production" SITE_BASE="/werewolf/" SITE_OUT="$GITHUB_WORKSPACE/_site" npm run build --prefix production
