@@ -1,8 +1,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-// Browser-only infrastructure initialization, deliberately outside the
-// import chain of GameController, GameRepository and their Node unit tests.
+// Production and development use the shared Apps Supabase project, with
+// Werewolf isolated in its own schema.
 export const supabaseClient = createClient(
-  'https://guldhewlhxhsxchbattf.supabase.co',
-  'sb_publishable_6g3XdNkAJesxzGzFZ9ulYg_redoxZWj'
+  'https://psoncybkfsdmjksyrcvv.supabase.co',
+  'sb_publishable_z-Aumyx5v_WMPTbY77u88A_H3oEEzFH',
+  { db: { schema: 'werewolf' } }
 );
